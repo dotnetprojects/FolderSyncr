@@ -11,6 +11,9 @@ $lightScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-light.png'
 $lightMenuScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-light-menu.png'
 $darkScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-dark.png'
 $darkSettingsScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-dark-settings.png'
+$sampleRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('FolderSyncr.UiSmoke.' + [Guid]::NewGuid().ToString('N'))
+$sampleLeft = Join-Path $sampleRoot 'Left'
+$sampleRight = Join-Path $sampleRoot 'Right'
 
 if (-not $SkipBuild) {
     dotnet build $solution
@@ -119,6 +122,84 @@ function Invoke-Element {
     }
 
     throw "$Label does not expose InvokePattern. Patterns: $($patterns -join ', ')"
+}
+
+function Invoke-ElementByHelpWhenEnabled {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string]$HelpText,
+        [string]$Label,
+        [int]$TimeoutSeconds = 10
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        $root = Focus-MainWindow $Process
+        $element = Find-ByHelp $root $HelpText
+        if ($null -ne $element -and $element.Current.IsEnabled) {
+            Invoke-Element $element $Label
+            return
+        }
+
+        Start-Sleep -Milliseconds 200
+    } while ((Get-Date) -lt $deadline)
+
+    throw "$Label was not found enabled."
+}
+
+function Wait-ControlTypeCount {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [System.Windows.Automation.ControlType]$ControlType,
+        [int]$MinimumCount,
+        [string]$Label,
+        [int]$TimeoutSeconds = 10
+    )
+
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        $ControlType)
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        $root = [System.Windows.Automation.AutomationElement]::FromHandle($Process.MainWindowHandle)
+        $items = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        if ($items.Count -ge $MinimumCount) {
+            return $items
+        }
+
+        Start-Sleep -Milliseconds 200
+    } while ((Get-Date) -lt $deadline)
+
+    throw "$Label did not appear."
+}
+
+function New-SmokeData {
+    param(
+        [string]$LeftPath,
+        [string]$RightPath
+    )
+
+    New-Item -ItemType Directory -Path $LeftPath, $RightPath -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $LeftPath 'Docs'), (Join-Path $RightPath 'Docs') -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $LeftPath 'Media'), (Join-Path $RightPath 'Media') -Force | Out-Null
+
+    Set-Content -LiteralPath (Join-Path $LeftPath 'Docs\left-only.txt') -Value 'Only on the left side.'
+    Set-Content -LiteralPath (Join-Path $RightPath 'Docs\right-only.txt') -Value 'Only on the right side.'
+    Set-Content -LiteralPath (Join-Path $LeftPath 'Docs\changed.txt') -Value 'Left version of the changed document.'
+    Set-Content -LiteralPath (Join-Path $RightPath 'Docs\changed.txt') -Value 'Right version of the changed document.'
+    Set-Content -LiteralPath (Join-Path $LeftPath 'Media\same.bin') -Value 'same payload'
+    Set-Content -LiteralPath (Join-Path $RightPath 'Media\same.bin') -Value 'same payload'
+
+    1..40 | ForEach-Object {
+        $name = 'Batch\left-file-{0:00}.txt' -f $_
+        $path = Join-Path $LeftPath $name
+        New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
+        Set-Content -LiteralPath $path -Value "Left batch file $_"
+    }
+
+    (Get-Item -LiteralPath (Join-Path $LeftPath 'Docs\changed.txt')).LastWriteTime = (Get-Date).AddMinutes(-10)
+    (Get-Item -LiteralPath (Join-Path $RightPath 'Docs\changed.txt')).LastWriteTime = Get-Date
 }
 
 function Focus-MainWindow {
@@ -312,7 +393,8 @@ function Capture-AutomationWindowWithDropdown {
     Capture-Rectangle $bounds.Left $bounds.Top $bounds.Width ($bounds.Height + 260) $Path
 }
 
-$process = Start-Process -FilePath $exe -PassThru
+New-SmokeData -LeftPath $sampleLeft -RightPath $sampleRight
+$process = Start-Process -FilePath $exe -ArgumentList @('-dirpair', $sampleLeft, $sampleRight) -PassThru
 try {
     $root = Wait-MainWindow -Process $process
 
@@ -346,6 +428,10 @@ try {
         Expand-Menu (Find-ByName $root 'View' $menuItemType) 'View'
         Invoke-Element (Find-ByName ([System.Windows.Automation.AutomationElement]::RootElement) 'Show Overview' $menuItemType) 'Show Overview menu item'
     }
+
+    Invoke-ElementByHelpWhenEnabled $process 'Compare selected folders' 'Compare button'
+    Wait-ControlTypeCount $process ([System.Windows.Automation.ControlType]::ComboBox) 1 'Populated operation action choices' | Out-Null
+    Start-Sleep -Milliseconds 300
 
     Capture-Window $process $lightScreenshot
 
@@ -393,5 +479,9 @@ finally {
         if (-not $process.HasExited) {
             $process.Kill()
         }
+    }
+
+    if (Test-Path -LiteralPath $sampleRoot) {
+        Remove-Item -LiteralPath $sampleRoot -Recurse -Force
     }
 }

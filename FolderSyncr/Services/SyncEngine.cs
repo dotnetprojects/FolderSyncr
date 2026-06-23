@@ -150,7 +150,7 @@ public sealed class SyncEngine
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
-        switch (operation.Kind)
+        switch (operation.EffectiveKind)
         {
             case OperationKind.CopyLeftToRight:
                 await CopyAsync(operation.Left!, leftStorage, rightStorage, options, progress, cancellationToken);

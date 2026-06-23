@@ -293,7 +293,7 @@ public sealed class FolderSyncrBatchRunner(
 
     private static long GetOperationBytes(SyncOperation operation)
     {
-        return operation.Kind switch
+        return operation.EffectiveKind switch
         {
             OperationKind.CopyLeftToRight => operation.Left?.Length ?? 0,
             OperationKind.CopyRightToLeft => operation.Right?.Length ?? 0,

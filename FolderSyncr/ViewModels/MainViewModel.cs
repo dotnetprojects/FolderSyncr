@@ -348,7 +348,7 @@ public sealed class MainViewModel : ObservableObject
     public int CopyRightToLeftCount => CountOperations(OperationKind.CopyRightToLeft);
     public int DeleteLeftCount => CountOperations(OperationKind.DeleteLeft);
     public int DeleteRightCount => CountOperations(OperationKind.DeleteRight);
-    public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
+    public int ConflictCount => Operations.Count(operation => operation.EffectiveKind == OperationKind.Conflict);
     public int TotalCount => Operations.Count;
     public int LeftFileCount => Operations.Count(operation => operation.Left is not null);
     public int RightFileCount => Operations.Count(operation => operation.Right is not null);
@@ -1822,6 +1822,7 @@ public sealed class MainViewModel : ObservableObject
     {
         foreach (var operation in operations)
         {
+            operation.DisplayIndex = Operations.Count + 1;
             operation.PropertyChanged += Operation_PropertyChanged;
             Operations.Add(operation);
         }
@@ -1841,7 +1842,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void Operation_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(SyncOperation.IsSelectedForSync) or nameof(SyncOperation.ShouldExecute))
+        if (e.PropertyName is nameof(SyncOperation.IsSelectedForSync) or nameof(SyncOperation.ShouldExecute) or nameof(SyncOperation.EffectiveKind))
         {
             OnOperationSummaryChanged();
         }
@@ -1863,19 +1864,19 @@ public sealed class MainViewModel : ObservableObject
         return _operationViewFilter switch
         {
             OperationViewFilter.Changes => operation.ShouldExecute,
-            OperationViewFilter.Equal => operation.Kind == OperationKind.Equal,
-            OperationViewFilter.CopyLeftToRight => operation.Kind == OperationKind.CopyLeftToRight,
-            OperationViewFilter.CopyRightToLeft => operation.Kind == OperationKind.CopyRightToLeft,
-            OperationViewFilter.DeleteLeft => operation.Kind == OperationKind.DeleteLeft,
-            OperationViewFilter.DeleteRight => operation.Kind == OperationKind.DeleteRight,
-            OperationViewFilter.Conflicts => operation.Kind == OperationKind.Conflict,
+            OperationViewFilter.Equal => operation.EffectiveKind == OperationKind.Equal,
+            OperationViewFilter.CopyLeftToRight => operation.EffectiveKind == OperationKind.CopyLeftToRight,
+            OperationViewFilter.CopyRightToLeft => operation.EffectiveKind == OperationKind.CopyRightToLeft,
+            OperationViewFilter.DeleteLeft => operation.EffectiveKind == OperationKind.DeleteLeft,
+            OperationViewFilter.DeleteRight => operation.EffectiveKind == OperationKind.DeleteRight,
+            OperationViewFilter.Conflicts => operation.EffectiveKind == OperationKind.Conflict,
             _ => true
         };
     }
 
     private int CountOperations(OperationKind kind)
     {
-        return Operations.Count(operation => operation.Kind == kind);
+        return Operations.Count(operation => operation.EffectiveKind == kind);
     }
 
     private void RefreshOverview()
@@ -1931,7 +1932,7 @@ public sealed class MainViewModel : ObservableObject
 
     private static long GetOperationBytes(SyncOperation operation)
     {
-        return operation.Kind switch
+        return operation.EffectiveKind switch
         {
             OperationKind.CopyLeftToRight => operation.Left?.Length ?? 0,
             OperationKind.CopyRightToLeft => operation.Right?.Length ?? 0,

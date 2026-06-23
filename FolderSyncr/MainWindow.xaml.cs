@@ -181,17 +181,12 @@ public partial class MainWindow : Window
 
     private IReadOnlyList<SyncOperation> GetSelectedOperationsFromGrids()
     {
-        var selectedOperations = new[]
-            {
-                LeftOperationsGrid,
-                ActionOperationsGrid,
-                RightOperationsGrid
-            }
-            .SelectMany(grid => grid.SelectedItems.OfType<SyncOperation>())
+        var selectedOperations = OperationsGrid.SelectedItems
+            .OfType<SyncOperation>()
             .Distinct()
             .ToList();
 
-        if (selectedOperations.Count == 0 && ActionOperationsGrid.CurrentItem is SyncOperation currentOperation)
+        if (selectedOperations.Count == 0 && OperationsGrid.CurrentItem is SyncOperation currentOperation)
         {
             selectedOperations.Add(currentOperation);
         }

@@ -227,6 +227,17 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="ActionComboBox" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Height" Value="24" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
         <Style TargetType="ContextMenu">
             <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
@@ -780,66 +791,55 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="2">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-
-                    <DataGrid x:Name="LeftOperationsGrid"
-                              Grid.Column="0"
-                              ItemsSource="{Binding OperationsView}">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="#" Binding="{Binding RelativePath}" Width="36" />
-                            <DataGridTextColumn Header="Relative path" Binding="{Binding LeftName}" Width="*" />
-                            <DataGridTextColumn Header="Size" Binding="{Binding LeftSize}" Width="92" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <DataGrid x:Name="ActionOperationsGrid"
-                              Grid.Column="1"
-                              ItemsSource="{Binding OperationsView}"
-                              BorderBrush="#9CA3AF"
-                              BorderThickness="1,0">
-                        <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="" Width="38">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <CheckBox IsChecked="{Binding IsSelectedForSync, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  IsEnabled="{Binding CanSelectForSync}"
-                                                  HorizontalAlignment="Center" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="Action" Width="78">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Border Style="{StaticResource ActionCell}">
-                                            <Border.ToolTip>
-                                                <ToolTip Content="{Binding ActionDescription}" />
-                                            </Border.ToolTip>
-                                            <TextBlock Text="{Binding ActionGlyph}"
-                                                       HorizontalAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       FontWeight="Bold"
-                                                       Foreground="#111827" />
-                                        </Border>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-
-                    <DataGrid x:Name="RightOperationsGrid"
-                              Grid.Column="2"
-                              ItemsSource="{Binding OperationsView}">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Relative path" Binding="{Binding RightName}" Width="*" />
-                            <DataGridTextColumn Header="Size" Binding="{Binding RightSize}" Width="92" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
+                <DataGrid x:Name="OperationsGrid"
+                          Grid.Row="2"
+                          ItemsSource="{Binding OperationsView}"
+                          SelectionMode="Extended"
+                          SelectionUnit="FullRow"
+                          ScrollViewer.CanContentScroll="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="#" Binding="{Binding DisplayIndex}" Width="46" />
+                        <DataGridTextColumn Header="Relative path" Binding="{Binding LeftName}" Width="*" MinWidth="220" />
+                        <DataGridTextColumn Header="Size" Binding="{Binding LeftSize}" Width="92" />
+                        <DataGridTemplateColumn Header="" Width="38">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelectedForSync, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding CanSelectForSync}"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Action" Width="104">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding ActionChoices}"
+                                              Style="{StaticResource ActionComboBox}"
+                                              SelectedValuePath="Kind"
+                                              SelectedValue="{Binding SelectedKind, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              ToolTip="{Binding ActionDescription}"
+                                              HorizontalContentAlignment="Stretch"
+                                              VerticalContentAlignment="Center">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Style="{StaticResource ActionCell}">
+                                                    <TextBlock Text="{Binding Glyph}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               FontWeight="Bold"
+                                                               Foreground="#111827" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Relative path" Binding="{Binding RightName}" Width="*" MinWidth="220" />
+                        <DataGridTextColumn Header="Size" Binding="{Binding RightSize}" Width="92" />
+                    </DataGrid.Columns>
+                </DataGrid>
 
                 <Border Grid.Row="3"
                         Background="{DynamicResource ChromeBrush}"

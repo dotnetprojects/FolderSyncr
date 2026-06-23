@@ -473,6 +473,26 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task ExecuteUsesSelectedOperationAction()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("manual.txt", "copy manually selected to left", DateTime.UtcNow.AddMinutes(-1));
+        workspace.WriteRight("manual.txt", "newer right value", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+        var operation = operations.Single(item => item.RelativePath == "manual.txt");
+
+        operation.SelectedKind = OperationKind.CopyLeftToRight;
+
+        await engine.ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.AreEqual("copy manually selected to left", File.ReadAllText(workspace.RightPath("manual.txt")));
+        Assert.AreEqual("Done", operation.Status);
+    }
+
+    [TestMethod]
     public async Task ExecuteCanIgnoreOperationErrorsAndContinue()
     {
         using var workspace = TestWorkspace.Create();
