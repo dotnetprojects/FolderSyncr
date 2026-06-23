@@ -36,8 +36,8 @@ public sealed class FreeFileSyncConfigurationExporter
                             new XElement("Left", pair.LeftPath),
                             new XElement("Right", pair.RightPath),
                             new XElement("LocalFilter",
-                                CreateFilter("Include", configuration.IncludePatterns, defaultValue: "*"),
-                                CreateFilter("Exclude", configuration.ExcludePatterns, defaultValue: string.Empty))))),
+                                CreateFilter("Include", string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns, defaultValue: "*"),
+                                CreateFilter("Exclude", string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns, defaultValue: string.Empty))))),
                 new XElement("Comparison",
                     new XElement("Variant", ToCompareVariant(configuration.CompareMethod))),
                 synchronization));

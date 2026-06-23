@@ -212,8 +212,8 @@ public sealed class FolderSyncrBatchRunner(
             Mode = configuration.SyncMode ?? SyncMode.TwoWay,
             CompareMethod = configuration.CompareMethod ?? CompareMethod.TimeAndSize,
             FileTimeToleranceSeconds = 2,
-            IncludePatterns = configuration.IncludePatterns,
-            ExcludePatterns = configuration.ExcludePatterns
+            IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
+            ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         }).ToArray();
     }
 
@@ -233,8 +233,8 @@ public sealed class FolderSyncrBatchRunner(
             VersioningFolderPath = configuration.VersioningFolderPath,
             ErrorHandling = configuration.ErrorHandling,
             SymbolicLinkHandling = configuration.SymbolicLinkHandling,
-            IncludePatterns = configuration.IncludePatterns,
-            ExcludePatterns = configuration.ExcludePatterns
+            IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
+            ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         };
     }
 

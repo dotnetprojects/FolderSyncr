@@ -38,7 +38,7 @@ Use `Tools` -> `Create sample data` to create a disposable folder pair under `%L
 
 ## FreeFileSync Import
 
-Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui`, `.ffs_batch`, or `.ffs_real` file. FolderSyncr preserves all imported folder pairs in saved native configurations and compatible FreeFileSync exports. The current WPF UI shows the first pair until full multi-pair editing is implemented. `FolderSyncr.Cli.exe` runs every preserved pair unless you pass a single `-dirpair` override. For `.ffs_real` files, FolderSyncr imports the configured folders but does not start a real-time monitor yet. Unsupported FreeFileSync options are written as import warnings in the app log.
+Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui`, `.ffs_batch`, or `.ffs_real` file. FolderSyncr preserves all imported folder pairs and local per-pair filters in saved native configurations and compatible FreeFileSync exports. The current WPF UI shows the first pair until full multi-pair editing is implemented. `FolderSyncr.Cli.exe` runs every preserved pair with its local filters unless you pass a single `-dirpair` override. For `.ffs_real` files, FolderSyncr imports the configured folders but does not start a real-time monitor yet. Unsupported FreeFileSync options are written as import warnings in the app log.
 
 Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or log file. JSON results from FreeFileSync batch runs show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.
 
@@ -190,6 +190,8 @@ Compare in WinMerge="C:\Program Files\WinMerge\WinMergeU.exe" %local_path% %loca
 Filters follow the FreeFileSync wildcard syntax. Separate official FreeFileSync filter items with `|` or new lines. FolderSyncr also accepts semicolons and commas when loading older FolderSyncr configurations. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. Matching is case-insensitive.
 
 By default, a filter item can match either files or folders. When a rule matches a folder, all descendants of that folder are matched too. A trailing `:` marks a file-only filter, while a trailing slash marks a folder-only filter. Start a path with `\` or `/` to anchor it to the folder-pair root.
+
+Imported FreeFileSync configurations can carry local filters on each folder pair. FolderSyncr preserves those filters for native saves, exports, and CLI batch runs. The current filter dialog edits the visible first pair.
 
 Include only text and markdown files:
 

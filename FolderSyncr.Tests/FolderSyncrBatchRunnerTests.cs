@@ -118,6 +118,30 @@ public sealed class FolderSyncrBatchRunnerTests
     }
 
     [TestMethod]
+    public async Task RunAsyncUsesLocalFiltersForImportedFolderPairs()
+    {
+        using var workspace = BatchWorkspace.Create();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "copy.txt"), "copy text");
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "skip.jpg"), "skip photo");
+        File.WriteAllText(Path.Combine(workspace.SecondLeftPath, "copy.jpg"), "copy photo");
+        File.WriteAllText(Path.Combine(workspace.SecondLeftPath, "skip.txt"), "skip text");
+        var configPath = workspace.SaveFreeFileSyncConfigurationWithPairFilters();
+
+        var report = await workspace.CreateRunner().RunAsync(
+            new BatchRunOptions(configPath, null, null, DryRun: false, JsonOutputPath: null),
+            null,
+            CancellationToken.None);
+
+        Assert.AreEqual(0, report.ExitCode);
+        Assert.AreEqual(2, report.Result.ProcessedItems);
+        Assert.AreEqual("copy text", File.ReadAllText(Path.Combine(workspace.RightPath, "copy.txt")));
+        Assert.IsFalse(File.Exists(Path.Combine(workspace.RightPath, "skip.jpg")));
+        Assert.AreEqual("copy photo", File.ReadAllText(Path.Combine(workspace.SecondRightPath, "copy.jpg")));
+        Assert.IsFalse(File.Exists(Path.Combine(workspace.SecondRightPath, "skip.txt")));
+    }
+
+
+    [TestMethod]
     public async Task RunAsyncReturnsErrorForMissingConfiguration()
     {
         using var workspace = BatchWorkspace.Create();
@@ -245,6 +269,33 @@ public sealed class FolderSyncrBatchRunnerTests
                       <Pair>
                         <Left>{{SecondLeftPath}}</Left>
                         <Right>{{SecondRightPath}}</Right>
+                      </Pair>
+                    </FolderPairs>
+                  </FreeFileSync>
+                  """);
+            return path;
+        }
+
+        public string SaveFreeFileSyncConfigurationWithPairFilters()
+        {
+            var path = Path.Combine(RootPath, "pair-filters.ffs_batch");
+            File.WriteAllText(path,
+                $$"""
+                  <FreeFileSync XmlType="BATCH">
+                    <FolderPairs>
+                      <Pair>
+                        <Left>{{LeftPath}}</Left>
+                        <Right>{{RightPath}}</Right>
+                        <LocalFilter>
+                          <Include><Item>*.txt</Item></Include>
+                        </LocalFilter>
+                      </Pair>
+                      <Pair>
+                        <Left>{{SecondLeftPath}}</Left>
+                        <Right>{{SecondRightPath}}</Right>
+                        <LocalFilter>
+                          <Include><Item>*.jpg</Item></Include>
+                        </LocalFilter>
                       </Pair>
                     </FolderPairs>
                   </FreeFileSync>

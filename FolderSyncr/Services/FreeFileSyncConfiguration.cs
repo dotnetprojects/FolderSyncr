@@ -11,4 +11,8 @@ public sealed record FreeFileSyncConfiguration(
     string ExcludePatterns,
     IReadOnlyList<string> Warnings);
 
-public sealed record FreeFileSyncFolderPair(string LeftPath, string RightPath);
+public sealed record FreeFileSyncFolderPair(
+    string LeftPath,
+    string RightPath,
+    string? IncludePatterns = null,
+    string? ExcludePatterns = null);

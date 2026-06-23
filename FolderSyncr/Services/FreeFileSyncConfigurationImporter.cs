@@ -37,8 +37,8 @@ public sealed class FreeFileSyncConfigurationImporter
             pairs,
             syncMode,
             compareMethod,
-            ExtractFilterText(document, "Include", defaultValue: "*"),
-            ExtractFilterText(document, "Exclude", defaultValue: string.Empty),
+            ExtractGlobalFilterText(document, "Include", defaultValue: "*"),
+            ExtractGlobalFilterText(document, "Exclude", defaultValue: string.Empty),
             warnings);
     }
 
@@ -50,7 +50,11 @@ public sealed class FreeFileSyncConfigurationImporter
             var right = ReadPathNode(pair, "Right");
             if (!string.IsNullOrWhiteSpace(left) && !string.IsNullOrWhiteSpace(right))
             {
-                yield return new FreeFileSyncFolderPair(ExpandPath(left), ExpandPath(right));
+                yield return new FreeFileSyncFolderPair(
+                    ExpandPath(left),
+                    ExpandPath(right),
+                    ExtractFilterText(pair, "Include", defaultValue: null),
+                    ExtractFilterText(pair, "Exclude", defaultValue: null));
             }
         }
 
@@ -65,7 +69,11 @@ public sealed class FreeFileSyncConfigurationImporter
             var right = ReadPathNode(candidate, "Right");
             if (!string.IsNullOrWhiteSpace(left) && !string.IsNullOrWhiteSpace(right))
             {
-                yield return new FreeFileSyncFolderPair(ExpandPath(left), ExpandPath(right));
+                yield return new FreeFileSyncFolderPair(
+                    ExpandPath(left),
+                    ExpandPath(right),
+                    ExtractFilterText(candidate, "Include", defaultValue: null),
+                    ExtractFilterText(candidate, "Exclude", defaultValue: null));
             }
         }
     }
@@ -155,9 +163,33 @@ public sealed class FreeFileSyncConfigurationImporter
         return values;
     }
 
-    private static string ExtractFilterText(XDocument document, string filterName, string defaultValue)
+    private static string ExtractGlobalFilterText(XDocument document, string filterName, string defaultValue)
     {
-        var filters = document.Descendants()
+        var root = document.Root;
+        if (root is null)
+        {
+            return defaultValue;
+        }
+
+        var filters = root.Descendants()
+            .Where(element => IsName(element, filterName) && !element.Ancestors().Any(ancestor => IsName(ancestor, "Pair")))
+            .SelectMany(ReadFilterItems)
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Select(value => value.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return filters.Count == 0 ? defaultValue : string.Join(Environment.NewLine, filters);
+    }
+
+    private static string? ExtractFilterText(XElement? root, string filterName, string? defaultValue)
+    {
+        if (root is null)
+        {
+            return defaultValue;
+        }
+
+        var filters = root.Descendants()
             .Where(element => IsName(element, filterName))
             .SelectMany(ReadFilterItems)
             .Where(value => !string.IsNullOrWhiteSpace(value))

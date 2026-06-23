@@ -47,8 +47,8 @@ public sealed class FreeFileSyncConfigurationExporterTests
             Assert.AreEqual("D:\\Right", imported.FolderPairs[0].RightPath);
             Assert.AreEqual(SyncMode.UpdateLeftToRight, imported.SyncMode);
             Assert.AreEqual(CompareMethod.SizeOnly, imported.CompareMethod);
-            Assert.AreEqual("*", imported.IncludePatterns);
-            Assert.AreEqual("*.tmp", imported.ExcludePatterns);
+            Assert.AreEqual("*", imported.FolderPairs[0].IncludePatterns);
+            Assert.AreEqual("*.tmp", imported.FolderPairs[0].ExcludePatterns);
         }
         finally
         {
@@ -99,6 +99,33 @@ public sealed class FreeFileSyncConfigurationExporterTests
             }
         }
     }
+
+    [TestMethod]
+    public void SaveWritesPairSpecificFilters()
+    {
+        var configuration = CreateConfiguration(
+            SyncMode.TwoWay,
+            CompareMethod.TimeAndSize,
+            includePatterns: "*",
+            excludePatterns: string.Empty)
+            with
+            {
+                FolderPairs =
+                [
+                    new FolderPairConfiguration("C:\\Docs", "D:\\Docs", "*.txt", "cache\\"),
+                    new FolderPairConfiguration("C:\\Photos", "D:\\Photos", "*.jpg", "thumbs.db")
+                ]
+            };
+
+        var document = new FreeFileSyncConfigurationExporter().CreateDocument(configuration);
+        var pairs = document.Descendants("Pair").ToArray();
+
+        Assert.AreEqual("*.txt", pairs[0].Descendants("Include").Single().Elements("Item").Single().Value);
+        Assert.AreEqual("cache\\", pairs[0].Descendants("Exclude").Single().Elements("Item").Single().Value);
+        Assert.AreEqual("*.jpg", pairs[1].Descendants("Include").Single().Elements("Item").Single().Value);
+        Assert.AreEqual("thumbs.db", pairs[1].Descendants("Exclude").Single().Elements("Item").Single().Value);
+    }
+
 
 
     private static FolderSyncrConfiguration CreateConfiguration(

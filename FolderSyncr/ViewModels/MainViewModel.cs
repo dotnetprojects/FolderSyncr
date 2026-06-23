@@ -726,7 +726,11 @@ public sealed class MainViewModel : ObservableObject
         LeftPath = firstPair.LeftPath;
         RightPath = firstPair.RightPath;
         _folderPairs = configuration.FolderPairs
-            .Select(pair => new FolderPairConfiguration(pair.LeftPath, pair.RightPath))
+            .Select(pair => new FolderPairConfiguration(
+                pair.LeftPath,
+                pair.RightPath,
+                pair.IncludePatterns,
+                pair.ExcludePatterns))
             .ToList();
 
         if (configuration.SyncMode is { } syncMode)
@@ -739,8 +743,12 @@ public sealed class MainViewModel : ObservableObject
             SelectedCompareMethod = compareMethod;
         }
 
-        IncludePatterns = configuration.IncludePatterns;
-        ExcludePatterns = configuration.ExcludePatterns;
+        IncludePatterns = string.IsNullOrWhiteSpace(firstPair.IncludePatterns)
+            ? configuration.IncludePatterns
+            : firstPair.IncludePatterns;
+        ExcludePatterns = string.IsNullOrWhiteSpace(firstPair.ExcludePatterns)
+            ? configuration.ExcludePatterns
+            : firstPair.ExcludePatterns;
         ClearOperations();
         OnOperationSummaryChanged();
         _currentConfigurationPath = null;
@@ -873,7 +881,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 10,
+            Version: 11,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -920,8 +928,12 @@ public sealed class MainViewModel : ObservableObject
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         SelectedErrorHandling = configuration.Version >= 7 ? configuration.ErrorHandling : SyncErrorHandling.ShowErrors;
         SelectedSymbolicLinkHandling = configuration.Version >= 8 ? configuration.SymbolicLinkHandling : SymbolicLinkHandling.Skip;
-        IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
-        ExcludePatterns = configuration.ExcludePatterns;
+        IncludePatterns = string.IsNullOrWhiteSpace(visiblePair?.IncludePatterns)
+            ? string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns
+            : visiblePair.IncludePatterns;
+        ExcludePatterns = string.IsNullOrWhiteSpace(visiblePair?.ExcludePatterns)
+            ? configuration.ExcludePatterns
+            : visiblePair.ExcludePatterns;
         ReplaceExternalCommands(configuration.Version >= 9 && configuration.ExternalCommands is not null
             ? configuration.ExternalCommands
             : CreateDefaultExternalCommands());
@@ -1434,12 +1446,18 @@ public sealed class MainViewModel : ObservableObject
             && string.Equals(_folderPairs[0].LeftPath, LeftPath, StringComparison.OrdinalIgnoreCase)
             && string.Equals(_folderPairs[0].RightPath, RightPath, StringComparison.OrdinalIgnoreCase))
         {
-            return _folderPairs.ToArray();
+            var pairs = _folderPairs.ToArray();
+            pairs[0] = pairs[0] with
+            {
+                IncludePatterns = IncludePatterns,
+                ExcludePatterns = ExcludePatterns
+            };
+            return pairs;
         }
 
         if (!string.IsNullOrWhiteSpace(LeftPath) || !string.IsNullOrWhiteSpace(RightPath))
         {
-            return [new FolderPairConfiguration(LeftPath, RightPath)];
+            return [new FolderPairConfiguration(LeftPath, RightPath, IncludePatterns, ExcludePatterns)];
         }
 
         return [];

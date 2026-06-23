@@ -44,9 +44,11 @@ public sealed class FreeFileSyncConfigurationImporterTests
         Assert.AreEqual(@"D:\Backup", configuration.FolderPairs[0].RightPath);
         Assert.AreEqual(CompareMethod.ContentHash, configuration.CompareMethod);
         Assert.AreEqual(SyncMode.TwoWay, configuration.SyncMode);
-        StringAssert.Contains(configuration.IncludePatterns, "*");
-        StringAssert.Contains(configuration.ExcludePatterns, "*.tmp");
-        StringAssert.Contains(configuration.ExcludePatterns, @"\bin\");
+        Assert.AreEqual("*", configuration.IncludePatterns);
+        Assert.AreEqual(string.Empty, configuration.ExcludePatterns);
+        Assert.AreEqual("*", configuration.FolderPairs[0].IncludePatterns);
+        StringAssert.Contains(configuration.FolderPairs[0].ExcludePatterns, "*.tmp");
+        StringAssert.Contains(configuration.FolderPairs[0].ExcludePatterns, @"\bin\");
     }
 
     [TestMethod]
@@ -79,6 +81,43 @@ public sealed class FreeFileSyncConfigurationImporterTests
         Assert.AreEqual(CompareMethod.TimeAndSize, configuration.CompareMethod);
         Assert.AreEqual(SyncMode.MirrorRightToLeft, configuration.SyncMode);
         Assert.IsFalse(configuration.Warnings.Any(warning => warning.Contains("multiple folder pairs", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [TestMethod]
+    public void ImportKeepsLocalFiltersPerFolderPair()
+    {
+        using var file = TempConfig.Create(
+            "pairs.ffs_batch",
+            """
+            <FreeFileSync XmlType="BATCH">
+              <FolderPairs>
+                <Pair>
+                  <Left>C:\Left1</Left>
+                  <Right>C:\Right1</Right>
+                  <LocalFilter>
+                    <Include><Item>*.txt</Item></Include>
+                    <Exclude><Item>cache\</Item></Exclude>
+                  </LocalFilter>
+                </Pair>
+                <Pair>
+                  <Left>C:\Left2</Left>
+                  <Right>C:\Right2</Right>
+                  <LocalFilter>
+                    <Include><Item>*.jpg</Item></Include>
+                    <Exclude><Item>thumbs.db</Item></Exclude>
+                  </LocalFilter>
+                </Pair>
+              </FolderPairs>
+            </FreeFileSync>
+            """);
+
+        var configuration = new FreeFileSyncConfigurationImporter().Import(file.Path);
+
+        Assert.HasCount(2, configuration.FolderPairs);
+        Assert.AreEqual("*.txt", configuration.FolderPairs[0].IncludePatterns);
+        Assert.AreEqual("cache\\", configuration.FolderPairs[0].ExcludePatterns);
+        Assert.AreEqual("*.jpg", configuration.FolderPairs[1].IncludePatterns);
+        Assert.AreEqual("thumbs.db", configuration.FolderPairs[1].ExcludePatterns);
     }
 
     [TestMethod]

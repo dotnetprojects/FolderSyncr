@@ -44,7 +44,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Support `*`, `?`, and `?*` wildcard semantics.
 - [x] Support file-only filters with `:`.
 - [x] Support folder-only filters with trailing `/` or `\`.
-- [ ] Support local per-folder-pair filters.
+- [x] Support local per-folder-pair filters.
 - [x] Add right-click exclude/include actions from the comparison grid.
 
 ## 4. Synchronization modes

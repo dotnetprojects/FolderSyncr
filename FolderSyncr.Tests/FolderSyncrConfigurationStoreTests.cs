@@ -36,8 +36,8 @@ public sealed class FolderSyncrConfigurationStoreTests
                 ],
                 FolderPairs:
                 [
-                    new FolderPairConfiguration(@"C:\Source", @"D:\Target"),
-                    new FolderPairConfiguration(@"E:\More", @"F:\MoreBackup")
+                    new FolderPairConfiguration(@"C:\Source", @"D:\Target", "*.txt", "cache\\"),
+                    new FolderPairConfiguration(@"E:\More", @"F:\MoreBackup", "*.jpg", "thumbs.db")
                 ]);
 
             var store = new FolderSyncrConfigurationStore();
