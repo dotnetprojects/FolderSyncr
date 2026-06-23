@@ -333,8 +333,16 @@ try {
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Invoke-Element (Find-ByHelp $root 'Close Overview pane') 'Close Overview pane button'
-    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
-    Invoke-Element (Find-ByHelp $root 'Show Overview pane') 'Show Overview pane button'
+    Start-Sleep -Milliseconds 250
+    $root = Focus-MainWindow $process
+    $showOverviewButton = Find-ByHelp $root 'Show Overview pane'
+    if ($null -ne $showOverviewButton) {
+        Invoke-Element $showOverviewButton 'Show Overview pane button'
+    }
+    else {
+        Expand-Menu (Find-ByName $root 'View' $menuItemType) 'View'
+        Invoke-Element (Find-ByName ([System.Windows.Automation.AutomationElement]::RootElement) 'Show Overview' $menuItemType) 'Show Overview menu item'
+    }
 
     Capture-Window $process $lightScreenshot
 

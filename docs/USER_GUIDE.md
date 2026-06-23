@@ -50,6 +50,8 @@ Each synchronization writes a JSON run result to `%LOCALAPPDATA%\FolderSyncr\His
 
 Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, compare method, filters, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
 
+Use `File` -> `Export FreeFileSync configuration` to write a compatible `.ffs_gui` file. The export includes the current folder pair, comparison method, synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as theme, recycle-bin deletion, and versioning options stay in the native `.foldersyncr.json` format.
+
 ## Command Line
 
 Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to `FolderSyncr.exe` to open it in the UI at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.

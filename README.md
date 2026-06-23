@@ -31,6 +31,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui`, `.ffs_batch`, and `.ffs_real` configurations.
+- Export supported settings to FreeFileSync-compatible `.ffs_gui` files.
 - Import FreeFileSync JSON results and log files.
 - Store local sync run history as FreeFileSync-like JSON.
 - Run saved configurations unattended with `FolderSyncr.Cli`, FreeFileSync-like exit codes, and JSON output.

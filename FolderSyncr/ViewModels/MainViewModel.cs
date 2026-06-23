@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject
 {
     private readonly SyncEngine _syncEngine = new();
     private readonly FreeFileSyncConfigurationImporter _configurationImporter = new();
+    private readonly FreeFileSyncConfigurationExporter _configurationExporter = new();
     private readonly FolderSyncrConfigurationStore _configurationStore = new();
     private readonly FreeFileSyncLogImporter _logImporter = new();
     private readonly SyncRunHistoryStore _runHistoryStore = new();
@@ -63,6 +64,7 @@ public sealed class MainViewModel : ObservableObject
         OpenConfigurationCommand = new RelayCommand(OpenConfigurationAsync);
         SaveConfigurationCommand = new RelayCommand(SaveConfigurationAsync);
         SaveAsConfigurationCommand = new RelayCommand(SaveAsConfigurationAsync);
+        ExportFreeFileSyncConfigurationCommand = new RelayCommand(ExportFreeFileSyncConfigurationAsync);
         ReloadConfigurationCommand = new RelayCommand(ReloadConfigurationAsync);
         OpenFreeFileSyncLogCommand = new RelayCommand(OpenFreeFileSyncLogAsync);
         CreateSampleDataCommand = new RelayCommand(CreateSampleDataAsync);
@@ -127,6 +129,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand OpenConfigurationCommand { get; }
     public RelayCommand SaveConfigurationCommand { get; }
     public RelayCommand SaveAsConfigurationCommand { get; }
+    public RelayCommand ExportFreeFileSyncConfigurationCommand { get; }
     public RelayCommand ReloadConfigurationCommand { get; }
     public RelayCommand OpenFreeFileSyncLogCommand { get; }
     public RelayCommand CreateSampleDataCommand { get; }
@@ -730,6 +733,28 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return LoadNativeConfigurationAsync(_currentConfigurationPath);
+    }
+
+    private Task ExportFreeFileSyncConfigurationAsync()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export FreeFileSync configuration",
+            Filter = "FreeFileSync GUI configurations (*.ffs_gui)|*.ffs_gui|XML files (*.xml)|*.xml|All files (*.*)|*.*",
+            DefaultExt = ".ffs_gui",
+            AddExtension = true,
+            FileName = string.IsNullOrWhiteSpace(_currentConfigurationPath)
+                ? "Backup.ffs_gui"
+                : $"{Path.GetFileNameWithoutExtension(_currentConfigurationPath)}.ffs_gui"
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return Task.CompletedTask;
+        }
+
+        _configurationExporter.Save(dialog.FileName, CreateNativeConfiguration(dialog.FileName));
+        return SetStatusAsync($"Exported FreeFileSync configuration {Path.GetFileName(dialog.FileName)}.");
     }
 
     private Task LoadNativeConfigurationAsync(string path)
@@ -1491,6 +1516,7 @@ public sealed class MainViewModel : ObservableObject
         OpenConfigurationCommand.RaiseCanExecuteChanged();
         SaveConfigurationCommand.RaiseCanExecuteChanged();
         SaveAsConfigurationCommand.RaiseCanExecuteChanged();
+        ExportFreeFileSyncConfigurationCommand.RaiseCanExecuteChanged();
         ReloadConfigurationCommand.RaiseCanExecuteChanged();
     }
 

@@ -482,6 +482,7 @@
                 <Separator />
                 <MenuItem Header="_Save" Command="{Binding SaveConfigurationCommand}" />
                 <MenuItem Header="Save _as" Command="{Binding SaveAsConfigurationCommand}" />
+                <MenuItem Header="_Export FreeFileSync configuration" Command="{Binding ExportFreeFileSyncConfigurationCommand}" />
                 <Separator />
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
             </MenuItem>
