@@ -28,6 +28,7 @@ public sealed class MainViewModel : ObservableObject
     private SyncMode _selectedMode = SyncMode.TwoWay;
     private CompareMethod _selectedCompareMethod = CompareMethod.TimeAndSize;
     private int _fileTimeToleranceSeconds = 2;
+    private bool _ignoreDaylightSavingTimeShift;
     private bool _verifyCopiedFiles;
     private DeletionHandling _selectedDeletionHandling = DeletionHandling.Permanent;
     private string _versioningFolderPath = string.Empty;
@@ -165,6 +166,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _verifyCopiedFiles;
         set => SetProperty(ref _verifyCopiedFiles, value);
+    }
+
+    public bool IgnoreDaylightSavingTimeShift
+    {
+        get => _ignoreDaylightSavingTimeShift;
+        set => SetProperty(ref _ignoreDaylightSavingTimeShift, value);
     }
 
     public DeletionHandling SelectedDeletionHandling
@@ -442,6 +449,13 @@ public sealed class MainViewModel : ObservableObject
             Margin = new Thickness(0, 0, 0, 16)
         };
 
+        var dstBox = new CheckBox
+        {
+            Content = "Ignore one-hour daylight saving time shifts",
+            IsChecked = IgnoreDaylightSavingTimeShift,
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+
         var deletionBox = new ComboBox
         {
             ItemsSource = DeletionHandlingModes,
@@ -464,6 +478,7 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(compareBox);
         content.Children.Add(new TextBlock { Text = "File time tolerance in seconds", FontWeight = FontWeights.SemiBold });
         content.Children.Add(toleranceBox);
+        content.Children.Add(dstBox);
         content.Children.Add(verifyBox);
         content.Children.Add(new TextBlock { Text = "Deletion handling", FontWeight = FontWeights.SemiBold });
         content.Children.Add(deletionBox);
@@ -480,6 +495,7 @@ public sealed class MainViewModel : ObservableObject
             }
 
             FileTimeToleranceSeconds = toleranceSeconds;
+            IgnoreDaylightSavingTimeShift = dstBox.IsChecked == true;
             VerifyCopiedFiles = verifyBox.IsChecked == true;
             SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
@@ -615,6 +631,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         FileTimeToleranceSeconds = 2;
+        IgnoreDaylightSavingTimeShift = false;
         VerifyCopiedFiles = false;
         SelectedDeletionHandling = DeletionHandling.Permanent;
         VersioningFolderPath = string.Empty;
@@ -689,13 +706,14 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 4,
+            Version: 5,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
             SelectedMode,
             SelectedCompareMethod,
             FileTimeToleranceSeconds,
+            IgnoreDaylightSavingTimeShift,
             VerifyCopiedFiles,
             SelectedDeletionHandling,
             VersioningFolderPath,
@@ -712,6 +730,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = configuration.SyncMode;
         SelectedCompareMethod = configuration.CompareMethod;
         FileTimeToleranceSeconds = configuration.Version < 2 ? 2 : configuration.FileTimeToleranceSeconds;
+        IgnoreDaylightSavingTimeShift = configuration.Version >= 5 && configuration.IgnoreDaylightSavingTimeShift;
         VerifyCopiedFiles = configuration.Version >= 3 && configuration.VerifyCopiedFiles;
         SelectedDeletionHandling = configuration.Version >= 4 ? configuration.DeletionHandling : DeletionHandling.Permanent;
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
@@ -1171,6 +1190,7 @@ public sealed class MainViewModel : ObservableObject
             Mode = SelectedMode,
             CompareMethod = SelectedCompareMethod,
             FileTimeToleranceSeconds = FileTimeToleranceSeconds,
+            IgnoreDaylightSavingTimeShift = IgnoreDaylightSavingTimeShift,
             VerifyCopiedFiles = VerifyCopiedFiles,
             DeletionHandling = SelectedDeletionHandling,
             VersioningFolderPath = VersioningFolderPath,

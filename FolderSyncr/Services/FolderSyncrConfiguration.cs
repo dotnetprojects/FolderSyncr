@@ -10,6 +10,7 @@ public sealed record FolderSyncrConfiguration(
     SyncMode SyncMode,
     CompareMethod CompareMethod,
     int FileTimeToleranceSeconds,
+    bool IgnoreDaylightSavingTimeShift,
     bool VerifyCopiedFiles,
     DeletionHandling DeletionHandling,
     string VersioningFolderPath,

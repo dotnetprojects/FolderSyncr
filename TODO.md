@@ -28,7 +28,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Compare by file content hash.
 - [x] Compare by file size only.
 - [x] Make the file time tolerance configurable.
-- [ ] Support explicit daylight-saving-time shift ignores.
+- [x] Support explicit daylight-saving-time shift ignores.
 - [ ] Add symbolic link handling:
   - [ ] Skip links
   - [ ] Follow links

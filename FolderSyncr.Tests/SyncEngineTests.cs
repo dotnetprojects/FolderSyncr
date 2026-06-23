@@ -130,6 +130,38 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task TimeAndSizeCanIgnoreOneHourDaylightSavingShift()
+    {
+        using var workspace = TestWorkspace.Create();
+        var timestamp = DateTime.UtcNow;
+        workspace.WriteLeft("dst.txt", "same", timestamp);
+        workspace.WriteRight("dst.txt", "same", timestamp.AddHours(-1));
+
+        var options = workspace.CreateOptions(
+            SyncMode.TwoWay,
+            CompareMethod.TimeAndSize,
+            fileTimeToleranceSeconds: 2,
+            ignoreDaylightSavingTimeShift: true);
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "dst.txt", OperationKind.Equal);
+    }
+
+    [TestMethod]
+    public async Task TimeAndSizeDoesNotIgnoreDaylightSavingShiftByDefault()
+    {
+        using var workspace = TestWorkspace.Create();
+        var timestamp = DateTime.UtcNow;
+        workspace.WriteLeft("dst-default.txt", "same", timestamp);
+        workspace.WriteRight("dst-default.txt", "same", timestamp.AddHours(-1));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "dst-default.txt", OperationKind.CopyLeftToRight);
+    }
+
+    [TestMethod]
     public async Task CompareExpandsEnvironmentVariablesInFolderPaths()
     {
         using var workspace = TestWorkspace.Create();
@@ -305,6 +337,7 @@ public sealed class SyncEngineTests
             SyncMode mode,
             CompareMethod compareMethod = CompareMethod.TimeAndSize,
             int fileTimeToleranceSeconds = 2,
+            bool ignoreDaylightSavingTimeShift = false,
             bool verifyCopiedFiles = false,
             DeletionHandling deletionHandling = DeletionHandling.Permanent,
             string versioningFolderPath = "")
@@ -316,6 +349,7 @@ public sealed class SyncEngineTests
                 Mode = mode,
                 CompareMethod = compareMethod,
                 FileTimeToleranceSeconds = fileTimeToleranceSeconds,
+                IgnoreDaylightSavingTimeShift = ignoreDaylightSavingTimeShift,
                 VerifyCopiedFiles = verifyCopiedFiles,
                 DeletionHandling = deletionHandling,
                 VersioningFolderPath = versioningFolderPath,

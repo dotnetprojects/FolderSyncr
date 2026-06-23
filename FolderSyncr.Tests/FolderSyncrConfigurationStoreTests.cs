@@ -20,6 +20,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 SyncMode.MirrorLeftToRight,
                 CompareMethod.ContentHash,
                 FileTimeToleranceSeconds: 7,
+                IgnoreDaylightSavingTimeShift: true,
                 VerifyCopiedFiles: true,
                 DeletionHandling.RecycleBin,
                 VersioningFolderPath: @"E:\Versions",

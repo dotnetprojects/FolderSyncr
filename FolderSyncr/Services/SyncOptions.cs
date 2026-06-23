@@ -9,6 +9,7 @@ public sealed class SyncOptions
     public SyncMode Mode { get; init; }
     public CompareMethod CompareMethod { get; init; }
     public int FileTimeToleranceSeconds { get; init; } = 2;
+    public bool IgnoreDaylightSavingTimeShift { get; init; }
     public bool VerifyCopiedFiles { get; init; }
     public DeletionHandling DeletionHandling { get; init; } = DeletionHandling.Permanent;
     public string VersioningFolderPath { get; init; } = string.Empty;
