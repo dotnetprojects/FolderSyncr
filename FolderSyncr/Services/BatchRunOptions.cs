@@ -12,7 +12,9 @@ public sealed record BatchRunOptions(
     SymbolicLinkHandling? SymbolicLinkHandling = null,
     IReadOnlyDictionary<string, string>? TemporaryVariables = null,
     bool Watch = false,
-    TimeSpan? WatchIdleDelay = null)
+    TimeSpan? WatchIdleDelay = null,
+    int? RemoteConnectionCount = null,
+    bool? SftpCompression = null)
 {
     public BatchRunOptions(
         string ConfigurationPath,
@@ -24,7 +26,9 @@ public sealed record BatchRunOptions(
         SymbolicLinkHandling? SymbolicLinkHandling = null,
         IReadOnlyDictionary<string, string>? TemporaryVariables = null,
         bool Watch = false,
-        TimeSpan? WatchIdleDelay = null)
+        TimeSpan? WatchIdleDelay = null,
+        int? RemoteConnectionCount = null,
+        bool? SftpCompression = null)
         : this(
             [ConfigurationPath],
             OverrideLeftPath,
@@ -35,7 +39,9 @@ public sealed record BatchRunOptions(
             SymbolicLinkHandling,
             TemporaryVariables,
             Watch,
-            WatchIdleDelay)
+            WatchIdleDelay,
+            RemoteConnectionCount,
+            SftpCompression)
     {
     }
 

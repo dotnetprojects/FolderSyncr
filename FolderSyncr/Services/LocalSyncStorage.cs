@@ -77,7 +77,7 @@ internal sealed class LocalSyncStorage(string root) : ISyncStorage
         return files;
     }
 
-    public Task<Stream> OpenReadAsync(FileSnapshot snapshot, CancellationToken cancellationToken)
+    public Task<Stream> OpenReadAsync(FileSnapshot snapshot, SyncOptions options, CancellationToken cancellationToken)
     {
         Stream stream = File.Open(snapshot.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
         return Task.FromResult(stream);

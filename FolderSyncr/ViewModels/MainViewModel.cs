@@ -38,6 +38,8 @@ public sealed class MainViewModel : ObservableObject
     private SyncErrorHandling _selectedErrorHandling = SyncErrorHandling.ShowErrors;
     private SymbolicLinkHandling _selectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
     private CustomSyncRules _customRules = CustomSyncRules.Default;
+    private int _remoteConnectionCount = 1;
+    private bool _sftpCompression;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -249,6 +251,18 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _customRules;
         set => SetProperty(ref _customRules, value);
+    }
+
+    public int RemoteConnectionCount
+    {
+        get => _remoteConnectionCount;
+        set => SetProperty(ref _remoteConnectionCount, Math.Max(1, value));
+    }
+
+    public bool SftpCompression
+    {
+        get => _sftpCompression;
+        set => SetProperty(ref _sftpCompression, value);
     }
 
     public string IncludePatterns
@@ -573,6 +587,20 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var remoteConnectionCountBox = new TextBox
+        {
+            Text = RemoteConnectionCount.ToString(),
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
+        var sftpCompressionBox = new CheckBox
+        {
+            Content = "Use SFTP compression",
+            IsChecked = SftpCompression,
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+
         ComboBox CreateCustomRuleBox(CustomSyncAction selectedAction)
         {
             return new ComboBox
@@ -609,6 +637,9 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(errorHandlingBox);
         content.Children.Add(new TextBlock { Text = "Symbolic links", FontWeight = FontWeights.SemiBold });
         content.Children.Add(symbolicLinkBox);
+        content.Children.Add(new TextBlock { Text = "Connection/channel count", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(remoteConnectionCountBox);
+        content.Children.Add(sftpCompressionBox);
         content.Children.Add(new TextBlock { Text = "Left-only action", FontWeight = FontWeights.SemiBold });
         content.Children.Add(leftOnlyRuleBox);
         content.Children.Add(new TextBlock { Text = "Right-only action", FontWeight = FontWeights.SemiBold });
@@ -644,6 +675,13 @@ public sealed class MainViewModel : ObservableObject
             SelectedErrorHandling = (SyncErrorHandling)errorHandlingBox.SelectedItem;
             SelectedSymbolicLinkHandling = (SymbolicLinkHandling)symbolicLinkBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
+            if (!int.TryParse(remoteConnectionCountBox.Text, out var remoteConnections) || remoteConnections < 1)
+            {
+                remoteConnections = 1;
+            }
+
+            RemoteConnectionCount = remoteConnections;
+            SftpCompression = sftpCompressionBox.IsChecked == true;
             CustomRules = new CustomSyncRules(
                 (CustomSyncAction)leftOnlyRuleBox.SelectedItem,
                 (CustomSyncAction)rightOnlyRuleBox.SelectedItem,
@@ -921,6 +959,8 @@ public sealed class MainViewModel : ObservableObject
         SelectedErrorHandling = SyncErrorHandling.ShowErrors;
         SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
         CustomRules = CustomSyncRules.Default;
+        RemoteConnectionCount = 1;
+        SftpCompression = false;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         _folderPairs = [];
@@ -1016,7 +1056,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 12,
+            Version: 13,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -1035,7 +1075,9 @@ public sealed class MainViewModel : ObservableObject
             IsDarkMode,
             ExternalCommands.ToArray(),
             GetSavedFolderPairs(),
-            CustomRules);
+            CustomRules,
+            RemoteConnectionCount,
+            SftpCompression);
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
@@ -1067,6 +1109,8 @@ public sealed class MainViewModel : ObservableObject
         CustomRules = configuration.Version >= 12 && configuration.CustomRules is not null
             ? configuration.CustomRules
             : CustomSyncRules.Default;
+        RemoteConnectionCount = configuration.Version >= 13 ? Math.Max(1, configuration.RemoteConnectionCount) : 1;
+        SftpCompression = configuration.Version >= 13 && configuration.SftpCompression;
         IncludePatterns = string.IsNullOrWhiteSpace(visiblePair?.IncludePatterns)
             ? string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns
             : visiblePair.IncludePatterns;
@@ -1147,6 +1191,8 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         CustomRules = CustomSyncRules.Default;
+        RemoteConnectionCount = 1;
+        SftpCompression = false;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         ClearOperations();
@@ -1697,6 +1743,8 @@ public sealed class MainViewModel : ObservableObject
             ErrorHandling = SelectedErrorHandling,
             SymbolicLinkHandling = SelectedSymbolicLinkHandling,
             CustomRules = CustomRules,
+            RemoteConnectionCount = RemoteConnectionCount,
+            SftpCompression = SftpCompression,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

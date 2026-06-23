@@ -165,7 +165,9 @@ public sealed class FolderSyncrBatchRunner(
             ExcludePatterns = syncOptions.ExcludePatterns,
             DryRun = syncOptions.DryRun,
             ErrorHandling = syncOptions.ErrorHandling,
-            SymbolicLinkHandling = syncOptions.SymbolicLinkHandling
+            SymbolicLinkHandling = syncOptions.SymbolicLinkHandling,
+            RemoteConnectionCount = syncOptions.RemoteConnectionCount,
+            SftpCompression = syncOptions.SftpCompression
         };
     }
 
@@ -197,7 +199,9 @@ public sealed class FolderSyncrBatchRunner(
             ExcludePatterns = syncOptions.ExcludePatterns,
             DryRun = options.DryRun,
             ErrorHandling = options.ErrorHandling ?? syncOptions.ErrorHandling,
-            SymbolicLinkHandling = options.SymbolicLinkHandling ?? syncOptions.SymbolicLinkHandling
+            SymbolicLinkHandling = options.SymbolicLinkHandling ?? syncOptions.SymbolicLinkHandling,
+            RemoteConnectionCount = options.RemoteConnectionCount ?? syncOptions.RemoteConnectionCount,
+            SftpCompression = options.SftpCompression ?? syncOptions.SftpCompression
         };
     }
 
@@ -216,6 +220,8 @@ public sealed class FolderSyncrBatchRunner(
             CustomRules = CustomSyncRules.Default,
             CompareMethod = configuration.CompareMethod ?? CompareMethod.TimeAndSize,
             FileTimeToleranceSeconds = 2,
+            RemoteConnectionCount = 1,
+            SftpCompression = false,
             IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
             ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         }).ToArray();
@@ -238,6 +244,8 @@ public sealed class FolderSyncrBatchRunner(
             VersioningFolderPath = configuration.VersioningFolderPath,
             ErrorHandling = configuration.ErrorHandling,
             SymbolicLinkHandling = configuration.SymbolicLinkHandling,
+            RemoteConnectionCount = Math.Max(1, configuration.RemoteConnectionCount),
+            SftpCompression = configuration.SftpCompression,
             IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
             ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         };

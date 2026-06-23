@@ -112,8 +112,8 @@ This list tracks the work needed to support the main features documented in the 
 
 - [x] Add SFTP support.
 - [x] Add FTP support.
-- [ ] Add connection count/channel count settings.
-- [ ] Add compression option for SFTP.
+- [x] Add connection count/channel count settings.
+- [x] Add compression option for SFTP.
 - [x] Investigate MTP support.
 - [x] Improve UNC/network path handling.
 

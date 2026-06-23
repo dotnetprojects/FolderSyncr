@@ -50,6 +50,8 @@ internal static class BatchCommandLineParser
         string? jsonOutputPath = null;
         SyncErrorHandling? errorHandling = null;
         SymbolicLinkHandling? symbolicLinkHandling = null;
+        int? remoteConnectionCount = null;
+        bool? sftpCompression = null;
         var temporaryVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var dryRun = false;
         var watch = false;
@@ -114,6 +116,26 @@ internal static class BatchCommandLineParser
 
                     symbolicLinkHandling = parsedSymbolicLinkHandling;
                     break;
+                case "--connections":
+                case "--channels":
+                    if (index + 1 >= args.Count)
+                    {
+                        return new BatchParseResult(null, $"{argument} requires a positive integer.", ShowHelp: false);
+                    }
+
+                    if (!int.TryParse(args[++index], out var parsedConnectionCount) || parsedConnectionCount < 1)
+                    {
+                        return new BatchParseResult(null, $"{argument} requires a positive integer.", ShowHelp: false);
+                    }
+
+                    remoteConnectionCount = parsedConnectionCount;
+                    break;
+                case "--sftp-compression":
+                    sftpCompression = true;
+                    break;
+                case "--no-sftp-compression":
+                    sftpCompression = false;
+                    break;
                 case "--var":
                     if (index + 1 >= args.Count)
                     {
@@ -149,7 +171,7 @@ internal static class BatchCommandLineParser
 
         return configurationPaths.Count == 0
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables, watch, watchIdleDelay), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables, watch, watchIdleDelay, remoteConnectionCount, sftpCompression), null, ShowHelp: false);
     }
 
     private static bool TryParseTemporaryVariable(string argument, out string name, out string value)
@@ -205,7 +227,7 @@ internal static class BatchCommandLineParser
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--watch] [--idle <seconds>] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--watch] [--idle <seconds>] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [--connections <count>] [--sftp-compression|--no-sftp-compression] [-dirpair <left> <right>]
 
                Additional positional paths may be FolderSyncr/FreeFileSync configurations or a FreeFileSync GlobalSettings.xml file.
 

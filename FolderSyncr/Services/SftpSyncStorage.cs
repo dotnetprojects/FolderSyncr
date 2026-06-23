@@ -16,7 +16,7 @@ internal sealed class SftpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
-        using var client = CreateConnectedClient();
+        using var client = CreateConnectedClient(options);
         var filter = new FileFilter(options.IncludePatterns, options.ExcludePatterns);
         var files = new Dictionary<string, FileSnapshot>(StringComparer.OrdinalIgnoreCase);
         await ScanDirectoryAsync(client, root.RootPath, compareMethod, filter, files, progress, cancellationToken);
@@ -24,9 +24,9 @@ internal sealed class SftpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         return files;
     }
 
-    public async Task<Stream> OpenReadAsync(FileSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task<Stream> OpenReadAsync(FileSnapshot snapshot, SyncOptions options, CancellationToken cancellationToken)
     {
-        using var client = CreateConnectedClient();
+        using var client = CreateConnectedClient(options);
         var memory = new MemoryStream();
         await client.DownloadFileAsync(snapshot.FullPath, memory, cancellationToken);
         memory.Position = 0;
@@ -40,7 +40,7 @@ internal sealed class SftpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         SyncOptions options,
         CancellationToken cancellationToken)
     {
-        using var client = CreateConnectedClient();
+        using var client = CreateConnectedClient(options);
         var destinationPath = root.Combine(relativePath);
         await EnsureDirectoryAsync(client, GetRemoteDirectory(destinationPath), cancellationToken);
         await client.UploadFileAsync(content, destinationPath, cancellationToken);
@@ -55,7 +55,7 @@ internal sealed class SftpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         }
 
         progress?.Report($"Delete {snapshot.RelativePath}");
-        using var client = CreateConnectedClient();
+        using var client = CreateConnectedClient(options);
         await client.DeleteFileAsync(snapshot.FullPath, cancellationToken);
     }
 
@@ -122,14 +122,24 @@ internal sealed class SftpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         }
     }
 
-    private SftpClient CreateConnectedClient()
+    private SftpClient CreateConnectedClient(SyncOptions options)
     {
         if (string.IsNullOrWhiteSpace(root.Username) || string.IsNullOrEmpty(root.Password))
         {
             throw new InvalidOperationException("SFTP paths must include credentials, for example sftp://user:password@example.com/backups.");
         }
 
-        var client = new SftpClient(root.Host, root.Port, root.Username, root.Password);
+        var connectionInfo = new PasswordConnectionInfo(root.Host, root.Port, root.Username, root.Password);
+        if (options.SftpCompression
+            && connectionInfo.CompressionAlgorithms.TryGetValue("zlib@openssh.com", out var zlibOpenSshFactory))
+        {
+            connectionInfo.CompressionAlgorithms.TryGetValue("none", out var noneFactory);
+            connectionInfo.CompressionAlgorithms.Clear();
+            connectionInfo.CompressionAlgorithms["zlib@openssh.com"] = zlibOpenSshFactory;
+            connectionInfo.CompressionAlgorithms["none"] = noneFactory;
+        }
+
+        var client = new SftpClient(connectionInfo);
         client.Connect();
         return client;
     }

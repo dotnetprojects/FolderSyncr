@@ -14,7 +14,7 @@ internal interface ISyncStorage
         IProgress<string>? progress,
         CancellationToken cancellationToken);
 
-    Task<Stream> OpenReadAsync(FileSnapshot snapshot, CancellationToken cancellationToken);
+    Task<Stream> OpenReadAsync(FileSnapshot snapshot, SyncOptions options, CancellationToken cancellationToken);
 
     Task WriteFileAsync(
         string relativePath,

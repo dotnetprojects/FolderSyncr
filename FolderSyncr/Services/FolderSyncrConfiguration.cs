@@ -22,4 +22,6 @@ public sealed record FolderSyncrConfiguration(
     bool IsDarkMode,
     IReadOnlyList<ExternalCommandDefinition>? ExternalCommands = null,
     IReadOnlyList<FolderPairConfiguration>? FolderPairs = null,
-    CustomSyncRules? CustomRules = null);
+    CustomSyncRules? CustomRules = null,
+    int RemoteConnectionCount = 1,
+    bool SftpCompression = false);

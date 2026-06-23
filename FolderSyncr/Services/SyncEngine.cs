@@ -74,27 +74,27 @@ public sealed class SyncEngine
                 return;
             }
 
-            foreach (var operation in executable)
+            var maxDegreeOfParallelism = Math.Max(1, options.RemoteConnectionCount);
+            if (maxDegreeOfParallelism == 1)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                operation.Status = "Running";
-                try
+                foreach (var operation in executable)
                 {
-                    await ExecuteOperationAsync(operation, options, leftStorage, rightStorage, progress, cancellationToken);
-                    operation.Status = "Done";
+                    await ExecuteOperationWithHandlingAsync(operation, options, leftStorage, rightStorage, progress, cancellationToken);
                 }
-                catch (Exception exception) when (exception is not OperationCanceledException && options.ErrorHandling == SyncErrorHandling.IgnoreErrors)
-                {
-                    operation.Status = "Error";
-                    progress?.Report($"Ignored error for {operation.RelativePath}: {exception.Message}");
-                }
-                catch (Exception exception) when (exception is not OperationCanceledException)
-                {
-                    operation.Status = "Error";
-                    progress?.Report($"Error for {operation.RelativePath}: {exception.Message}");
-                    throw;
-                }
+            }
+            else
+            {
+                await Parallel.ForEachAsync(
+                    executable,
+                    new ParallelOptions
+                    {
+                        CancellationToken = cancellationToken,
+                        MaxDegreeOfParallelism = maxDegreeOfParallelism
+                    },
+                    async (operation, token) =>
+                    {
+                        await ExecuteOperationWithHandlingAsync(operation, options, leftStorage, rightStorage, progress, token);
+                    });
             }
 
             if (CanUpdateSyncDatabase(operations))
@@ -110,6 +110,35 @@ public sealed class SyncEngine
             {
                 syncLock.Dispose();
             }
+        }
+    }
+
+    private static async Task ExecuteOperationWithHandlingAsync(
+        SyncOperation operation,
+        SyncOptions options,
+        ISyncStorage leftStorage,
+        ISyncStorage rightStorage,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        operation.Status = "Running";
+        try
+        {
+            await ExecuteOperationAsync(operation, options, leftStorage, rightStorage, progress, cancellationToken);
+            operation.Status = "Done";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException && options.ErrorHandling == SyncErrorHandling.IgnoreErrors)
+        {
+            operation.Status = "Error";
+            progress?.Report($"Ignored error for {operation.RelativePath}: {exception.Message}");
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            operation.Status = "Error";
+            progress?.Report($"Error for {operation.RelativePath}: {exception.Message}");
+            throw;
         }
     }
 
@@ -621,6 +650,8 @@ public sealed class SyncEngine
             VersioningFolderPath = PathMacroExpander.Expand(options.VersioningFolderPath),
             ErrorHandling = options.ErrorHandling,
             SymbolicLinkHandling = options.SymbolicLinkHandling,
+            RemoteConnectionCount = Math.Max(1, options.RemoteConnectionCount),
+            SftpCompression = options.SftpCompression,
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun
@@ -695,7 +726,7 @@ public sealed class SyncEngine
             throw new NotSupportedException("Copying symbolic links as links is supported only for local folder pairs.");
         }
 
-        await using (var input = await sourceStorage.OpenReadAsync(source, cancellationToken))
+        await using (var input = await sourceStorage.OpenReadAsync(source, options, cancellationToken))
         {
             await destinationStorage.WriteFileAsync(source.RelativePath, input, source.LastWriteTimeUtc, options, cancellationToken);
         }
@@ -703,7 +734,7 @@ public sealed class SyncEngine
         if (options.VerifyCopiedFiles)
         {
             progress?.Report($"Verify {source.RelativePath}");
-            if (!await FilesAreEqualAsync(source, sourceStorage, destinationStorage, cancellationToken))
+            if (!await FilesAreEqualAsync(source, sourceStorage, destinationStorage, options, cancellationToken))
             {
                 throw new IOException($"Verification failed after copying {source.RelativePath}.");
             }
@@ -853,11 +884,13 @@ public sealed class SyncEngine
         FileSnapshot source,
         ISyncStorage sourceStorage,
         ISyncStorage destinationStorage,
+        SyncOptions options,
         CancellationToken cancellationToken)
     {
-        await using var left = await sourceStorage.OpenReadAsync(source, cancellationToken);
+        await using var left = await sourceStorage.OpenReadAsync(source, options, cancellationToken);
         await using var right = await destinationStorage.OpenReadAsync(
             new FileSnapshot(destinationStorage.Root, source.RelativePath, GetFullDestinationPath(destinationStorage, source.RelativePath), source.Length, source.LastWriteTimeUtc, null),
+            options,
             cancellationToken);
 
         var leftBuffer = new byte[81920];

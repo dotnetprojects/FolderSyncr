@@ -24,7 +24,7 @@ internal sealed class FtpSyncStorage(RemoteSyncRoot root) : ISyncStorage
         return files;
     }
 
-    public async Task<Stream> OpenReadAsync(FileSnapshot snapshot, CancellationToken cancellationToken)
+    public async Task<Stream> OpenReadAsync(FileSnapshot snapshot, SyncOptions options, CancellationToken cancellationToken)
     {
         using var client = await CreateConnectedClientAsync(cancellationToken);
         var memory = new MemoryStream();

@@ -17,6 +17,8 @@ public sealed class SyncOptions
     public string VersioningFolderPath { get; init; } = string.Empty;
     public SyncErrorHandling ErrorHandling { get; init; } = SyncErrorHandling.ShowErrors;
     public SymbolicLinkHandling SymbolicLinkHandling { get; init; } = SymbolicLinkHandling.Skip;
+    public int RemoteConnectionCount { get; init; } = 1;
+    public bool SftpCompression { get; init; }
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

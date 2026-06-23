@@ -229,6 +229,28 @@ public sealed class FolderSyncrBatchRunnerTests
         Assert.AreEqual(SyncErrorHandling.CancelOnFirstError, options.ErrorHandling);
     }
 
+    [TestMethod]
+    public void LoadSyncOptionsAppliesRemoteConnectionOverrides()
+    {
+        using var workspace = BatchWorkspace.Create();
+        var configPath = workspace.SaveNativeConfiguration("remote-options.foldersyncr.json", SyncMode.TwoWay);
+
+        var options = workspace.CreateRunner().LoadSyncOptions(
+            new BatchRunOptions(
+                configPath,
+                null,
+                null,
+                DryRun: true,
+                JsonOutputPath: null,
+                RemoteConnectionCount: 5,
+                SftpCompression: true),
+            out _);
+
+        Assert.HasCount(1, options);
+        Assert.AreEqual(5, options[0].RemoteConnectionCount);
+        Assert.IsTrue(options[0].SftpCompression);
+    }
+
     private sealed class BatchWorkspace : IDisposable
     {
         private BatchWorkspace(string rootPath)

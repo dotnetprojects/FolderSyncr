@@ -44,7 +44,9 @@ public sealed class FolderSyncrConfigurationStoreTests
                     CustomSyncAction.DeleteRight,
                     CustomSyncAction.CopyLeftToRight,
                     CustomSyncAction.CopyRightToLeft,
-                    CustomSyncAction.DeleteLeft));
+                    CustomSyncAction.DeleteLeft),
+                RemoteConnectionCount: 4,
+                SftpCompression: true);
 
             var store = new FolderSyncrConfigurationStore();
             store.Save(path, original);
