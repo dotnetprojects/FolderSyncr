@@ -201,6 +201,17 @@
     </section>
 
     <section>
+      <h2>Deletion Handling</h2>
+      <p>Mirror modes can remove files from the target side. Choose the deletion handling mode in the settings dialog:</p>
+      <ul>
+        <li><code>Permanent</code>: deletes the target-side file.</li>
+        <li><code>RecycleBin</code>: sends the target-side file to the Windows recycle bin.</li>
+        <li><code>VersioningFolder</code>: moves the target-side file into the configured versioning folder under a timestamped subfolder.</li>
+      </ul>
+      <p>Set a versioning folder before using <code>VersioningFolder</code>; otherwise synchronization stops with an error before deleting the file.</p>
+    </section>
+
+    <section>
       <h2>Filters</h2>
       <p>Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines. <code>*</code> matches zero or more characters, <code>?</code> matches one character, and <code>?*</code> requires at least one character.</p>
       <p>A trailing <code>:</code> marks a file-only filter, while a trailing slash marks a folder filter whose contents are also matched. Start a path with <code>\</code> or <code>/</code> to anchor it to the folder-pair root.</p>

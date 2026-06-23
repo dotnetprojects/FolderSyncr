@@ -178,6 +178,27 @@ public sealed class SyncEngineTests
         Assert.IsTrue(messages.Any(message => message.Contains("Verify verify.txt", StringComparison.OrdinalIgnoreCase)));
     }
 
+    [TestMethod]
+    public async Task VersioningDeletionMovesTargetFileToVersioningFolder()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteRight("obsolete.txt", "keep a version", DateTime.UtcNow);
+
+        var versioningRoot = Path.Combine(workspace.RootPath, "versions");
+        var options = workspace.CreateOptions(
+            SyncMode.MirrorLeftToRight,
+            deletionHandling: DeletionHandling.VersioningFolder,
+            versioningFolderPath: versioningRoot);
+        var engine = new SyncEngine();
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.IsFalse(File.Exists(workspace.RightPath("obsolete.txt")));
+        var versionedFile = Directory.EnumerateFiles(versioningRoot, "obsolete.txt", SearchOption.AllDirectories).Single();
+        Assert.AreEqual("keep a version", File.ReadAllText(versionedFile));
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -217,7 +238,9 @@ public sealed class SyncEngineTests
             SyncMode mode,
             CompareMethod compareMethod = CompareMethod.TimeAndSize,
             int fileTimeToleranceSeconds = 2,
-            bool verifyCopiedFiles = false)
+            bool verifyCopiedFiles = false,
+            DeletionHandling deletionHandling = DeletionHandling.Permanent,
+            string versioningFolderPath = "")
         {
             return new SyncOptions
             {
@@ -227,6 +250,8 @@ public sealed class SyncEngineTests
                 CompareMethod = compareMethod,
                 FileTimeToleranceSeconds = fileTimeToleranceSeconds,
                 VerifyCopiedFiles = verifyCopiedFiles,
+                DeletionHandling = deletionHandling,
+                VersioningFolderPath = versioningFolderPath,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false

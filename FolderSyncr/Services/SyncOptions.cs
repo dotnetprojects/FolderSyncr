@@ -10,6 +10,8 @@ public sealed class SyncOptions
     public CompareMethod CompareMethod { get; init; }
     public int FileTimeToleranceSeconds { get; init; } = 2;
     public bool VerifyCopiedFiles { get; init; }
+    public DeletionHandling DeletionHandling { get; init; } = DeletionHandling.Permanent;
+    public string VersioningFolderPath { get; init; } = string.Empty;
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

@@ -1,6 +1,9 @@
 using System.IO;
 using System.Security.Cryptography;
 using FolderSyncr.Models;
+using RecycleOption = Microsoft.VisualBasic.FileIO.RecycleOption;
+using UIOption = Microsoft.VisualBasic.FileIO.UIOption;
+using VisualBasicFileSystem = Microsoft.VisualBasic.FileIO.FileSystem;
 
 namespace FolderSyncr.Services;
 
@@ -54,10 +57,10 @@ public sealed class SyncEngine
                     await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
                     break;
                 case OperationKind.DeleteLeft:
-                    DeleteFile(operation.Left!.FullPath, progress);
+                    DeleteFile(operation.Left!, options, progress);
                     break;
                 case OperationKind.DeleteRight:
-                    DeleteFile(operation.Right!.FullPath, progress);
+                    DeleteFile(operation.Right!, options, progress);
                     break;
             }
 
@@ -275,6 +278,8 @@ public sealed class SyncEngine
             CompareMethod = options.CompareMethod,
             FileTimeToleranceSeconds = options.FileTimeToleranceSeconds,
             VerifyCopiedFiles = options.VerifyCopiedFiles,
+            DeletionHandling = options.DeletionHandling,
+            VersioningFolderPath = PathMacroExpander.Expand(options.VersioningFolderPath),
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun
@@ -315,11 +320,65 @@ public sealed class SyncEngine
         }
     }
 
-    private static void DeleteFile(string path, IProgress<string>? progress)
+    private static void DeleteFile(FileSnapshot file, SyncOptions options, IProgress<string>? progress)
     {
-        progress?.Report($"Delete {path}");
-        File.Delete(path);
-        RemoveEmptyParents(Path.GetDirectoryName(path));
+        progress?.Report($"Delete {file.RelativePath}");
+        switch (options.DeletionHandling)
+        {
+            case DeletionHandling.RecycleBin:
+                VisualBasicFileSystem.DeleteFile(file.FullPath, UIOption.OnlyErrorDialogs, RecycleOption.SendToRecycleBin);
+                break;
+            case DeletionHandling.VersioningFolder:
+                MoveToVersioningFolder(file, options);
+                break;
+            default:
+                File.Delete(file.FullPath);
+                break;
+        }
+
+        RemoveEmptyParents(Path.GetDirectoryName(file.FullPath));
+    }
+
+    private static void MoveToVersioningFolder(FileSnapshot file, SyncOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.VersioningFolderPath))
+        {
+            throw new InvalidOperationException("Choose a versioning folder before using versioning deletion handling.");
+        }
+
+        var versionRoot = PathMacroExpander.Expand(options.VersioningFolderPath);
+        var destinationPath = Path.Combine(
+            versionRoot,
+            DateTime.Now.ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture),
+            file.RelativePath);
+        var destinationDirectory = Path.GetDirectoryName(destinationPath);
+        if (!string.IsNullOrWhiteSpace(destinationDirectory))
+        {
+            Directory.CreateDirectory(destinationDirectory);
+        }
+
+        if (File.Exists(destinationPath))
+        {
+            destinationPath = GetUniquePath(destinationPath);
+        }
+
+        File.Move(file.FullPath, destinationPath);
+    }
+
+    private static string GetUniquePath(string path)
+    {
+        var directory = Path.GetDirectoryName(path) ?? string.Empty;
+        var fileName = Path.GetFileNameWithoutExtension(path);
+        var extension = Path.GetExtension(path);
+
+        for (var index = 1; ; index++)
+        {
+            var candidate = Path.Combine(directory, $"{fileName} ({index}){extension}");
+            if (!File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
     }
 
     private static void RemoveEmptyParents(string? directory)

@@ -21,6 +21,8 @@ public sealed class FolderSyncrConfigurationStoreTests
                 CompareMethod.ContentHash,
                 FileTimeToleranceSeconds: 7,
                 VerifyCopiedFiles: true,
+                DeletionHandling.RecycleBin,
+                VersioningFolderPath: @"E:\Versions",
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
                 IsDarkMode: true);

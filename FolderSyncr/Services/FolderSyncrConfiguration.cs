@@ -11,6 +11,8 @@ public sealed record FolderSyncrConfiguration(
     CompareMethod CompareMethod,
     int FileTimeToleranceSeconds,
     bool VerifyCopiedFiles,
+    DeletionHandling DeletionHandling,
+    string VersioningFolderPath,
     string IncludePatterns,
     string ExcludePatterns,
     bool IsDarkMode);

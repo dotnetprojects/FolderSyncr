@@ -55,13 +55,13 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Update left to right.
 - [x] Update right to left.
 - [ ] Add custom synchronization rules.
-- [ ] Add deletion handling options:
-  - [ ] Permanent delete
-  - [ ] Recycle bin
-  - [ ] Versioning folder
+- [x] Add deletion handling options:
+  - [x] Permanent delete
+  - [x] Recycle bin
+  - [x] Versioning folder
 - [ ] Add versioning modes:
   - [ ] Replace
-  - [ ] Time stamp
+  - [x] Time stamp
   - [ ] File time
 - [x] Verify copied files by binary compare after copy.
 - [ ] Serialize sync jobs with lock files.

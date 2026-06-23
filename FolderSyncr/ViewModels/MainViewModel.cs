@@ -27,6 +27,8 @@ public sealed class MainViewModel : ObservableObject
     private CompareMethod _selectedCompareMethod = CompareMethod.TimeAndSize;
     private int _fileTimeToleranceSeconds = 2;
     private bool _verifyCopiedFiles;
+    private DeletionHandling _selectedDeletionHandling = DeletionHandling.Permanent;
+    private string _versioningFolderPath = string.Empty;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -84,6 +86,7 @@ public sealed class MainViewModel : ObservableObject
 
     public IReadOnlyList<SyncMode> SyncModes { get; } = Enum.GetValues<SyncMode>();
     public IReadOnlyList<CompareMethod> CompareMethods { get; } = Enum.GetValues<CompareMethod>();
+    public IReadOnlyList<DeletionHandling> DeletionHandlingModes { get; } = Enum.GetValues<DeletionHandling>();
 
     public RelayCommand BrowseLeftCommand { get; }
     public RelayCommand BrowseRightCommand { get; }
@@ -158,6 +161,18 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _verifyCopiedFiles;
         set => SetProperty(ref _verifyCopiedFiles, value);
+    }
+
+    public DeletionHandling SelectedDeletionHandling
+    {
+        get => _selectedDeletionHandling;
+        set => SetProperty(ref _selectedDeletionHandling, value);
+    }
+
+    public string VersioningFolderPath
+    {
+        get => _versioningFolderPath;
+        set => SetProperty(ref _versioningFolderPath, value);
     }
 
     public string IncludePatterns
@@ -383,6 +398,21 @@ public sealed class MainViewModel : ObservableObject
             Margin = new Thickness(0, 0, 0, 16)
         };
 
+        var deletionBox = new ComboBox
+        {
+            ItemsSource = DeletionHandlingModes,
+            SelectedItem = SelectedDeletionHandling,
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
+        var versioningBox = new TextBox
+        {
+            Text = VersioningFolderPath,
+            Margin = new Thickness(0, 4, 0, 16),
+            MinWidth = 260
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -391,6 +421,10 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(new TextBlock { Text = "File time tolerance in seconds", FontWeight = FontWeights.SemiBold });
         content.Children.Add(toleranceBox);
         content.Children.Add(verifyBox);
+        content.Children.Add(new TextBlock { Text = "Deletion handling", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(deletionBox);
+        content.Children.Add(new TextBlock { Text = "Versioning folder", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(versioningBox);
 
         if (ShowDialog("Comparison settings", content))
         {
@@ -403,7 +437,9 @@ public sealed class MainViewModel : ObservableObject
 
             FileTimeToleranceSeconds = toleranceSeconds;
             VerifyCopiedFiles = verifyBox.IsChecked == true;
-            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {FileTimeToleranceSeconds}s tolerance, verify copies {VerifyCopiedFiles}.").GetAwaiter().GetResult();
+            SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
+            VersioningFolderPath = versioningBox.Text.Trim();
+            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}.").GetAwaiter().GetResult();
         }
 
         return Task.CompletedTask;
@@ -536,6 +572,8 @@ public sealed class MainViewModel : ObservableObject
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         FileTimeToleranceSeconds = 2;
         VerifyCopiedFiles = false;
+        SelectedDeletionHandling = DeletionHandling.Permanent;
+        VersioningFolderPath = string.Empty;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         Operations.Clear();
@@ -607,7 +645,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 3,
+            Version: 4,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -615,6 +653,8 @@ public sealed class MainViewModel : ObservableObject
             SelectedCompareMethod,
             FileTimeToleranceSeconds,
             VerifyCopiedFiles,
+            SelectedDeletionHandling,
+            VersioningFolderPath,
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode);
@@ -629,6 +669,8 @@ public sealed class MainViewModel : ObservableObject
         SelectedCompareMethod = configuration.CompareMethod;
         FileTimeToleranceSeconds = configuration.Version < 2 ? 2 : configuration.FileTimeToleranceSeconds;
         VerifyCopiedFiles = configuration.Version >= 3 && configuration.VerifyCopiedFiles;
+        SelectedDeletionHandling = configuration.Version >= 4 ? configuration.DeletionHandling : DeletionHandling.Permanent;
+        VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
         Operations.Clear();
@@ -1017,6 +1059,8 @@ public sealed class MainViewModel : ObservableObject
             CompareMethod = SelectedCompareMethod,
             FileTimeToleranceSeconds = FileTimeToleranceSeconds,
             VerifyCopiedFiles = VerifyCopiedFiles,
+            DeletionHandling = SelectedDeletionHandling,
+            VersioningFolderPath = VersioningFolderPath,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

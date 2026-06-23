@@ -90,6 +90,16 @@ The settings dialog also includes a file time tolerance in seconds. The default 
 
 Enable `Verify copied files by binary compare` in the settings dialog when you want FolderSyncr to read copied files back and compare them byte-for-byte before marking the copy operation as done.
 
+## Deletion Handling
+
+Mirror modes can remove files from the target side. Choose the deletion handling mode in the settings dialog:
+
+- `Permanent`: deletes the target-side file.
+- `RecycleBin`: sends the target-side file to the Windows recycle bin.
+- `VersioningFolder`: moves the target-side file into the configured versioning folder under a timestamped subfolder.
+
+Set a versioning folder before using `VersioningFolder`; otherwise synchronization stops with an error before deleting the file.
+
 ## Preview Actions
 
 - `=>`: copy from left to right.
