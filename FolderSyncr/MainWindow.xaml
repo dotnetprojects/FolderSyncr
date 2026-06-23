@@ -3,8 +3,11 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:syswin="clr-namespace:System.Windows;assembly=PresentationFramework"
+        xmlns:vm="clr-namespace:FolderSyncr.ViewModels"
         mc:Ignorable="d"
         Title="FolderSyncr - Folder Comparison and Synchronization"
+        Icon="Assets/FolderSyncr.ico"
         Height="760"
         Width="1240"
         MinHeight="700"
@@ -29,11 +32,23 @@
         <SolidColorBrush x:Key="SelectionBrush" Color="#DBEAFE" />
         <SolidColorBrush x:Key="SelectionTextBrush" Color="#111827" />
         <SolidColorBrush x:Key="ColumnHeaderBrush" Color="#ECEFF3" />
+        <SolidColorBrush x:Key="MenuHoverBrush" Color="#DBEAFE" />
+        <SolidColorBrush x:Key="DisabledTextBrush" Color="#6B7280" />
+        <SolidColorBrush x:Key="ConflictRowBrush" Color="#FFF7D6" />
         <SolidColorBrush x:Key="GreenBrush" Color="#16A34A" />
         <SolidColorBrush x:Key="DarkGreenBrush" Color="#15803D" />
         <SolidColorBrush x:Key="ActionGreenBrush" Color="#A7F3B6" />
         <SolidColorBrush x:Key="DeleteBrush" Color="#FCA5A5" />
         <SolidColorBrush x:Key="ConflictBrush" Color="#FDE68A" />
+        <SolidColorBrush x:Key="{x:Static syswin:SystemColors.MenuBrushKey}" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="{x:Static syswin:SystemColors.MenuTextBrushKey}" Color="#111827" />
+        <SolidColorBrush x:Key="{x:Static syswin:SystemColors.HighlightBrushKey}" Color="#DBEAFE" />
+        <SolidColorBrush x:Key="{x:Static syswin:SystemColors.HighlightTextBrushKey}" Color="#111827" />
+        <SolidColorBrush x:Key="{x:Static syswin:SystemColors.GrayTextBrushKey}" Color="#6B7280" />
+
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <vm:BoolToGridLengthConverter x:Key="ConfigurationRowHeightConverter" TrueValue="*" FalseValue="0" />
+        <vm:BoolToGridLengthConverter x:Key="OverviewRowHeightConverter" TrueValue="230" FalseValue="0" />
 
         <Style x:Key="PaneBorder" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
@@ -50,6 +65,34 @@
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
+        </Style>
+
+        <Style x:Key="PaneCloseButton" TargetType="Button">
+            <Setter Property="Width" Value="18" />
+            <Setter Property="Height" Value="18" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2563EB" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="ToolbarButton" TargetType="Button">
@@ -167,9 +210,151 @@
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
         </Style>
 
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
+        </Style>
+
+        <ControlTemplate x:Key="TopLevelMenuHeaderTemplate" TargetType="{x:Type MenuItem}">
+            <Grid>
+                <Border x:Name="HeaderBorder"
+                        Background="{TemplateBinding Background}"
+                        Padding="6,3">
+                    <ContentPresenter ContentSource="Header"
+                                      RecognizesAccessKey="True"
+                                      TextElement.Foreground="{TemplateBinding Foreground}" />
+                </Border>
+                <Popup x:Name="PART_Popup"
+                       Placement="Bottom"
+                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrushSoft}"
+                            BorderThickness="1"
+                            Padding="2">
+                        <StackPanel IsItemsHost="True"
+                                    KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="TopLevelMenuItemTemplate" TargetType="{x:Type MenuItem}">
+            <Border x:Name="ItemBorder"
+                    Background="{TemplateBinding Background}"
+                    Padding="6,3">
+                <ContentPresenter ContentSource="Header"
+                                  RecognizesAccessKey="True"
+                                  TextElement.Foreground="{TemplateBinding Foreground}" />
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="SubmenuItemTemplate" TargetType="{x:Type MenuItem}">
+            <Border x:Name="ItemBorder"
+                    Background="{TemplateBinding Background}"
+                    Padding="34,5,34,5"
+                    MinWidth="190">
+                <ContentPresenter ContentSource="Header"
+                                  RecognizesAccessKey="True"
+                                  TextElement.Foreground="{TemplateBinding Foreground}" />
+            </Border>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <ControlTemplate x:Key="SubmenuHeaderTemplate" TargetType="{x:Type MenuItem}">
+            <Grid>
+                <Border x:Name="ItemBorder"
+                        Background="{TemplateBinding Background}"
+                        Padding="34,5,24,5"
+                        MinWidth="190">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <ContentPresenter ContentSource="Header"
+                                          RecognizesAccessKey="True"
+                                          TextElement.Foreground="{TemplateBinding Foreground}" />
+                        <TextBlock Grid.Column="1"
+                                   Text=">"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   Margin="14,0,0,0" />
+                    </Grid>
+                </Border>
+                <Popup x:Name="PART_Popup"
+                       Placement="Right"
+                       IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       PopupAnimation="Fade">
+                    <Border Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrushSoft}"
+                            BorderThickness="1"
+                            Padding="2">
+                        <StackPanel IsItemsHost="True"
+                                    KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{DynamicResource DisabledTextBrush}" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template" Value="{StaticResource SubmenuItemTemplate}" />
+            <Style.Triggers>
+                <Trigger Property="Role" Value="TopLevelHeader">
+                    <Setter Property="Template" Value="{StaticResource TopLevelMenuHeaderTemplate}" />
+                </Trigger>
+                <Trigger Property="Role" Value="TopLevelItem">
+                    <Setter Property="Template" Value="{StaticResource TopLevelMenuItemTemplate}" />
+                </Trigger>
+                <Trigger Property="Role" Value="SubmenuHeader">
+                    <Setter Property="Template" Value="{StaticResource SubmenuHeaderTemplate}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="RowBackground" Value="{DynamicResource PanelBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="GridLinesVisibility" Value="All" />
             <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource GridLineBrush}" />
@@ -195,6 +380,7 @@
 
         <Style TargetType="DataGridCell">
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
             <Setter Property="Padding" Value="5,2" />
             <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}" />
             <Setter Property="BorderThickness" Value="0,0,1,1" />
@@ -205,7 +391,8 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
-                            <ContentPresenter VerticalAlignment="Center" />
+                            <ContentPresenter VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -221,6 +408,7 @@
         <Style TargetType="DataGridRow">
             <Setter Property="MinHeight" Value="23" />
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
@@ -230,7 +418,7 @@
                     <Setter Property="Foreground" Value="{DynamicResource SelectionTextBrush}" />
                 </Trigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Conflict">
-                    <Setter Property="Background" Value="#FFF7D6" />
+                    <Setter Property="Background" Value="{DynamicResource ConflictRowBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -283,6 +471,10 @@
                 <MenuItem Header="_Synchronize" Command="{Binding SyncCommand}" />
                 <MenuItem Header="_Cancel" Command="{Binding CancelCommand}" />
             </MenuItem>
+            <MenuItem Header="_View">
+                <MenuItem Header="Show _Configuration" Command="{Binding ShowConfigurationCommand}" />
+                <MenuItem Header="Show _Overview" Command="{Binding ShowOverviewCommand}" />
+            </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="_Reload configuration list" Command="{Binding ReloadConfigurationCommand}" />
                 <MenuItem Header="_Toggle light/dark mode" Command="{Binding ToggleThemeCommand}" />
@@ -310,12 +502,14 @@
 
             <Grid Grid.Column="0" Background="{DynamicResource ChromeBrush}">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="{Binding IsConfigurationVisible, Converter={StaticResource ConfigurationRowHeightConverter}}" />
                     <RowDefinition Height="5" />
-                    <RowDefinition Height="230" />
+                    <RowDefinition Height="{Binding IsOverviewVisible, Converter={StaticResource OverviewRowHeightConverter}}" />
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Style="{StaticResource PaneBorder}">
+                <Border Grid.Row="0"
+                        Style="{StaticResource PaneBorder}"
+                        Visibility="{Binding IsConfigurationVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -330,7 +524,9 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Configuration" Style="{StaticResource PaneHeaderText}" />
-                                <TextBlock Grid.Column="1" Text="x" Foreground="#FFFFFF" Margin="8,0,2,0" />
+                                <Button Grid.Column="1" Style="{StaticResource PaneCloseButton}" Command="{Binding CloseConfigurationCommand}" ToolTip="Close Configuration pane">
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="9" />
+                                </Button>
                             </Grid>
                         </Border>
 
@@ -396,9 +592,15 @@
                     </Grid>
                 </Border>
 
-                <GridSplitter Grid.Row="1" Height="5" HorizontalAlignment="Stretch" Background="#D1D5DB" />
+                <GridSplitter Grid.Row="1"
+                              Height="5"
+                              HorizontalAlignment="Stretch"
+                              Background="#D1D5DB"
+                              Visibility="{Binding IsLeftPaneSplitterVisible, Converter={StaticResource BoolToVisibilityConverter}}" />
 
-                <Border Grid.Row="2" Style="{StaticResource PaneBorder}">
+                <Border Grid.Row="2"
+                        Style="{StaticResource PaneBorder}"
+                        Visibility="{Binding IsOverviewVisible, Converter={StaticResource BoolToVisibilityConverter}}">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -411,7 +613,9 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Overview" Style="{StaticResource PaneHeaderText}" />
-                                <TextBlock Grid.Column="1" Text="x" Foreground="#FFFFFF" Margin="8,0,2,0" />
+                                <Button Grid.Column="1" Style="{StaticResource PaneCloseButton}" Command="{Binding CloseOverviewCommand}" ToolTip="Close Overview pane">
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="9" />
+                                </Button>
                             </Grid>
                         </Border>
                         <DataGrid Grid.Row="1"
@@ -472,7 +676,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Button Grid.Column="0" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="8,10,4,10" ToolTip="Comparison settings">
+                        <Button Grid.Column="0" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="8,10,4,10" Command="{Binding DataContext.OpenSettingsCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Comparison settings">
                             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="27" Foreground="#2563EB" />
                         </Button>
 
@@ -481,7 +685,7 @@
                                 <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#2563EB" Margin="0,0,12,0" />
                                 <StackPanel>
                                     <TextBlock Text="Compare" FontSize="16" FontWeight="Bold" />
-                                    <TextBlock Text="File time and size" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
+                                    <TextBlock Text="{Binding SelectedCompareMethod}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>
@@ -493,7 +697,7 @@
                             </StackPanel>
                         </Button>
 
-                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="4,10" ToolTip="Filter files">
+                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="4,10" Command="{Binding DataContext.OpenFilterCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Filter files">
                             <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#B91C1C" />
                         </Button>
 
@@ -532,20 +736,20 @@
 
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
                         <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
-                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource PathIconButton}" ToolTip="Add folder pair">
+                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource PathIconButton}" Command="{Binding NewConfigurationCommand}" ToolTip="Add folder pair">
                             <TextBlock Text="+" FontSize="20" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                         </Button>
                         <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource SmallButton}" Command="{Binding BrowseLeftCommand}" Content="Browse" />
-                        <Button Grid.Row="1" Grid.Column="3" Style="{StaticResource PathIconButton}" ToolTip="Cloud path">
+                        <Button Grid.Row="1" Grid.Column="3" Style="{StaticResource PathIconButton}" Command="{Binding DataContext.CloudPathCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />
                         </Button>
-                        <Button Grid.Row="1" Grid.Column="4" Style="{StaticResource PathSwapButton}" ToolTip="Swap sides">
+                        <Button Grid.Row="1" Grid.Column="4" Style="{StaticResource PathSwapButton}" Command="{Binding DataContext.SwapSidesCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Swap sides">
                             <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#374151" />
                         </Button>
                         <TextBox Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Grid.Row="1" Grid.Column="6" Style="{StaticResource SmallButton}" Command="{Binding BrowseRightCommand}" Content="Browse" />
-                        <Button Grid.Row="1" Grid.Column="7" Style="{StaticResource PathIconButton}" ToolTip="Cloud path">
+                        <Button Grid.Row="1" Grid.Column="7" Style="{StaticResource PathIconButton}" Command="{Binding DataContext.CloudPathCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />
                         </Button>
                     </Grid>
@@ -559,7 +763,7 @@
                     </Grid.ColumnDefinitions>
 
                     <DataGrid Grid.Column="0"
-                              ItemsSource="{Binding Operations}">
+                              ItemsSource="{Binding OperationsView}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding RelativePath}" Width="36" />
                             <DataGridTextColumn Header="Relative path" Binding="{Binding LeftName}" Width="*" />
@@ -568,7 +772,7 @@
                     </DataGrid>
 
                     <DataGrid Grid.Column="1"
-                              ItemsSource="{Binding Operations}"
+                              ItemsSource="{Binding OperationsView}"
                               BorderBrush="#9CA3AF"
                               BorderThickness="1,0">
                         <DataGrid.Columns>
@@ -596,7 +800,7 @@
                     </DataGrid>
 
                     <DataGrid Grid.Column="2"
-                              ItemsSource="{Binding Operations}">
+                              ItemsSource="{Binding OperationsView}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Relative path" Binding="{Binding RightName}" Width="*" />
                             <DataGridTextColumn Header="Size" Binding="{Binding RightSize}" Width="92" />
@@ -616,7 +820,7 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                            <Button Style="{StaticResource BottomIconButton}" ToolTip="Toggle overview">
+                            <Button Style="{StaticResource BottomIconButton}" Command="{Binding ShowOverviewCommand}" ToolTip="Show Overview pane">
                                 <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#2563EB" />
                             </Button>
                             <TextBlock VerticalAlignment="Center" Text="{Binding LeftFileCount, StringFormat={}{0} left files}" />
@@ -626,19 +830,19 @@
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="Select view:" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <Button Style="{StaticResource BottomBarButton}">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowAllOperationsCommand}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="==" FontWeight="Bold" FontSize="18" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BottomBarButton}">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowChangeOperationsCommand}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="=>" FontWeight="Bold" FontSize="18" Foreground="{StaticResource DarkGreenBrush}" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding ChangeCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BottomBarButton}" Margin="0">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowConflictOperationsCommand}" Margin="0">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="!" FontWeight="Bold" FontSize="18" Foreground="#B45309" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding ConflictCount}" VerticalAlignment="Center" />

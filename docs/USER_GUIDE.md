@@ -8,6 +8,14 @@ This screenshot is captured from the actual WPF application.
 
 ![FolderSyncr main window](screenshots/foldersyncr-light.png)
 
+Dark mode is also captured from the running application.
+
+![FolderSyncr dark mode](screenshots/foldersyncr-dark.png)
+
+Menu rendering is checked in the same smoke run.
+
+![FolderSyncr light menu](screenshots/foldersyncr-light-menu.png)
+
 ## Basic Workflow
 
 1. Choose a left folder.
@@ -55,6 +63,15 @@ Exclude build and repository folders:
 ```text
 **/bin/**;**/obj/**;**/.git/**
 ```
+
+Use the funnel button in the top command bar to edit include and exclude filters.
+
+## View Controls
+
+- Use the gear button to edit synchronization mode and comparison method.
+- Use the `View` menu to reopen the Configuration and Overview panes after closing them.
+- Use the bottom overview button to reopen the Overview pane.
+- Use the bottom `==`, `=>`, and `!` buttons to filter the file grid by all items, changes, or conflicts.
 
 ## Theme
 

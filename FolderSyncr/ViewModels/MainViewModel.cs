@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
 
@@ -20,15 +23,25 @@ public sealed class MainViewModel : ObservableObject
     private string _status = "Choose two folders, compare, then sync.";
     private bool _isBusy;
     private bool _isDarkMode;
+    private bool _isConfigurationVisible = true;
+    private bool _isOverviewVisible = true;
+    private OperationViewFilter _operationViewFilter = OperationViewFilter.All;
 
     public MainViewModel()
     {
+        OperationsView = CollectionViewSource.GetDefaultView(Operations);
+        OperationsView.Filter = FilterOperation;
+
         BrowseLeftCommand = new RelayCommand(() => BrowseAsync(isLeft: true), () => !IsBusy);
         BrowseRightCommand = new RelayCommand(() => BrowseAsync(isLeft: false), () => !IsBusy);
         CompareCommand = new RelayCommand(CompareAsync, CanRunFolderAction);
         SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.WillChangeFileSystem));
         CancelCommand = new RelayCommand(CancelAsync, () => IsBusy);
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
+        OpenSettingsCommand = new RelayCommand(OpenSettingsAsync);
+        OpenFilterCommand = new RelayCommand(OpenFilterAsync);
+        SwapSidesCommand = new RelayCommand(SwapSidesAsync);
+        CloudPathCommand = new RelayCommand(() => SetStatusAsync("Cloud path integration is not implemented yet. Use Browse or paste a local/cloud-synced folder path."));
         NewConfigurationCommand = new RelayCommand(() => SetStatusAsync("New configuration is not implemented yet."));
         OpenConfigurationCommand = new RelayCommand(() => SetStatusAsync("Open configuration is not implemented yet."));
         SaveConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save configuration is not implemented yet."));
@@ -37,9 +50,17 @@ public sealed class MainViewModel : ObservableObject
         OpenDocumentationCommand = new RelayCommand(OpenDocumentationAsync);
         AboutCommand = new RelayCommand(AboutAsync);
         ExitCommand = new RelayCommand(ExitAsync);
+        ShowConfigurationCommand = new RelayCommand(() => SetConfigurationVisibleAsync(true));
+        CloseConfigurationCommand = new RelayCommand(() => SetConfigurationVisibleAsync(false));
+        ShowOverviewCommand = new RelayCommand(() => SetOverviewVisibleAsync(true));
+        CloseOverviewCommand = new RelayCommand(() => SetOverviewVisibleAsync(false));
+        ShowAllOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.All));
+        ShowChangeOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.Changes));
+        ShowConflictOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.Conflicts));
     }
 
     public ObservableCollection<SyncOperation> Operations { get; } = [];
+    public ICollectionView OperationsView { get; }
     public ObservableCollection<string> LogEntries { get; } = [];
     public ObservableCollection<ConfigurationItem> Configurations { get; } =
     [
@@ -60,6 +81,10 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand SyncCommand { get; }
     public RelayCommand CancelCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
+    public RelayCommand OpenSettingsCommand { get; }
+    public RelayCommand OpenFilterCommand { get; }
+    public RelayCommand SwapSidesCommand { get; }
+    public RelayCommand CloudPathCommand { get; }
     public RelayCommand NewConfigurationCommand { get; }
     public RelayCommand OpenConfigurationCommand { get; }
     public RelayCommand SaveConfigurationCommand { get; }
@@ -68,6 +93,13 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand OpenDocumentationCommand { get; }
     public RelayCommand AboutCommand { get; }
     public RelayCommand ExitCommand { get; }
+    public RelayCommand ShowConfigurationCommand { get; }
+    public RelayCommand CloseConfigurationCommand { get; }
+    public RelayCommand ShowOverviewCommand { get; }
+    public RelayCommand CloseOverviewCommand { get; }
+    public RelayCommand ShowAllOperationsCommand { get; }
+    public RelayCommand ShowChangeOperationsCommand { get; }
+    public RelayCommand ShowConflictOperationsCommand { get; }
 
     public string LeftPath
     {
@@ -148,6 +180,32 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public string ThemeButtonText => IsDarkMode ? "Light mode" : "Dark mode";
+
+    public bool IsConfigurationVisible
+    {
+        get => _isConfigurationVisible;
+        private set
+        {
+            if (SetProperty(ref _isConfigurationVisible, value))
+            {
+                OnPropertyChanged(nameof(IsLeftPaneSplitterVisible));
+            }
+        }
+    }
+
+    public bool IsOverviewVisible
+    {
+        get => _isOverviewVisible;
+        private set
+        {
+            if (SetProperty(ref _isOverviewVisible, value))
+            {
+                OnPropertyChanged(nameof(IsLeftPaneSplitterVisible));
+            }
+        }
+    }
+
+    public bool IsLeftPaneSplitterVisible => IsConfigurationVisible && IsOverviewVisible;
 
     public int ChangeCount => Operations.Count(operation => operation.WillChangeFileSystem);
     public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
@@ -238,11 +296,165 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    private Task OpenSettingsAsync()
+    {
+        var modeBox = new ComboBox
+        {
+            ItemsSource = SyncModes,
+            SelectedItem = SelectedMode,
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
+        var compareBox = new ComboBox
+        {
+            ItemsSource = CompareMethods,
+            SelectedItem = SelectedCompareMethod,
+            Margin = new Thickness(0, 4, 0, 16),
+            MinWidth = 260
+        };
+
+        var content = new StackPanel { Margin = new Thickness(18) };
+        content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(modeBox);
+        content.Children.Add(new TextBlock { Text = "Compare method", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(compareBox);
+
+        if (ShowDialog("Comparison settings", content))
+        {
+            SelectedMode = (SyncMode)modeBox.SelectedItem;
+            SelectedCompareMethod = (CompareMethod)compareBox.SelectedItem;
+            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}.").GetAwaiter().GetResult();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task OpenFilterAsync()
+    {
+        var includeBox = new TextBox
+        {
+            Text = IncludePatterns,
+            AcceptsReturn = true,
+            MinHeight = 70,
+            Margin = new Thickness(0, 4, 0, 12),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var excludeBox = new TextBox
+        {
+            Text = ExcludePatterns,
+            AcceptsReturn = true,
+            MinHeight = 90,
+            Margin = new Thickness(0, 4, 0, 16),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var content = new StackPanel { Margin = new Thickness(18), MinWidth = 420 };
+        content.Children.Add(new TextBlock { Text = "Include patterns", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(includeBox);
+        content.Children.Add(new TextBlock { Text = "Exclude patterns", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(excludeBox);
+
+        if (ShowDialog("File filters", content))
+        {
+            IncludePatterns = string.IsNullOrWhiteSpace(includeBox.Text) ? "*" : includeBox.Text.Trim();
+            ExcludePatterns = excludeBox.Text.Trim();
+            SetStatusAsync("Filter settings updated. Run Compare to refresh the preview.").GetAwaiter().GetResult();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task SwapSidesAsync()
+    {
+        (LeftPath, RightPath) = (RightPath, LeftPath);
+        SetStatusAsync("Left and right folders swapped.").GetAwaiter().GetResult();
+        return Task.CompletedTask;
+    }
+
+    private static bool ShowDialog(string title, UIElement body)
+    {
+        var okButton = new Button
+        {
+            Content = "OK",
+            MinWidth = 86,
+            IsDefault = true,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        var cancelButton = new Button
+        {
+            Content = "Cancel",
+            MinWidth = 86,
+            IsCancel = true
+        };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(18, 0, 18, 16)
+        };
+        buttons.Children.Add(okButton);
+        buttons.Children.Add(cancelButton);
+
+        var root = new DockPanel();
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(buttons);
+        root.Children.Add(body);
+
+        var window = new Window
+        {
+            Title = title,
+            Content = root,
+            SizeToContent = SizeToContent.WidthAndHeight,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize,
+            Owner = Application.Current.MainWindow,
+            MinWidth = 360
+        };
+
+        okButton.Click += (_, _) =>
+        {
+            window.DialogResult = true;
+            window.Close();
+        };
+
+        return window.ShowDialog() == true;
+    }
+
     private Task SetStatusAsync(string message)
     {
         Status = message;
         AddLog(message);
         return Task.CompletedTask;
+    }
+
+    private Task SetConfigurationVisibleAsync(bool visible)
+    {
+        IsConfigurationVisible = visible;
+        return SetStatusAsync(visible ? "Configuration pane shown." : "Configuration pane closed.");
+    }
+
+    private Task SetOverviewVisibleAsync(bool visible)
+    {
+        IsOverviewVisible = visible;
+        return SetStatusAsync(visible ? "Overview pane shown." : "Overview pane closed.");
+    }
+
+    private Task SetOperationViewFilterAsync(OperationViewFilter filter)
+    {
+        _operationViewFilter = filter;
+        OperationsView.Refresh();
+
+        var label = filter switch
+        {
+            OperationViewFilter.Changes => "changes",
+            OperationViewFilter.Conflicts => "conflicts",
+            _ => "all items"
+        };
+
+        return SetStatusAsync($"Showing {label}.");
     }
 
     private Task OpenDocumentationAsync()
@@ -363,7 +575,23 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(LeftFileCount));
         OnPropertyChanged(nameof(RightFileCount));
         RefreshOverview();
+        OperationsView.Refresh();
         SyncCommand.RaiseCanExecuteChanged();
+    }
+
+    private bool FilterOperation(object item)
+    {
+        if (item is not SyncOperation operation)
+        {
+            return false;
+        }
+
+        return _operationViewFilter switch
+        {
+            OperationViewFilter.Changes => operation.WillChangeFileSystem,
+            OperationViewFilter.Conflicts => operation.Kind == OperationKind.Conflict,
+            _ => true
+        };
     }
 
     private void RefreshOverview()
@@ -423,5 +651,12 @@ public sealed class MainViewModel : ObservableObject
         SaveConfigurationCommand.RaiseCanExecuteChanged();
         SaveAsConfigurationCommand.RaiseCanExecuteChanged();
         ReloadConfigurationCommand.RaiseCanExecuteChanged();
+    }
+
+    private enum OperationViewFilter
+    {
+        All,
+        Changes,
+        Conflicts
     }
 }

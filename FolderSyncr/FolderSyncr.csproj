@@ -6,9 +6,14 @@
     <AssemblyName>FolderSyncr</AssemblyName>
     <Product>FolderSyncr</Product>
     <Version>0.1.0</Version>
+    <ApplicationIcon>Assets\FolderSyncr.ico</ApplicationIcon>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\FolderSyncr.ico" />
+  </ItemGroup>
 
 </Project>

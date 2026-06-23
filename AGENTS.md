@@ -39,3 +39,11 @@ Run this before committing:
 dotnet build .\FolderSyncr.slnx
 dotnet test .\FolderSyncr.slnx
 ```
+
+For UI changes, also run the documented WPF smoke test:
+
+```powershell
+.\scripts\Invoke-UiSmoke.ps1
+```
+
+See `docs/AUTOMATION.md` before changing the smoke test. Prefer scoped UI Automation `InvokePattern` checks for WPF buttons and robust process/title dialog lookup.
