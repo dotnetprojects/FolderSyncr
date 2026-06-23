@@ -189,6 +189,7 @@
       <p>Windows special-folder macros are supported for common locations, including <code>%csidl_Desktop%</code>, <code>%csidl_Documents%</code>, <code>%csidl_Pictures%</code>, <code>%csidl_Music%</code>, <code>%csidl_Videos%</code>, <code>%csidl_Downloads%</code>, <code>%csidl_Favorites%</code>, <code>%csidl_StartMenu%</code>, <code>%csidl_Programs%</code>, <code>%csidl_Startup%</code>, <code>%csidl_Templates%</code>, and public document/media variants.</p>
       <p>For removable drives, use a volume label path such as <code>[Backup-Disk]\folder</code>. FolderSyncr resolves the label to the currently mounted drive and reports a clear error if the drive is not available.</p>
       <p>FolderSyncr also accepts Windows volume GUID paths such as <code>\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder</code>. Windows resolves the mounted volume, and FolderSyncr reports a volume-specific error if the GUID path is currently unavailable.</p>
+      <p>Network folders can use standard UNC paths such as <code>\\server\share\folder</code> or extended UNC paths such as <code>\\?\UNC\server\share\folder</code>. If the share itself is unavailable, FolderSyncr reports the network share name instead of a generic missing-folder message.</p>
     </section>
 
     <section>

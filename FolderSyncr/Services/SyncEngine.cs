@@ -536,6 +536,11 @@ public sealed class SyncEngine
                 throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
             }
 
+            if (PathMacroExpander.GetUncShareRoot(options.LeftPath) is { } uncRoot && !Directory.Exists(uncRoot))
+            {
+                throw new DirectoryNotFoundException($"Network share '{uncRoot}' is not available.");
+            }
+
             throw new DirectoryNotFoundException("Choose an existing left folder.");
         }
 
@@ -549,6 +554,11 @@ public sealed class SyncEngine
             if (PathMacroExpander.GetVolumeGuidReference(options.RightPath) is { } volumeGuid)
             {
                 throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
+            }
+
+            if (PathMacroExpander.GetUncShareRoot(options.RightPath) is { } uncRoot && !Directory.Exists(uncRoot))
+            {
+                throw new DirectoryNotFoundException($"Network share '{uncRoot}' is not available.");
             }
 
             throw new DirectoryNotFoundException("Choose an existing right folder.");

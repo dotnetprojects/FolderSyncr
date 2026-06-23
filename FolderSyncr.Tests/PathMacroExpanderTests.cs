@@ -115,4 +115,23 @@ public sealed class PathMacroExpanderTests
         Assert.AreEqual(path, expanded);
         Assert.AreEqual("Volume{01234567-89ab-cdef-0123-456789abcdef}", PathMacroExpander.GetVolumeGuidReference(expanded));
     }
+
+    [TestMethod]
+    public void GetUncShareRootReturnsServerAndShare()
+    {
+        Assert.AreEqual(@"\\server\share", PathMacroExpander.GetUncShareRoot(@"\\server\share\folder\file.txt"));
+    }
+
+    [TestMethod]
+    public void GetUncShareRootReturnsExtendedUncServerAndShare()
+    {
+        Assert.AreEqual(@"\\?\UNC\server\share", PathMacroExpander.GetUncShareRoot(@"\\?\UNC\server\share\folder"));
+    }
+
+    [TestMethod]
+    public void GetUncShareRootIgnoresLocalAndVolumeGuidPaths()
+    {
+        Assert.IsNull(PathMacroExpander.GetUncShareRoot(@"C:\Data\folder"));
+        Assert.IsNull(PathMacroExpander.GetUncShareRoot(@"\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder"));
+    }
 }

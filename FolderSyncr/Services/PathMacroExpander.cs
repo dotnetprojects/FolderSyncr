@@ -35,6 +35,30 @@ public static partial class PathMacroExpander
         return match.Success ? match.Groups["volume"].Value : null;
     }
 
+    public static string? GetUncShareRoot(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        var normalized = path.Replace('/', '\\');
+        const string extendedUncPrefix = @"\\?\UNC\";
+        if (normalized.StartsWith(extendedUncPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return GetUncShareRoot(normalized, extendedUncPrefix);
+        }
+
+        const string uncPrefix = @"\\";
+        if (normalized.StartsWith(uncPrefix, StringComparison.OrdinalIgnoreCase)
+            && !normalized.StartsWith(@"\\?\", StringComparison.OrdinalIgnoreCase))
+        {
+            return GetUncShareRoot(normalized, uncPrefix);
+        }
+
+        return null;
+    }
+
     private static string ExpandInternalMacros(string path, DateTime now)
     {
         return MacroRegex().Replace(path, match =>
@@ -141,6 +165,13 @@ public static partial class PathMacroExpander
         }
 
         return roots;
+    }
+
+    private static string? GetUncShareRoot(string path, string prefix)
+    {
+        var rest = path[prefix.Length..];
+        var parts = rest.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length < 2 ? null : $"{prefix}{parts[0]}\\{parts[1]}";
     }
 
     [GeneratedRegex("%(?<name>Date|Time|TimeStamp|Year|Month|MonthName|Day|Hour|Min|Sec|WeekDay|WeekDayName|Week|csidl_[A-Za-z]+)%", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]

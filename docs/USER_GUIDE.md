@@ -86,6 +86,8 @@ For removable drives, use a volume label path such as `[Backup-Disk]\folder`. Fo
 
 FolderSyncr also accepts Windows volume GUID paths such as `\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder`. Windows resolves the mounted volume, and FolderSyncr reports a volume-specific error if the GUID path is currently unavailable.
 
+Network folders can use standard UNC paths such as `\\server\share\folder` or extended UNC paths such as `\\?\UNC\server\share\folder`. If the share itself is unavailable, FolderSyncr reports the network share name instead of a generic missing-folder message.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.
