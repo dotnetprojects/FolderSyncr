@@ -120,14 +120,27 @@
         </Style>
 
         <Style x:Key="ConfigToolbarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="Width" Value="54" />
             <Setter Property="Height" Value="58" />
-            <Setter Property="MinWidth" Value="54" />
+            <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="58" />
             <Setter Property="Padding" Value="4,3" />
             <Setter Property="Margin" Value="3,0" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="BottomBarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Width" Value="78" />
+            <Setter Property="Height" Value="38" />
+            <Setter Property="MinWidth" Value="78" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="8,3" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
+
+        <Style x:Key="BottomIconButton" TargetType="Button" BasedOn="{StaticResource BottomBarButton}">
+            <Setter Property="Width" Value="48" />
+            <Setter Property="MinWidth" Value="48" />
         </Style>
 
         <Style TargetType="ComboBox">
@@ -240,10 +253,28 @@
 
     <DockPanel>
         <Menu DockPanel.Dock="Top" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="0,0,0,1">
-            <MenuItem Header="_File" />
-            <MenuItem Header="_Actions" />
-            <MenuItem Header="_Tools" />
-            <MenuItem Header="_Help" />
+            <MenuItem Header="_File">
+                <MenuItem Header="_New configuration" Command="{Binding NewConfigurationCommand}" />
+                <MenuItem Header="_Open configuration" Command="{Binding OpenConfigurationCommand}" />
+                <Separator />
+                <MenuItem Header="_Save" Command="{Binding SaveConfigurationCommand}" />
+                <MenuItem Header="Save _as" Command="{Binding SaveAsConfigurationCommand}" />
+                <Separator />
+                <MenuItem Header="E_xit" Command="{Binding ExitCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Actions">
+                <MenuItem Header="_Compare" Command="{Binding CompareCommand}" />
+                <MenuItem Header="_Synchronize" Command="{Binding SyncCommand}" />
+                <MenuItem Header="_Cancel" Command="{Binding CancelCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Tools">
+                <MenuItem Header="_Reload configuration list" Command="{Binding ReloadConfigurationCommand}" />
+                <MenuItem Header="_Toggle light/dark mode" Command="{Binding ToggleThemeCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Documentation" Command="{Binding OpenDocumentationCommand}" />
+                <MenuItem Header="_About FolderSyncr" Command="{Binding AboutCommand}" />
+            </MenuItem>
         </Menu>
 
         <StatusBar DockPanel.Dock="Bottom"
@@ -288,31 +319,31 @@
                         </Border>
 
                         <UniformGrid Grid.Row="1" Columns="5" Margin="5">
-                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="New configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" Command="{Binding NewConfigurationCommand}" ToolTip="New configuration">
                                 <StackPanel>
                                     <TextBlock Text="+" FontSize="24" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="New" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Open configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" Command="{Binding OpenConfigurationCommand}" ToolTip="Open configuration">
                                 <StackPanel>
                                     <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#2563EB" HorizontalAlignment="Center" />
                                     <TextBlock Text="Open" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Save configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" Command="{Binding SaveConfigurationCommand}" ToolTip="Save configuration">
                                 <StackPanel>
                                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#374151" HorizontalAlignment="Center" />
                                     <TextBlock Text="Save" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Refresh session">
+                            <Button Style="{StaticResource ConfigToolbarButton}" Command="{Binding ReloadConfigurationCommand}" ToolTip="Refresh session">
                                 <StackPanel>
                                     <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="Reload" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Save as">
+                            <Button Style="{StaticResource ConfigToolbarButton}" Command="{Binding SaveAsConfigurationCommand}" ToolTip="Save as">
                                 <StackPanel>
                                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#111827" HorizontalAlignment="Center" />
                                     <TextBlock Text="Save as" FontSize="11" />
@@ -563,13 +594,13 @@
                         BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="280" />
+                            <ColumnDefinition Width="250" />
+                            <ColumnDefinition Width="340" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="360" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
-                            <Button Style="{StaticResource ToolbarButton}" MinHeight="36" MinWidth="42" Margin="0,0,8,0" ToolTip="Toggle overview">
+                            <Button Style="{StaticResource BottomIconButton}" ToolTip="Toggle overview">
                                 <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#2563EB" />
                             </Button>
                             <TextBlock VerticalAlignment="Center" Text="{Binding LeftFileCount, StringFormat={}{0} left files}" />
@@ -579,19 +610,19 @@
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="Select view:" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <Button Style="{StaticResource ToolbarButton}" MinHeight="34" MinWidth="66" Margin="0,0,6,0">
+                            <Button Style="{StaticResource BottomBarButton}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="==" FontWeight="Bold" FontSize="18" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" MinHeight="34" MinWidth="66" Margin="0,0,6,0">
+                            <Button Style="{StaticResource BottomBarButton}">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="=>" FontWeight="Bold" FontSize="18" Foreground="{StaticResource DarkGreenBrush}" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding ChangeCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" MinHeight="34" MinWidth="66">
+                            <Button Style="{StaticResource BottomBarButton}" Margin="0">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="!" FontWeight="Bold" FontSize="18" Foreground="#B45309" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding ConflictCount}" VerticalAlignment="Center" />

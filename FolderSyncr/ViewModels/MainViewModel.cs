@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
 
@@ -27,6 +29,14 @@ public sealed class MainViewModel : ObservableObject
         SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.WillChangeFileSystem));
         CancelCommand = new RelayCommand(CancelAsync, () => IsBusy);
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
+        NewConfigurationCommand = new RelayCommand(() => SetStatusAsync("New configuration is not implemented yet."));
+        OpenConfigurationCommand = new RelayCommand(() => SetStatusAsync("Open configuration is not implemented yet."));
+        SaveConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save configuration is not implemented yet."));
+        SaveAsConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save as is not implemented yet."));
+        ReloadConfigurationCommand = new RelayCommand(() => SetStatusAsync("Configuration list refreshed."));
+        OpenDocumentationCommand = new RelayCommand(OpenDocumentationAsync);
+        AboutCommand = new RelayCommand(AboutAsync);
+        ExitCommand = new RelayCommand(ExitAsync);
     }
 
     public ObservableCollection<SyncOperation> Operations { get; } = [];
@@ -50,6 +60,14 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand SyncCommand { get; }
     public RelayCommand CancelCommand { get; }
     public RelayCommand ToggleThemeCommand { get; }
+    public RelayCommand NewConfigurationCommand { get; }
+    public RelayCommand OpenConfigurationCommand { get; }
+    public RelayCommand SaveConfigurationCommand { get; }
+    public RelayCommand SaveAsConfigurationCommand { get; }
+    public RelayCommand ReloadConfigurationCommand { get; }
+    public RelayCommand OpenDocumentationCommand { get; }
+    public RelayCommand AboutCommand { get; }
+    public RelayCommand ExitCommand { get; }
 
     public string LeftPath
     {
@@ -220,6 +238,47 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    private Task SetStatusAsync(string message)
+    {
+        Status = message;
+        AddLog(message);
+        return Task.CompletedTask;
+    }
+
+    private Task OpenDocumentationAsync()
+    {
+        var docsPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "docs", "USER_GUIDE.md"));
+        if (!File.Exists(docsPath))
+        {
+            docsPath = Path.Combine(Directory.GetCurrentDirectory(), "docs", "USER_GUIDE.md");
+        }
+
+        if (File.Exists(docsPath))
+        {
+            Process.Start(new ProcessStartInfo(docsPath) { UseShellExecute = true });
+            return SetStatusAsync("Opened documentation.");
+        }
+
+        return SetStatusAsync("Documentation file was not found.");
+    }
+
+    private Task AboutAsync()
+    {
+        MessageBox.Show(
+            "FolderSyncr\nFolder comparison and synchronization for Windows.",
+            "About FolderSyncr",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+
+        return Task.CompletedTask;
+    }
+
+    private Task ExitAsync()
+    {
+        Application.Current.Shutdown();
+        return Task.CompletedTask;
+    }
+
     private async Task RunBusyAsync(Func<CancellationToken, Task> action)
     {
         if (IsBusy)
@@ -359,5 +418,10 @@ public sealed class MainViewModel : ObservableObject
         CompareCommand.RaiseCanExecuteChanged();
         SyncCommand.RaiseCanExecuteChanged();
         CancelCommand.RaiseCanExecuteChanged();
+        NewConfigurationCommand.RaiseCanExecuteChanged();
+        OpenConfigurationCommand.RaiseCanExecuteChanged();
+        SaveConfigurationCommand.RaiseCanExecuteChanged();
+        SaveAsConfigurationCommand.RaiseCanExecuteChanged();
+        ReloadConfigurationCommand.RaiseCanExecuteChanged();
     }
 }

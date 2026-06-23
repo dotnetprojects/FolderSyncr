@@ -40,6 +40,12 @@ dotnet --list-sdks
 dotnet build .\FolderSyncr.slnx
 ```
 
+## Test
+
+```powershell
+dotnet test .\FolderSyncr.slnx
+```
+
 ## Release Builds
 
 When a GitHub release is published, the release workflow builds `FolderSyncr` for `win-x64`, applies the release tag as the application version, creates a ZIP, and uploads it to the release assets.

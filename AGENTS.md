@@ -27,6 +27,7 @@ dotnet run --project .\FolderSyncr\FolderSyncr.csproj
 - Keep the app WPF-only. Do not reintroduce WinForms for folder selection; use `Microsoft.Win32.OpenFolderDialog`.
 - Keep synchronization behavior preview-first: compare before writing files.
 - Avoid generated or fake screenshots in docs. Documentation screenshots must be captured from the running app and stored as PNG files.
+- After any UI, layout, or theme change, run the app and recreate the real documentation screenshots under `docs/screenshots/`.
 - Keep release versioning aligned with GitHub release tags.
 - Do not commit `bin/`, `obj/`, `.vs/`, or local artifacts.
 
@@ -36,4 +37,5 @@ Run this before committing:
 
 ```powershell
 dotnet build .\FolderSyncr.slnx
+dotnet test .\FolderSyncr.slnx
 ```
