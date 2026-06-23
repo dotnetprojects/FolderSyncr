@@ -103,6 +103,35 @@ public sealed class FreeFileSyncConfigurationImporterTests
         Assert.AreEqual(CompareMethod.SizeOnly, configuration.CompareMethod);
     }
 
+    [TestMethod]
+    public void ImportReadsRealTimeSyncFolderPair()
+    {
+        using var file = TempConfig.Create(
+            "watch.ffs_real",
+            """
+            <FreeFileSync XmlType="REAL">
+              <FolderPairs>
+                <Pair>
+                  <Left>C:\Watched</Left>
+                  <Right>D:\Mirror</Right>
+                </Pair>
+              </FolderPairs>
+              <Filter>
+                <Include>
+                  <Item>*.txt</Item>
+                </Include>
+              </Filter>
+            </FreeFileSync>
+            """);
+
+        var configuration = new FreeFileSyncConfigurationImporter().Import(file.Path);
+
+        Assert.HasCount(1, configuration.FolderPairs);
+        Assert.AreEqual(@"C:\Watched", configuration.FolderPairs[0].LeftPath);
+        Assert.AreEqual(@"D:\Mirror", configuration.FolderPairs[0].RightPath);
+        Assert.AreEqual("*.txt", configuration.IncludePatterns);
+    }
+
     private sealed class TempConfig : IDisposable
     {
         private TempConfig(string path)

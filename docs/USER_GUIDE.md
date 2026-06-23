@@ -38,7 +38,7 @@ Use `Tools` -> `Create sample data` to create a disposable folder pair under `%L
 
 ## FreeFileSync Import
 
-Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui` or `.ffs_batch` file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters. If the file contains multiple folder pairs or unsupported FreeFileSync options, FolderSyncr writes an import warning to the app log.
+Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui`, `.ffs_batch`, or `.ffs_real` file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters. For `.ffs_real` files, FolderSyncr imports the configured folders but does not start a real-time monitor yet. If the file contains multiple folder pairs or unsupported FreeFileSync options, FolderSyncr writes an import warning to the app log.
 
 Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or log file. JSON results from FreeFileSync batch runs show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.
 

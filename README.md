@@ -30,7 +30,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - UNC paths like `\\server\share\folder` and extended UNC paths like `\\?\UNC\server\share\folder`, with clear unavailable-share errors.
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
-- Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
+- Import FreeFileSync `.ffs_gui`, `.ffs_batch`, and `.ffs_real` configurations.
 - Import FreeFileSync JSON results and log files.
 - Store local sync run history as FreeFileSync-like JSON.
 - Save, open, and reload native `.foldersyncr.json` configurations.

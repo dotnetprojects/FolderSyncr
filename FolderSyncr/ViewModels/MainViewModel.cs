@@ -587,7 +587,7 @@ public sealed class MainViewModel : ObservableObject
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
             Title = "Open configuration",
-            Filter = "FolderSyncr configurations (*.foldersyncr.json)|*.foldersyncr.json|FreeFileSync configurations (*.ffs_gui;*.ffs_batch)|*.ffs_gui;*.ffs_batch|XML files (*.xml)|*.xml|All files (*.*)|*.*",
+            Filter = "FolderSyncr configurations (*.foldersyncr.json)|*.foldersyncr.json|FreeFileSync configurations (*.ffs_gui;*.ffs_batch;*.ffs_real)|*.ffs_gui;*.ffs_batch;*.ffs_real|XML files (*.xml)|*.xml|All files (*.*)|*.*",
             CheckFileExists = true,
             Multiselect = false
         };
