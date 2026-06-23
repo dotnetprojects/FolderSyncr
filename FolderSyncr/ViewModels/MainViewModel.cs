@@ -31,6 +31,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _ignoreDaylightSavingTimeShift;
     private bool _verifyCopiedFiles;
     private DeletionHandling _selectedDeletionHandling = DeletionHandling.Permanent;
+    private VersioningMode _selectedVersioningMode = VersioningMode.TimeStampFolder;
     private string _versioningFolderPath = string.Empty;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
@@ -91,6 +92,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<SyncMode> SyncModes { get; } = Enum.GetValues<SyncMode>();
     public IReadOnlyList<CompareMethod> CompareMethods { get; } = Enum.GetValues<CompareMethod>();
     public IReadOnlyList<DeletionHandling> DeletionHandlingModes { get; } = Enum.GetValues<DeletionHandling>();
+    public IReadOnlyList<VersioningMode> VersioningModes { get; } = Enum.GetValues<VersioningMode>();
 
     public RelayCommand BrowseLeftCommand { get; }
     public RelayCommand BrowseRightCommand { get; }
@@ -184,6 +186,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _versioningFolderPath;
         set => SetProperty(ref _versioningFolderPath, value);
+    }
+
+    public VersioningMode SelectedVersioningMode
+    {
+        get => _selectedVersioningMode;
+        set => SetProperty(ref _selectedVersioningMode, value);
     }
 
     public string IncludePatterns
@@ -471,6 +479,14 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var versioningModeBox = new ComboBox
+        {
+            ItemsSource = VersioningModes,
+            SelectedItem = SelectedVersioningMode,
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -482,6 +498,8 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(verifyBox);
         content.Children.Add(new TextBlock { Text = "Deletion handling", FontWeight = FontWeights.SemiBold });
         content.Children.Add(deletionBox);
+        content.Children.Add(new TextBlock { Text = "Versioning mode", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(versioningModeBox);
         content.Children.Add(new TextBlock { Text = "Versioning folder", FontWeight = FontWeights.SemiBold });
         content.Children.Add(versioningBox);
 
@@ -498,6 +516,7 @@ public sealed class MainViewModel : ObservableObject
             IgnoreDaylightSavingTimeShift = dstBox.IsChecked == true;
             VerifyCopiedFiles = verifyBox.IsChecked == true;
             SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
+            SelectedVersioningMode = (VersioningMode)versioningModeBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
             SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}.").GetAwaiter().GetResult();
         }
@@ -634,6 +653,7 @@ public sealed class MainViewModel : ObservableObject
         IgnoreDaylightSavingTimeShift = false;
         VerifyCopiedFiles = false;
         SelectedDeletionHandling = DeletionHandling.Permanent;
+        SelectedVersioningMode = VersioningMode.TimeStampFolder;
         VersioningFolderPath = string.Empty;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
@@ -706,7 +726,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 5,
+            Version: 6,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -716,6 +736,7 @@ public sealed class MainViewModel : ObservableObject
             IgnoreDaylightSavingTimeShift,
             VerifyCopiedFiles,
             SelectedDeletionHandling,
+            SelectedVersioningMode,
             VersioningFolderPath,
             IncludePatterns,
             ExcludePatterns,
@@ -733,6 +754,7 @@ public sealed class MainViewModel : ObservableObject
         IgnoreDaylightSavingTimeShift = configuration.Version >= 5 && configuration.IgnoreDaylightSavingTimeShift;
         VerifyCopiedFiles = configuration.Version >= 3 && configuration.VerifyCopiedFiles;
         SelectedDeletionHandling = configuration.Version >= 4 ? configuration.DeletionHandling : DeletionHandling.Permanent;
+        SelectedVersioningMode = configuration.Version >= 6 ? configuration.VersioningMode : VersioningMode.TimeStampFolder;
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
@@ -1193,6 +1215,7 @@ public sealed class MainViewModel : ObservableObject
             IgnoreDaylightSavingTimeShift = IgnoreDaylightSavingTimeShift,
             VerifyCopiedFiles = VerifyCopiedFiles,
             DeletionHandling = SelectedDeletionHandling,
+            VersioningMode = SelectedVersioningMode,
             VersioningFolderPath = VersioningFolderPath,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,

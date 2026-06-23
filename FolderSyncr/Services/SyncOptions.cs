@@ -12,6 +12,7 @@ public sealed class SyncOptions
     public bool IgnoreDaylightSavingTimeShift { get; init; }
     public bool VerifyCopiedFiles { get; init; }
     public DeletionHandling DeletionHandling { get; init; } = DeletionHandling.Permanent;
+    public VersioningMode VersioningMode { get; init; } = VersioningMode.TimeStampFolder;
     public string VersioningFolderPath { get; init; } = string.Empty;
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;

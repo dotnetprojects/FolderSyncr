@@ -221,6 +221,12 @@
         <li><code>RecycleBin</code>: sends the target-side file to the Windows recycle bin.</li>
         <li><code>VersioningFolder</code>: moves the target-side file into the configured versioning folder under a timestamped subfolder.</li>
       </ul>
+      <p>When using <code>VersioningFolder</code>, choose a versioning mode:</p>
+      <ul>
+        <li><code>Replace</code>: preserves the original relative path in the versioning folder and replaces an older stored version.</li>
+        <li><code>TimeStampFolder</code>: stores files below a timestamped subfolder.</li>
+        <li><code>FileTime</code>: appends the deleted file's timestamp to the file name.</li>
+      </ul>
       <p>Set a versioning folder before using <code>VersioningFolder</code>; otherwise synchronization stops with an error before deleting the file.</p>
     </section>
 

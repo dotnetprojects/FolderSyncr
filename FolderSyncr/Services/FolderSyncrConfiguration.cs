@@ -13,6 +13,7 @@ public sealed record FolderSyncrConfiguration(
     bool IgnoreDaylightSavingTimeShift,
     bool VerifyCopiedFiles,
     DeletionHandling DeletionHandling,
+    VersioningMode VersioningMode,
     string VersioningFolderPath,
     string IncludePatterns,
     string ExcludePatterns,

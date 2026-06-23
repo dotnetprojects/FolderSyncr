@@ -23,6 +23,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 IgnoreDaylightSavingTimeShift: true,
                 VerifyCopiedFiles: true,
                 DeletionHandling.RecycleBin,
+                VersioningMode.FileTime,
                 VersioningFolderPath: @"E:\Versions",
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",

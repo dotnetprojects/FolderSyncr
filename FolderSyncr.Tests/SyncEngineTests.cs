@@ -232,6 +232,47 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task VersioningReplaceMovesTargetFileWithoutDecoration()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteRight(Path.Combine("nested", "replace.txt"), "replace version", DateTime.UtcNow);
+
+        var versioningRoot = Path.Combine(workspace.RootPath, "versions-replace");
+        var options = workspace.CreateOptions(
+            SyncMode.MirrorLeftToRight,
+            deletionHandling: DeletionHandling.VersioningFolder,
+            versioningMode: VersioningMode.Replace,
+            versioningFolderPath: versioningRoot);
+
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+        await new SyncEngine().ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.AreEqual("replace version", File.ReadAllText(Path.Combine(versioningRoot, "nested", "replace.txt")));
+    }
+
+    [TestMethod]
+    public async Task VersioningFileTimeAppendsSourceFileTimeToFileName()
+    {
+        using var workspace = TestWorkspace.Create();
+        var fileTime = new DateTime(2026, 6, 23, 12, 25, 42, DateTimeKind.Utc);
+        workspace.WriteRight("filetime.txt", "file-time version", fileTime);
+
+        var versioningRoot = Path.Combine(workspace.RootPath, "versions-filetime");
+        var options = workspace.CreateOptions(
+            SyncMode.MirrorLeftToRight,
+            deletionHandling: DeletionHandling.VersioningFolder,
+            versioningMode: VersioningMode.FileTime,
+            versioningFolderPath: versioningRoot);
+
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+        await new SyncEngine().ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        var versionedFile = Directory.EnumerateFiles(versioningRoot, "filetime *.txt", SearchOption.AllDirectories).Single();
+        StringAssert.Contains(Path.GetFileName(versionedFile), "filetime ");
+        Assert.AreEqual("file-time version", File.ReadAllText(versionedFile));
+    }
+
+    [TestMethod]
     public async Task ExecuteFailsWhenFolderPairIsAlreadyLocked()
     {
         using var workspace = TestWorkspace.Create();
@@ -340,6 +381,7 @@ public sealed class SyncEngineTests
             bool ignoreDaylightSavingTimeShift = false,
             bool verifyCopiedFiles = false,
             DeletionHandling deletionHandling = DeletionHandling.Permanent,
+            VersioningMode versioningMode = VersioningMode.TimeStampFolder,
             string versioningFolderPath = "")
         {
             return new SyncOptions
@@ -352,6 +394,7 @@ public sealed class SyncEngineTests
                 IgnoreDaylightSavingTimeShift = ignoreDaylightSavingTimeShift,
                 VerifyCopiedFiles = verifyCopiedFiles,
                 DeletionHandling = deletionHandling,
+                VersioningMode = versioningMode,
                 VersioningFolderPath = versioningFolderPath,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,

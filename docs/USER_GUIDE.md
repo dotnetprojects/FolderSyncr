@@ -112,6 +112,12 @@ Mirror modes can remove files from the target side. Choose the deletion handling
 - `RecycleBin`: sends the target-side file to the Windows recycle bin.
 - `VersioningFolder`: moves the target-side file into the configured versioning folder under a timestamped subfolder.
 
+When using `VersioningFolder`, choose a versioning mode:
+
+- `Replace`: preserves the original relative path in the versioning folder and replaces an older stored version.
+- `TimeStampFolder`: stores files below a timestamped subfolder.
+- `FileTime`: appends the deleted file's timestamp to the file name.
+
 Set a versioning folder before using `VersioningFolder`; otherwise synchronization stops with an error before deleting the file.
 
 ## Sync Locks

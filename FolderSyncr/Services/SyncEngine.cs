@@ -301,6 +301,7 @@ public sealed class SyncEngine
             IgnoreDaylightSavingTimeShift = options.IgnoreDaylightSavingTimeShift,
             VerifyCopiedFiles = options.VerifyCopiedFiles,
             DeletionHandling = options.DeletionHandling,
+            VersioningMode = options.VersioningMode,
             VersioningFolderPath = PathMacroExpander.Expand(options.VersioningFolderPath),
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
@@ -407,10 +408,7 @@ public sealed class SyncEngine
         }
 
         var versionRoot = PathMacroExpander.Expand(options.VersioningFolderPath);
-        var destinationPath = Path.Combine(
-            versionRoot,
-            DateTime.Now.ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture),
-            file.RelativePath);
+        var destinationPath = GetVersioningDestinationPath(file, versionRoot, options.VersioningMode);
         var destinationDirectory = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrWhiteSpace(destinationDirectory))
         {
@@ -419,10 +417,42 @@ public sealed class SyncEngine
 
         if (File.Exists(destinationPath))
         {
-            destinationPath = GetUniquePath(destinationPath);
+            if (options.VersioningMode == VersioningMode.Replace)
+            {
+                File.Delete(destinationPath);
+            }
+            else
+            {
+                destinationPath = GetUniquePath(destinationPath);
+            }
         }
 
         File.Move(file.FullPath, destinationPath);
+    }
+
+    private static string GetVersioningDestinationPath(FileSnapshot file, string versionRoot, VersioningMode versioningMode)
+    {
+        return versioningMode switch
+        {
+            VersioningMode.Replace => Path.Combine(versionRoot, file.RelativePath),
+            VersioningMode.FileTime => Path.Combine(
+                versionRoot,
+                AppendTimestampToFileName(file.RelativePath, file.LastWriteTimeUtc)),
+            _ => Path.Combine(
+                versionRoot,
+                DateTime.Now.ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture),
+                file.RelativePath)
+        };
+    }
+
+    private static string AppendTimestampToFileName(string relativePath, DateTime lastWriteTimeUtc)
+    {
+        var directory = Path.GetDirectoryName(relativePath);
+        var fileName = Path.GetFileNameWithoutExtension(relativePath);
+        var extension = Path.GetExtension(relativePath);
+        var timestamp = lastWriteTimeUtc.ToLocalTime().ToString("yyyy-MM-dd HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+        var stampedName = $"{fileName} {timestamp}{extension}";
+        return string.IsNullOrWhiteSpace(directory) ? stampedName : Path.Combine(directory, stampedName);
     }
 
     private static string GetUniquePath(string path)

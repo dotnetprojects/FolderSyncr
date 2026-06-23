@@ -20,6 +20,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Configurable file time tolerance for time/size comparisons.
 - Optional binary verification after copying files.
 - Deletion handling options: permanent delete, recycle bin, or timestamped versioning folder.
+- Versioning modes for replace, timestamped folders, and file-time names.
 - Lock files prevent concurrent sync jobs from writing the same folder pair.
 - Built-in sample data generator for first-run testing.
 - Drag-and-drop folder selection for left and right paths.
