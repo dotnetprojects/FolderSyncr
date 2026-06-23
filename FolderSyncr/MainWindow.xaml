@@ -426,6 +426,8 @@
             <Setter Property="MinHeight" Value="23" />
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <EventSetter Event="MouseDoubleClick" Handler="OperationRow_MouseDoubleClick" />
+            <EventSetter Event="ContextMenuOpening" Handler="OperationRow_ContextMenuOpening" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />

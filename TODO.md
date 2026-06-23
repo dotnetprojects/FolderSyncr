@@ -104,8 +104,8 @@ This list tracks the work needed to support the main features documented in the 
 ## 8. External applications and context menu
 
 - [ ] Add configurable external commands.
-- [ ] Add row double-click behavior.
-- [ ] Add grid context menu actions.
+- [x] Add row double-click behavior.
+- [x] Add grid context menu actions.
 - [ ] Add keyboard shortcuts for configured external commands.
 
 ## 9. Cloud, network, and device folders

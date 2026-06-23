@@ -24,6 +24,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Built-in sample data generator for first-run testing.
 - Drag-and-drop folder selection for left and right paths.
 - Per-row checkboxes to include or exclude planned sync actions.
+- Result-grid double-click and context menu actions.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
 - Import FreeFileSync JSON results and log files.

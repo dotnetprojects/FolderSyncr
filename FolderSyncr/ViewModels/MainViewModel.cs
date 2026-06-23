@@ -1038,6 +1038,53 @@ public sealed class MainViewModel : ObservableObject
         return SetStatusAsync($"Showing {label}.");
     }
 
+    public Task OpenOperationSideAsync(SyncOperation operation, bool openLeftSide)
+    {
+        var snapshot = openLeftSide ? operation.Left : operation.Right;
+        var side = openLeftSide ? "left" : "right";
+        if (snapshot is null)
+        {
+            return SetStatusAsync($"No {side} file exists for {operation.RelativePath}.");
+        }
+
+        if (!File.Exists(snapshot.FullPath) && !Directory.Exists(snapshot.FullPath))
+        {
+            return SetStatusAsync($"The {side} path no longer exists: {snapshot.FullPath}");
+        }
+
+        Process.Start(new ProcessStartInfo(snapshot.FullPath) { UseShellExecute = true });
+        return SetStatusAsync($"Opened {side} item: {operation.RelativePath}");
+    }
+
+    public Task OpenOperationDefaultAsync(SyncOperation operation)
+    {
+        return operation.Left is not null
+            ? OpenOperationSideAsync(operation, openLeftSide: true)
+            : OpenOperationSideAsync(operation, openLeftSide: false);
+    }
+
+    public Task CopyOperationRelativePathAsync(SyncOperation operation)
+    {
+        Clipboard.SetText(operation.RelativePath);
+        return SetStatusAsync($"Copied relative path: {operation.RelativePath}");
+    }
+
+    public Task ExcludeOperationAsync(SyncOperation operation)
+    {
+        var pattern = operation.RelativePath.Replace('\\', '/');
+        var existingPatterns = ExcludePatterns
+            .Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+        if (!existingPatterns.Contains(pattern, StringComparer.OrdinalIgnoreCase))
+        {
+            ExcludePatterns = string.IsNullOrWhiteSpace(ExcludePatterns)
+                ? pattern
+                : $"{ExcludePatterns}{Environment.NewLine}{pattern}";
+        }
+
+        return SetStatusAsync($"Excluded {operation.RelativePath}. Run Compare to refresh the preview.");
+    }
+
     private Task OpenDocumentationAsync()
     {
         var docsPath = FindDocumentationPath();
