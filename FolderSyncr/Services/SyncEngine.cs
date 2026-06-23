@@ -34,7 +34,7 @@ public sealed class SyncEngine
         var rightFiles = await rightStorage.ScanAsync(options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
-        var syncDatabase = options.Mode == SyncMode.TwoWay && !leftStorage.IsRemote && !rightStorage.IsRemote
+        var syncDatabase = options.UseSynchronizationDatabase && options.Mode == SyncMode.TwoWay && !leftStorage.IsRemote && !rightStorage.IsRemote
             ? _syncDatabaseStore.LoadPair(options.LeftPath, options.RightPath)
             : null;
         return BuildOperations(
@@ -640,6 +640,7 @@ public sealed class SyncEngine
             LeftPath = PathMacroExpander.Expand(options.LeftPath),
             RightPath = PathMacroExpander.Expand(options.RightPath),
             Mode = options.Mode,
+            UseSynchronizationDatabase = options.UseSynchronizationDatabase,
             CustomRules = options.CustomRules,
             CompareMethod = options.CompareMethod,
             FileTimeToleranceSeconds = options.FileTimeToleranceSeconds,
@@ -847,6 +848,7 @@ public sealed class SyncEngine
         CancellationToken cancellationToken)
     {
         if (options.DryRun
+            || !options.UseSynchronizationDatabase
             || options.Mode != SyncMode.TwoWay
             || RemoteSyncRoot.IsRemotePath(options.LeftPath)
             || RemoteSyncRoot.IsRemotePath(options.RightPath))

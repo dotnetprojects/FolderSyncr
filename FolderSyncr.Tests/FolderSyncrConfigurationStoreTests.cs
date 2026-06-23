@@ -47,7 +47,8 @@ public sealed class FolderSyncrConfigurationStoreTests
                     CustomSyncAction.DeleteLeft),
                 RemoteConnectionCount: 4,
                 SftpCompression: true,
-                UseVolumeShadowCopy: true);
+                UseVolumeShadowCopy: true,
+                UseSynchronizationDatabase: false);
 
             var store = new FolderSyncrConfigurationStore();
             store.Save(path, original);

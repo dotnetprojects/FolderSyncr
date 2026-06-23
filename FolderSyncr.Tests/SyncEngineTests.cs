@@ -117,6 +117,27 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task TwoWayCanIgnoreSyncDatabase()
+    {
+        using var workspace = TestWorkspace.Create();
+        var baselineTime = DateTime.UtcNow.AddMinutes(-30);
+        workspace.WriteLeft("shared.txt", "base", baselineTime);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, options, null, CancellationToken.None);
+
+        workspace.WriteLeft("shared.txt", "left edit", baselineTime.AddMinutes(10));
+        workspace.WriteRight("shared.txt", "right edit", baselineTime.AddMinutes(20));
+
+        var withoutDatabase = workspace.CreateOptions(SyncMode.TwoWay, useSynchronizationDatabase: false);
+        var operations = await engine.CompareAsync(withoutDatabase, null, CancellationToken.None);
+
+        AssertOperation(operations, "shared.txt", OperationKind.CopyRightToLeft);
+    }
+
+    [TestMethod]
     public async Task TwoWayUsesSyncDatabaseToPropagateOneSidedDeletion()
     {
         using var workspace = TestWorkspace.Create();
@@ -641,13 +662,15 @@ public sealed class SyncEngineTests
             string versioningFolderPath = "",
             SyncErrorHandling errorHandling = SyncErrorHandling.ShowErrors,
             SymbolicLinkHandling symbolicLinkHandling = SymbolicLinkHandling.Skip,
-            CustomSyncRules? customRules = null)
+            CustomSyncRules? customRules = null,
+            bool useSynchronizationDatabase = true)
         {
             return new SyncOptions
             {
                 LeftPath = _left,
                 RightPath = _right,
                 Mode = mode,
+                UseSynchronizationDatabase = useSynchronizationDatabase,
                 CustomRules = customRules ?? CustomSyncRules.Default,
                 CompareMethod = compareMethod,
                 FileTimeToleranceSeconds = fileTimeToleranceSeconds,

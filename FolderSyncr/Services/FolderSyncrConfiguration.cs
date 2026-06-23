@@ -25,4 +25,5 @@ public sealed record FolderSyncrConfiguration(
     CustomSyncRules? CustomRules = null,
     int RemoteConnectionCount = 1,
     bool SftpCompression = false,
-    bool UseVolumeShadowCopy = false);
+    bool UseVolumeShadowCopy = false,
+    bool UseSynchronizationDatabase = true);

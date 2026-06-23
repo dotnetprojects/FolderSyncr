@@ -737,7 +737,11 @@
                             <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#B91C1C" />
                         </Button>
 
-                        <Button Grid.Column="4" Style="{StaticResource MainCommandButton}" Command="{Binding SyncCommand}" Margin="4,10,8,10" ToolTip="Start synchronization">
+                        <Button Grid.Column="4" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="4,10" Command="{Binding DataContext.OpenSynchronizationSettingsCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Synchronization settings">
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="{StaticResource GreenBrush}" />
+                        </Button>
+
+                        <Button Grid.Column="5" Style="{StaticResource MainCommandButton}" Command="{Binding SyncCommand}" Margin="4,10,8,10" ToolTip="Start synchronization">
                             <StackPanel Style="{StaticResource IconButtonContent}">
                                 <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="30" Foreground="{StaticResource GreenBrush}" Margin="0,0,12,0" />
                                 <StackPanel>

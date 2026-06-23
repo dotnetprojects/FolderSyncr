@@ -38,6 +38,7 @@ public sealed class MainViewModel : ObservableObject
     private SyncErrorHandling _selectedErrorHandling = SyncErrorHandling.ShowErrors;
     private SymbolicLinkHandling _selectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
     private CustomSyncRules _customRules = CustomSyncRules.Default;
+    private bool _useSynchronizationDatabase = true;
     private int _remoteConnectionCount = 1;
     private bool _sftpCompression;
     private bool _useVolumeShadowCopy;
@@ -63,8 +64,9 @@ public sealed class MainViewModel : ObservableObject
         SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.ShouldExecute));
         CancelCommand = new RelayCommand(CancelAsync, () => IsBusy);
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
-        OpenSettingsCommand = new RelayCommand(OpenSettingsAsync);
-        OpenFilterCommand = new RelayCommand(OpenFilterAsync);
+        OpenSettingsCommand = new RelayCommand(() => OpenSettingsAsync(SettingsDialogTab.Compare));
+        OpenFilterCommand = new RelayCommand(() => OpenSettingsAsync(SettingsDialogTab.Filter));
+        OpenSynchronizationSettingsCommand = new RelayCommand(() => OpenSettingsAsync(SettingsDialogTab.Synchronization));
         OpenFolderPairsCommand = new RelayCommand(OpenFolderPairsAsync);
         OpenExternalCommandsCommand = new RelayCommand(OpenExternalCommandsAsync);
         SwapSidesCommand = new RelayCommand(SwapSidesAsync);
@@ -136,6 +138,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ToggleThemeCommand { get; }
     public RelayCommand OpenSettingsCommand { get; }
     public RelayCommand OpenFilterCommand { get; }
+    public RelayCommand OpenSynchronizationSettingsCommand { get; }
     public RelayCommand OpenFolderPairsCommand { get; }
     public RelayCommand OpenExternalCommandsCommand { get; }
     public RelayCommand SwapSidesCommand { get; }
@@ -252,6 +255,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _customRules;
         set => SetProperty(ref _customRules, value);
+    }
+
+    public bool UseSynchronizationDatabase
+    {
+        get => _useSynchronizationDatabase;
+        set => SetProperty(ref _useSynchronizationDatabase, value);
     }
 
     public int RemoteConnectionCount
@@ -516,167 +525,247 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
-    private Task OpenSettingsAsync()
+    private Task OpenSettingsAsync(SettingsDialogTab initialTab)
     {
-        var modeBox = new ComboBox
-        {
-            ItemsSource = SyncModes,
-            SelectedItem = SelectedMode,
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
-        };
-
-        var compareBox = new ComboBox
-        {
-            ItemsSource = CompareMethods,
-            SelectedItem = SelectedCompareMethod,
-            Margin = new Thickness(0, 4, 0, 16),
-            MinWidth = 260
-        };
+        var selectedMode = SelectedMode;
+        var selectedCompareMethod = SelectedCompareMethod;
+        var selectedDeletionHandling = SelectedDeletionHandling;
 
         var toleranceBox = new TextBox
         {
             Text = FileTimeToleranceSeconds.ToString(),
-            Margin = new Thickness(0, 4, 0, 16),
-            MinWidth = 260
+            Width = 90,
+            Margin = new Thickness(0, 4, 12, 0)
         };
 
         var verifyBox = new CheckBox
         {
             Content = "Verify copied files by binary compare",
             IsChecked = VerifyCopiedFiles,
-            Margin = new Thickness(0, 0, 0, 16)
+            Margin = new Thickness(0, 0, 0, 10)
         };
 
         var dstBox = new CheckBox
         {
             Content = "Ignore one-hour daylight saving time shifts",
             IsChecked = IgnoreDaylightSavingTimeShift,
-            Margin = new Thickness(0, 0, 0, 12)
-        };
-
-        var deletionBox = new ComboBox
-        {
-            ItemsSource = DeletionHandlingModes,
-            SelectedItem = SelectedDeletionHandling,
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
+            Margin = new Thickness(0, 0, 0, 10)
         };
 
         var versioningBox = new TextBox
         {
             Text = VersioningFolderPath,
-            Margin = new Thickness(0, 4, 0, 16),
-            MinWidth = 260
+            Margin = new Thickness(0, 4, 0, 10),
+            MinWidth = 360
         };
 
         var versioningModeBox = new ComboBox
         {
             ItemsSource = VersioningModes,
             SelectedItem = SelectedVersioningMode,
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
+            Margin = new Thickness(0, 4, 0, 10),
+            MinWidth = 220
         };
 
         var errorHandlingBox = new ComboBox
         {
             ItemsSource = ErrorHandlingModes,
             SelectedItem = SelectedErrorHandling,
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
+            Margin = new Thickness(0, 4, 0, 10),
+            MinWidth = 220
         };
 
         var symbolicLinkBox = new ComboBox
         {
             ItemsSource = SymbolicLinkHandlingModes,
             SelectedItem = SelectedSymbolicLinkHandling,
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
+            Margin = new Thickness(0, 4, 0, 10),
+            MinWidth = 220
         };
 
         var remoteConnectionCountBox = new TextBox
         {
-            Text = RemoteConnectionCount.ToString(),
-            Margin = new Thickness(0, 4, 0, 12),
-            MinWidth = 260
+            Text = Math.Max(2, RemoteConnectionCount).ToString(),
+            Width = 90,
+            Margin = new Thickness(0, 4, 12, 0)
         };
+        var parallelFileCopyBox = new CheckBox
+        {
+            Content = "Enable parallel file copy",
+            IsChecked = RemoteConnectionCount > 1,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        remoteConnectionCountBox.IsEnabled = parallelFileCopyBox.IsChecked == true;
+        parallelFileCopyBox.Checked += (_, _) => remoteConnectionCountBox.IsEnabled = true;
+        parallelFileCopyBox.Unchecked += (_, _) => remoteConnectionCountBox.IsEnabled = false;
 
         var sftpCompressionBox = new CheckBox
         {
             Content = "Use SFTP compression",
             IsChecked = SftpCompression,
-            Margin = new Thickness(0, 0, 0, 12)
+            Margin = new Thickness(0, 0, 0, 10)
         };
 
         var volumeShadowCopyBox = new CheckBox
         {
             Content = "Use Volume Shadow Copy for locked local files",
             IsChecked = UseVolumeShadowCopy,
-            Margin = new Thickness(0, 0, 0, 12)
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+        var syncDatabaseBox = new CheckBox
+        {
+            Content = "Use synchronization database to detect changes, deletions, moves, and conflicts",
+            IsChecked = UseSynchronizationDatabase,
+            Margin = new Thickness(0, 0, 0, 10)
         };
 
-        ComboBox CreateCustomRuleBox(CustomSyncAction selectedAction)
+        var includeBox = new TextBox
         {
-            return new ComboBox
-            {
-                ItemsSource = CustomSyncActions,
-                SelectedItem = selectedAction,
-                Margin = new Thickness(0, 4, 0, 12),
-                MinWidth = 260
-            };
-        }
-
-        var leftOnlyRuleBox = CreateCustomRuleBox(CustomRules.LeftOnly);
-        var rightOnlyRuleBox = CreateCustomRuleBox(CustomRules.RightOnly);
-        var leftNewerRuleBox = CreateCustomRuleBox(CustomRules.LeftNewer);
-        var rightNewerRuleBox = CreateCustomRuleBox(CustomRules.RightNewer);
-        var differentRuleBox = CreateCustomRuleBox(CustomRules.Different);
-
-        var content = new StackPanel { Margin = new Thickness(18) };
-        content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(modeBox);
-        content.Children.Add(new TextBlock { Text = "Compare method", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(compareBox);
-        content.Children.Add(new TextBlock { Text = "File time tolerance in seconds", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(toleranceBox);
-        content.Children.Add(dstBox);
-        content.Children.Add(verifyBox);
-        content.Children.Add(new TextBlock { Text = "Deletion handling", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(deletionBox);
-        content.Children.Add(new TextBlock { Text = "Versioning mode", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(versioningModeBox);
-        content.Children.Add(new TextBlock { Text = "Versioning folder", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(versioningBox);
-        content.Children.Add(new TextBlock { Text = "Error handling", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(errorHandlingBox);
-        content.Children.Add(new TextBlock { Text = "Symbolic links", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(symbolicLinkBox);
-        content.Children.Add(new TextBlock { Text = "Connection/channel count", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(remoteConnectionCountBox);
-        content.Children.Add(sftpCompressionBox);
-        content.Children.Add(volumeShadowCopyBox);
-        content.Children.Add(new TextBlock { Text = "Left-only action", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(leftOnlyRuleBox);
-        content.Children.Add(new TextBlock { Text = "Right-only action", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(rightOnlyRuleBox);
-        content.Children.Add(new TextBlock { Text = "Left-newer action", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(leftNewerRuleBox);
-        content.Children.Add(new TextBlock { Text = "Right-newer action", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(rightNewerRuleBox);
-        content.Children.Add(new TextBlock { Text = "Different action", FontWeight = FontWeights.SemiBold });
-        content.Children.Add(differentRuleBox);
-
-        var scroller = new ScrollViewer
-        {
-            Content = content,
-            MaxHeight = 720,
+            Text = IncludePatterns,
+            AcceptsReturn = true,
+            MinHeight = 120,
+            Margin = new Thickness(0, 4, 0, 14),
+            TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto
         };
 
-        if (ShowDialog("Comparison settings", scroller))
+        var excludeBox = new TextBox
         {
-            SelectedMode = (SyncMode)modeBox.SelectedItem;
-            SelectedCompareMethod = (CompareMethod)compareBox.SelectedItem;
+            Text = ExcludePatterns,
+            AcceptsReturn = true,
+            MinHeight = 190,
+            Margin = new Thickness(0, 4, 0, 14),
+            TextWrapping = TextWrapping.Wrap,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        var leftOnlyRule = CustomRules.LeftOnly;
+        var rightOnlyRule = CustomRules.RightOnly;
+        var leftNewerRule = CustomRules.LeftNewer;
+        var rightNewerRule = CustomRules.RightNewer;
+        var differentRule = CustomRules.Different;
+
+        var comparePanel = CreateSettingsScrollPanel(
+            CreateSettingsGrid(
+                CreateSettingsChoiceSection(
+                    "Variant",
+                    "Choose how files are compared before synchronization.",
+                    CreateChoiceList(
+                        [
+                            (CompareMethod.TimeAndSize, "\uE823", "File time and size", "Fast default comparison using modified time and file size."),
+                            (CompareMethod.ContentHash, "\uE8A5", "File content", "Read and hash file contents for byte-level comparison."),
+                            (CompareMethod.SizeOnly, "\uE8B7", "File size", "Compare only file length when timestamps are unreliable.")
+                        ],
+                        () => selectedCompareMethod,
+                        value => selectedCompareMethod = value)),
+                CreateSettingsSection(
+                    "Tolerances and links",
+                    CreateVerticalStack(
+                        CreateLabeledRow("File time tolerance in seconds", toleranceBox),
+                        dstBox,
+                        CreateLabeledRow("Symbolic links", symbolicLinkBox),
+                        verifyBox)),
+                CreateSettingsSection(
+                    "Performance",
+                    CreateVerticalStack(
+                        parallelFileCopyBox,
+                        CreateLabeledRow("Parallel file copy count", remoteConnectionCountBox),
+                        sftpCompressionBox,
+                        volumeShadowCopyBox))));
+
+        var filterPanel = CreateSettingsScrollPanel(
+            CreateSettingsGrid(
+                CreateSettingsSection(
+                    "Include",
+                    CreateVerticalStack(
+                        new TextBlock { Text = "One pattern per line or separated by |." },
+                        includeBox)),
+                CreateSettingsSection(
+                    "Exclude",
+                    CreateVerticalStack(
+                        new TextBlock { Text = "Exclude files or folders relative to the folder pair." },
+                        excludeBox)),
+                CreateSettingsSection(
+                    "Filter hints",
+                    CreateVerticalStack(
+                        new TextBlock { Text = "* and ? wildcards are supported." },
+                        new TextBlock { Text = "Use a trailing slash for folder-only filters." },
+                        new TextBlock { Text = "Use : for file-only filters." }))));
+
+        var syncPanel = CreateSettingsScrollPanel(
+            CreateSettingsGrid(
+                CreateSettingsChoiceSection(
+                    "Variant",
+                    "Choose the default synchronization strategy.",
+                    CreateChoiceList(
+                        [
+                            (SyncMode.TwoWay, "\uE8AB", "Two way", "Propagate changes on both sides and detect conflicts."),
+                            (SyncMode.MirrorLeftToRight, "\uE72A", "Mirror left to right", "Make the right side match the left side."),
+                            (SyncMode.MirrorRightToLeft, "\uE72B", "Mirror right to left", "Make the left side match the right side."),
+                            (SyncMode.UpdateLeftToRight, "\uE74A", "Update left to right", "Copy new and newer left-side files to the right side."),
+                            (SyncMode.UpdateRightToLeft, "\uE74B", "Update right to left", "Copy new and newer right-side files to the left side."),
+                            (SyncMode.Custom, "\uE713", "Custom", "Use the custom row action rules below.")
+                        ],
+                        () => selectedMode,
+                        value => selectedMode = value)),
+                CreateSettingsSection(
+                    "Synchronization database",
+                    CreateVerticalStack(
+                        syncDatabaseBox,
+                        new TextBlock
+                        {
+                            Text = "When enabled, FolderSyncr writes sync.ffs_db-style metadata for local two-way jobs and uses it to recognize one-sided changes, deletions, moved files, and conflicts.",
+                            TextWrapping = TextWrapping.Wrap
+                        })),
+                CreateSettingsChoiceSection(
+                    "Delete and overwrite",
+                    "Choose where removed or overwritten files go.",
+                    CreateChoiceList(
+                        [
+                            (DeletionHandling.RecycleBin, "\uE74D", "Recycle bin", "Move deleted files to the Windows Recycle Bin."),
+                            (DeletionHandling.Permanent, "\uE74D", "Permanent", "Delete files permanently."),
+                            (DeletionHandling.VersioningFolder, "\uE8A5", "Versioning", "Move deleted or overwritten files to a versioning folder.")
+                        ],
+                        () => selectedDeletionHandling,
+                        value => selectedDeletionHandling = value)),
+                CreateSettingsSection(
+                    "Versioning",
+                    CreateVerticalStack(
+                        CreateLabeledRow("Versioning mode", versioningModeBox),
+                        CreateLabeledRow("Versioning folder", versioningBox))),
+                CreateSettingsSection(
+                    "Errors",
+                    CreateTwoColumnForm(
+                        ("Error handling", errorHandlingBox))),
+                CreateSettingsSection(
+                    "Custom rule matrix",
+                    CreateCustomRuleMatrix(
+                        ("Left only", "Item exists only on the left side.", () => leftOnlyRule, value => leftOnlyRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.DeleteLeft }),
+                        ("Right only", "Item exists only on the right side.", () => rightOnlyRule, value => rightOnlyRule = value, new[] { CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.DeleteRight }),
+                        ("Left newer", "Both sides exist; left side is newer.", () => leftNewerRule, value => leftNewerRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft }),
+                        ("Right newer", "Both sides exist; right side is newer.", () => rightNewerRule, value => rightNewerRule = value, new[] { CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.CopyLeftToRight }),
+                        ("Different", "Both sides changed or contents differ.", () => differentRule, value => differentRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft })))));
+
+        var tabs = new TabControl
+        {
+            MinWidth = 920,
+            MinHeight = 560,
+            Margin = new Thickness(14)
+        };
+        tabs.Items.Add(CreateSettingsTab("\uE713", "Compare (F6)", comparePanel));
+        tabs.Items.Add(CreateSettingsTab("\uE71C", "Filter (F7)", filterPanel));
+        tabs.Items.Add(CreateSettingsTab("\uE72C", "Synchronization (F8)", syncPanel));
+        tabs.SelectedIndex = initialTab switch
+        {
+            SettingsDialogTab.Filter => 1,
+            SettingsDialogTab.Synchronization => 2,
+            _ => 0
+        };
+
+        if (ShowDialog("Synchronization settings", tabs))
+        {
+            SelectedMode = selectedMode;
+            SelectedCompareMethod = selectedCompareMethod;
             if (!int.TryParse(toleranceBox.Text, out var toleranceSeconds) || toleranceSeconds < 0)
             {
                 toleranceSeconds = 2;
@@ -685,29 +774,418 @@ public sealed class MainViewModel : ObservableObject
             FileTimeToleranceSeconds = toleranceSeconds;
             IgnoreDaylightSavingTimeShift = dstBox.IsChecked == true;
             VerifyCopiedFiles = verifyBox.IsChecked == true;
-            SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
+            SelectedDeletionHandling = selectedDeletionHandling;
             SelectedVersioningMode = (VersioningMode)versioningModeBox.SelectedItem;
             SelectedErrorHandling = (SyncErrorHandling)errorHandlingBox.SelectedItem;
             SelectedSymbolicLinkHandling = (SymbolicLinkHandling)symbolicLinkBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
-            if (!int.TryParse(remoteConnectionCountBox.Text, out var remoteConnections) || remoteConnections < 1)
+            if (!int.TryParse(remoteConnectionCountBox.Text, out var remoteConnections) || remoteConnections < 2)
             {
-                remoteConnections = 1;
+                remoteConnections = 2;
             }
 
-            RemoteConnectionCount = remoteConnections;
+            RemoteConnectionCount = parallelFileCopyBox.IsChecked == true ? remoteConnections : 1;
             SftpCompression = sftpCompressionBox.IsChecked == true;
             UseVolumeShadowCopy = volumeShadowCopyBox.IsChecked == true;
+            UseSynchronizationDatabase = syncDatabaseBox.IsChecked == true;
+            IncludePatterns = string.IsNullOrWhiteSpace(includeBox.Text) ? "*" : includeBox.Text.Trim();
+            ExcludePatterns = excludeBox.Text.Trim();
             CustomRules = new CustomSyncRules(
-                (CustomSyncAction)leftOnlyRuleBox.SelectedItem,
-                (CustomSyncAction)rightOnlyRuleBox.SelectedItem,
-                (CustomSyncAction)leftNewerRuleBox.SelectedItem,
-                (CustomSyncAction)rightNewerRuleBox.SelectedItem,
-                (CustomSyncAction)differentRuleBox.SelectedItem);
+                leftOnlyRule,
+                rightOnlyRule,
+                leftNewerRule,
+                rightNewerRule,
+                differentRule);
             SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}, {SelectedErrorHandling}.").GetAwaiter().GetResult();
         }
 
         return Task.CompletedTask;
+    }
+
+    private static TabItem CreateSettingsTab(string icon, string title, UIElement content)
+    {
+        var header = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(4, 0, 4, 0)
+        };
+        header.Children.Add(new TextBlock
+        {
+            Text = icon,
+            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+            FontSize = 18,
+            Margin = new Thickness(0, 0, 8, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        header.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+
+        return new TabItem
+        {
+            Header = header,
+            Content = content
+        };
+    }
+
+    private static ScrollViewer CreateSettingsScrollPanel(UIElement content)
+    {
+        return new ScrollViewer
+        {
+            Content = content,
+            MaxHeight = 610,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+    }
+
+    private static Grid CreateSettingsGrid(params UIElement[] sections)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 14, 0, 0) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        for (var index = 0; index < sections.Length; index++)
+        {
+            var row = index / 2;
+            if (grid.RowDefinitions.Count <= row)
+            {
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            }
+
+            var section = sections[index];
+            Grid.SetRow(section, row);
+            Grid.SetColumn(section, index % 2);
+            grid.Children.Add(section);
+        }
+
+        return grid;
+    }
+
+    private static Border CreateSettingsChoiceSection(string title, string description, UIElement choices)
+    {
+        return CreateSettingsSection(
+            title,
+            CreateVerticalStack(
+                new TextBlock
+                {
+                    Text = description,
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 10)
+                },
+                choices));
+    }
+
+    private static Border CreateSettingsSection(string title, UIElement body)
+    {
+        var content = new StackPanel();
+        content.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 15,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 10)
+        });
+        content.Children.Add(body);
+
+        var border = new Border
+        {
+            Child = content,
+            Margin = new Thickness(8),
+            Padding = new Thickness(14),
+            MinHeight = 160,
+            BorderThickness = new Thickness(1)
+        };
+        border.SetResourceReference(Border.BackgroundProperty, "PanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "BorderBrushSoft");
+        return border;
+    }
+
+    private static StackPanel CreateVerticalStack(params UIElement[] children)
+    {
+        var panel = new StackPanel();
+        foreach (var child in children)
+        {
+            panel.Children.Add(child);
+        }
+
+        return panel;
+    }
+
+    private static StackPanel CreateLabeledRow(string label, UIElement control)
+    {
+        var panel = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+        panel.Children.Add(new TextBlock
+        {
+            Text = label,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 2)
+        });
+        panel.Children.Add(control);
+        return panel;
+    }
+
+    private static Grid CreateTwoColumnForm(params (string Label, FrameworkElement Control)[] rows)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        for (var index = 0; index < rows.Length; index++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var label = new TextBlock
+            {
+                Text = rows[index].Label,
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 7, 12, 12),
+                VerticalAlignment = VerticalAlignment.Top
+            };
+            var control = rows[index].Control;
+            control.Margin = new Thickness(0, 2, 0, 10);
+
+            Grid.SetRow(label, index);
+            Grid.SetColumn(label, 0);
+            Grid.SetRow(control, index);
+            Grid.SetColumn(control, 1);
+            grid.Children.Add(label);
+            grid.Children.Add(control);
+        }
+
+        return grid;
+    }
+
+    private static Grid CreateCustomRuleMatrix(params (string Label, string Description, Func<CustomSyncAction> GetSelected, Action<CustomSyncAction> SetSelected, IReadOnlyList<CustomSyncAction> Actions)[] rows)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(155) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        for (var index = 0; index < rows.Length; index++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var labelPanel = new StackPanel
+            {
+                Margin = new Thickness(0, 0, 12, 12)
+            };
+            labelPanel.Children.Add(new TextBlock
+            {
+                Text = rows[index].Label,
+                FontWeight = FontWeights.SemiBold
+            });
+            labelPanel.Children.Add(new TextBlock
+            {
+                Text = rows[index].Description,
+                TextWrapping = TextWrapping.Wrap,
+                FontSize = 11
+            });
+
+            var actionsPanel = CreateRuleActionButtons(rows[index].Actions, rows[index].GetSelected, rows[index].SetSelected);
+            actionsPanel.Margin = new Thickness(0, 0, 0, 12);
+
+            Grid.SetRow(labelPanel, index);
+            Grid.SetColumn(labelPanel, 0);
+            Grid.SetRow(actionsPanel, index);
+            Grid.SetColumn(actionsPanel, 1);
+            grid.Children.Add(labelPanel);
+            grid.Children.Add(actionsPanel);
+        }
+
+        return grid;
+    }
+
+    private static StackPanel CreateRuleActionButtons(
+        IReadOnlyList<CustomSyncAction> actions,
+        Func<CustomSyncAction> getSelected,
+        Action<CustomSyncAction> setSelected)
+    {
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        var groupName = $"RuleAction{Guid.NewGuid():N}";
+        var controls = new List<(RadioButton Button, Border Border, TextBlock Glyph, TextBlock Label)>();
+
+        foreach (var action in actions)
+        {
+            var (glyph, label, brushKey) = GetCustomRuleActionPresentation(action);
+            var glyphText = new TextBlock
+            {
+                Text = glyph,
+                FontSize = 17,
+                FontWeight = FontWeights.Bold,
+                Width = 32,
+                TextAlignment = TextAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            glyphText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+            var labelText = new TextBlock
+            {
+                Text = label,
+                FontSize = 11,
+                TextAlignment = TextAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            var content = new StackPanel();
+            content.Children.Add(glyphText);
+            content.Children.Add(labelText);
+
+            var border = new Border
+            {
+                Child = content,
+                MinWidth = 72,
+                Padding = new Thickness(7, 5, 7, 5),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4)
+            };
+
+            var button = new RadioButton
+            {
+                GroupName = groupName,
+                Content = border,
+                Margin = new Thickness(0, 0, 6, 0),
+                IsChecked = getSelected() == action
+            };
+            controls.Add((button, border, glyphText, labelText));
+            button.Checked += (_, _) =>
+            {
+                setSelected(action);
+                UpdateRuleActionStyles(controls);
+            };
+            button.Unchecked += (_, _) => UpdateRuleActionStyles(controls);
+            panel.Children.Add(button);
+        }
+
+        UpdateRuleActionStyles(controls);
+        return panel;
+    }
+
+    private static (string Glyph, string Label, string BrushKey) GetCustomRuleActionPresentation(CustomSyncAction action)
+    {
+        return action switch
+        {
+            CustomSyncAction.CopyLeftToRight => ("=>", "Copy right", "DarkGreenBrush"),
+            CustomSyncAction.CopyRightToLeft => ("<=", "Copy left", "DarkGreenBrush"),
+            CustomSyncAction.DeleteLeft => ("X<", "Delete left", "DeleteBrush"),
+            CustomSyncAction.DeleteRight => (">X", "Delete right", "DeleteBrush"),
+            _ => ("--", "No action", "TextBrush")
+        };
+    }
+
+    private static void UpdateRuleActionStyles(IEnumerable<(RadioButton Button, Border Border, TextBlock Glyph, TextBlock Label)> controls)
+    {
+        foreach (var control in controls)
+        {
+            if (control.Button.IsChecked == true)
+            {
+                control.Border.SetResourceReference(Border.BackgroundProperty, "SelectionBrush");
+                control.Border.SetResourceReference(Border.BorderBrushProperty, "SelectionBrush");
+                control.Label.SetResourceReference(TextBlock.ForegroundProperty, "SelectionTextBrush");
+            }
+            else
+            {
+                control.Border.SetResourceReference(Border.BackgroundProperty, "ButtonBrush");
+                control.Border.SetResourceReference(Border.BorderBrushProperty, "BorderBrushSoft");
+                control.Label.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+            }
+        }
+    }
+
+    private static StackPanel CreateChoiceList<T>(
+        IReadOnlyList<(T Value, string Icon, string Title, string Description)> choices,
+        Func<T> getSelected,
+        Action<T> setSelected)
+        where T : notnull
+    {
+        var panel = new StackPanel();
+        var groupName = $"SettingsChoice{Guid.NewGuid():N}";
+        var controls = new List<(RadioButton Button, Border Border, TextBlock Icon, TextBlock Title, TextBlock Description)>();
+
+        foreach (var choice in choices)
+        {
+            var icon = new TextBlock
+            {
+                Text = choice.Icon,
+                FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                FontSize = 24,
+                Width = 34,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var title = new TextBlock
+            {
+                Text = choice.Title,
+                FontWeight = FontWeights.SemiBold,
+                FontSize = 14
+            };
+            var description = new TextBlock
+            {
+                Text = choice.Description,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 2, 0, 0)
+            };
+            var text = new StackPanel();
+            text.Children.Add(title);
+            text.Children.Add(description);
+
+            var layout = new Grid();
+            layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetColumn(icon, 0);
+            Grid.SetColumn(text, 1);
+            layout.Children.Add(icon);
+            layout.Children.Add(text);
+
+            var border = new Border
+            {
+                Child = layout,
+                Padding = new Thickness(10),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4)
+            };
+
+            var button = new RadioButton
+            {
+                GroupName = groupName,
+                Content = border,
+                Margin = new Thickness(0, 0, 0, 8),
+                IsChecked = EqualityComparer<T>.Default.Equals(choice.Value, getSelected())
+            };
+
+            controls.Add((button, border, icon, title, description));
+            button.Checked += (_, _) =>
+            {
+                setSelected(choice.Value);
+                UpdateChoiceStyles(controls);
+            };
+            button.Unchecked += (_, _) => UpdateChoiceStyles(controls);
+            panel.Children.Add(button);
+        }
+
+        UpdateChoiceStyles(controls);
+        return panel;
+    }
+
+    private static void UpdateChoiceStyles(IEnumerable<(RadioButton Button, Border Border, TextBlock Icon, TextBlock Title, TextBlock Description)> controls)
+    {
+        foreach (var control in controls)
+        {
+            if (control.Button.IsChecked == true)
+            {
+                control.Border.SetResourceReference(Border.BackgroundProperty, "SelectionBrush");
+                control.Border.SetResourceReference(Border.BorderBrushProperty, "SelectionBrush");
+                control.Icon.SetResourceReference(TextBlock.ForegroundProperty, "SelectionTextBrush");
+                control.Title.SetResourceReference(TextBlock.ForegroundProperty, "SelectionTextBrush");
+                control.Description.SetResourceReference(TextBlock.ForegroundProperty, "SelectionTextBrush");
+            }
+            else
+            {
+                control.Border.SetResourceReference(Border.BackgroundProperty, "ButtonBrush");
+                control.Border.SetResourceReference(Border.BorderBrushProperty, "BorderBrushSoft");
+                control.Icon.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+                control.Title.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+                control.Description.SetResourceReference(TextBlock.ForegroundProperty, "MutedTextBrush");
+            }
+        }
     }
 
     private Task OpenFilterAsync()
@@ -767,9 +1245,11 @@ public sealed class MainViewModel : ObservableObject
             AutoGenerateColumns = false,
             CanUserAddRows = true,
             CanUserDeleteRows = true,
-            MinWidth = 760,
-            MinHeight = 280,
-            Margin = new Thickness(18)
+            MinWidth = 560,
+            MinHeight = 260,
+            Margin = new Thickness(14),
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
         };
         grid.Columns.Add(new DataGridTextColumn
         {
@@ -787,16 +1267,16 @@ public sealed class MainViewModel : ObservableObject
         {
             Header = "Include",
             Binding = new Binding(nameof(FolderPairEditorRow.IncludePatterns)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
-            Width = new DataGridLength(140)
+            Width = new DataGridLength(115)
         });
         grid.Columns.Add(new DataGridTextColumn
         {
             Header = "Exclude",
             Binding = new Binding(nameof(FolderPairEditorRow.ExcludePatterns)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
-            Width = new DataGridLength(180)
+            Width = new DataGridLength(135)
         });
 
-        if (!ShowDialog("Folder pairs", grid))
+        if (!ShowDialog("Folder pairs", grid, resizable: true, width: 720, height: 420))
         {
             return Task.CompletedTask;
         }
@@ -975,6 +1455,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedErrorHandling = SyncErrorHandling.ShowErrors;
         SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
         CustomRules = CustomSyncRules.Default;
+        UseSynchronizationDatabase = true;
         RemoteConnectionCount = 1;
         SftpCompression = false;
         UseVolumeShadowCopy = false;
@@ -1073,7 +1554,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 14,
+            Version: 15,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -1095,7 +1576,8 @@ public sealed class MainViewModel : ObservableObject
             CustomRules,
             RemoteConnectionCount,
             SftpCompression,
-            UseVolumeShadowCopy);
+            UseVolumeShadowCopy,
+            UseSynchronizationDatabase);
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
@@ -1127,6 +1609,7 @@ public sealed class MainViewModel : ObservableObject
         CustomRules = configuration.Version >= 12 && configuration.CustomRules is not null
             ? configuration.CustomRules
             : CustomSyncRules.Default;
+        UseSynchronizationDatabase = configuration.Version >= 15 ? configuration.UseSynchronizationDatabase : true;
         RemoteConnectionCount = configuration.Version >= 13 ? Math.Max(1, configuration.RemoteConnectionCount) : 1;
         SftpCompression = configuration.Version >= 13 && configuration.SftpCompression;
         UseVolumeShadowCopy = configuration.Version >= 14 && configuration.UseVolumeShadowCopy;
@@ -1210,6 +1693,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         CustomRules = CustomSyncRules.Default;
+        UseSynchronizationDatabase = true;
         RemoteConnectionCount = 1;
         SftpCompression = false;
         UseVolumeShadowCopy = false;
@@ -1227,7 +1711,7 @@ public sealed class MainViewModel : ObservableObject
         return SetStatusAsync($"Sample data created in {sample.RootPath}. Run Compare to see the planned actions.");
     }
 
-    private bool ShowDialog(string title, UIElement body)
+    private bool ShowDialog(string title, UIElement body, bool resizable = false, double? width = null, double? height = null)
     {
         var okButton = new Button
         {
@@ -1261,12 +1745,23 @@ public sealed class MainViewModel : ObservableObject
         {
             Title = title,
             Content = root,
-            SizeToContent = SizeToContent.WidthAndHeight,
+            SizeToContent = width is null || height is null ? SizeToContent.WidthAndHeight : SizeToContent.Manual,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ResizeMode = ResizeMode.NoResize,
+            ResizeMode = resizable ? ResizeMode.CanResize : ResizeMode.NoResize,
             Owner = Application.Current.MainWindow,
             MinWidth = 360
         };
+        if (width is not null)
+        {
+            window.Width = width.Value;
+            window.MinWidth = Math.Min(width.Value, 560);
+        }
+
+        if (height is not null)
+        {
+            window.Height = height.Value;
+            window.MinHeight = Math.Min(height.Value, 360);
+        }
 
         ApplyDialogTheme(window);
 
@@ -1291,6 +1786,9 @@ public sealed class MainViewModel : ObservableObject
 
         window.Background = panelBrush;
         window.SetValue(TextElement.ForegroundProperty, textBrush);
+        window.Resources[SystemColors.ControlBrushKey] = panelBrush;
+        window.Resources[SystemColors.WindowBrushKey] = panelBrush;
+        window.Resources[SystemColors.ControlTextBrushKey] = textBrush;
 
         window.Resources[typeof(TextBlock)] = CreateStyle<TextBlock>(
             (TextBlock.ForegroundProperty, textBrush),
@@ -1333,6 +1831,17 @@ public sealed class MainViewModel : ObservableObject
             (CheckBox.ForegroundProperty, textBrush),
             (CheckBox.VerticalContentAlignmentProperty, VerticalAlignment.Center),
             (CheckBox.MinHeightProperty, 28d));
+
+        window.Resources[typeof(RadioButton)] = CreateStyle<RadioButton>(
+            (RadioButton.ForegroundProperty, textBrush),
+            (RadioButton.VerticalContentAlignmentProperty, VerticalAlignment.Center),
+            (RadioButton.MinHeightProperty, 34d));
+
+        window.Resources[typeof(TabControl)] = CreateStyle<TabControl>(
+            (Control.BackgroundProperty, panelBrush),
+            (Control.BorderBrushProperty, borderBrush));
+
+        window.Resources[typeof(TabItem)] = CreateDialogTabItemStyle();
 
         window.Resources[typeof(Button)] = CreateStyle<Button>(
             (Button.ForegroundProperty, textBrush),
@@ -1428,6 +1937,49 @@ public sealed class MainViewModel : ObservableObject
 </Style>
 """;
 
+        return (Style)XamlReader.Parse(styleXaml);
+    }
+
+    private static Style CreateDialogTabItemStyle()
+    {
+        const string styleXaml = """
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="{x:Type TabItem}">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ButtonBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
+    <Setter Property="Padding" Value="13,8" />
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="{x:Type TabItem}">
+                <Border x:Name="Chrome"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="1"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter ContentSource="Header"
+                                      RecognizesAccessKey="True"
+                                      TextElement.Foreground="{TemplateBinding Foreground}" />
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource MenuHoverBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                    </Trigger>
+                    <Trigger Property="IsEnabled" Value="False">
+                        <Setter Property="Opacity" Value="0.6" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+""";
         return (Style)XamlReader.Parse(styleXaml);
     }
 
@@ -1763,6 +2315,7 @@ public sealed class MainViewModel : ObservableObject
             ErrorHandling = SelectedErrorHandling,
             SymbolicLinkHandling = SelectedSymbolicLinkHandling,
             CustomRules = CustomRules,
+            UseSynchronizationDatabase = UseSynchronizationDatabase,
             RemoteConnectionCount = RemoteConnectionCount,
             SftpCompression = SftpCompression,
             UseVolumeShadowCopy = UseVolumeShadowCopy,
@@ -1967,6 +2520,13 @@ public sealed class MainViewModel : ObservableObject
         DeleteLeft,
         DeleteRight,
         Conflicts
+    }
+
+    private enum SettingsDialogTab
+    {
+        Compare,
+        Filter,
+        Synchronization
     }
 
     private sealed class FolderPairEditorRow

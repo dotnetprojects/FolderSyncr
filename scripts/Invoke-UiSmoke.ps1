@@ -38,6 +38,9 @@ public static class FolderSyncrSmokeNative
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
     {
@@ -291,8 +294,69 @@ function Close-Window {
         [System.Windows.Automation.AutomationElement]$Window
     )
 
+    $handle = $Window.Current.NativeWindowHandle
+    $name = $Window.Current.Name
     $pattern = $Window.GetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern)
     $pattern.Close()
+
+    if (Wait-WindowClosed -Handle $handle -TimeoutSeconds 2) {
+        return
+    }
+
+    $cancelButton = Find-ByName $Window 'Cancel' ([System.Windows.Automation.ControlType]::Button)
+    if ($null -ne $cancelButton) {
+        Invoke-Element $cancelButton "$name Cancel button"
+        if (Wait-WindowClosed -Handle $handle -TimeoutSeconds 3) {
+            return
+        }
+    }
+
+    $okButton = Find-ByName $Window 'OK' ([System.Windows.Automation.ControlType]::Button)
+    if ($null -ne $okButton) {
+        Invoke-Element $okButton "$name OK button"
+        if (Wait-WindowClosed -Handle $handle -TimeoutSeconds 3) {
+            return
+        }
+    }
+
+    throw "Window did not close: $name"
+}
+
+function Wait-WindowClosed {
+    param(
+        [int]$Handle,
+        [int]$TimeoutSeconds = 5
+    )
+
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Window)
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    do {
+        Start-Sleep -Milliseconds 100
+        $windows = [System.Windows.Automation.AutomationElement]::RootElement.FindAll(
+            [System.Windows.Automation.TreeScope]::Children,
+            $condition)
+
+        $found = $false
+        for ($i = 0; $i -lt $windows.Count; $i++) {
+            try {
+                if ($windows.Item($i).Current.NativeWindowHandle -eq $Handle) {
+                    $found = $true
+                    break
+                }
+            }
+            catch {
+                continue
+            }
+        }
+
+        if (-not $found) {
+            return $true
+        }
+    } while ((Get-Date) -lt $deadline)
+
+    return $false
 }
 
 function Expand-Menu {
@@ -317,6 +381,7 @@ function Capture-Handle {
         [string]$Path
     )
 
+    Set-CaptureForeground $Handle
     $rect = New-Object FolderSyncrSmokeNative+RECT
     [FolderSyncrSmokeNative]::GetWindowRect($Handle, [ref]$rect) | Out-Null
 
@@ -332,11 +397,34 @@ function Capture-Handle {
     $bitmap.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
     $graphics.Dispose()
     $bitmap.Dispose()
+    Clear-CaptureTopMost $Handle
 
     $file = Get-Item $Path
     if ($file.Length -lt 10000) {
         throw "Screenshot looks too small: $Path"
     }
+}
+
+function Set-CaptureForeground {
+    param(
+        [IntPtr]$Handle
+    )
+
+    $topMost = [IntPtr]::op_Explicit(-1)
+    $flags = 0x0001 -bor 0x0002 -bor 0x0040
+    [FolderSyncrSmokeNative]::SetWindowPos($Handle, $topMost, 0, 0, 0, 0, $flags) | Out-Null
+    [FolderSyncrSmokeNative]::SetForegroundWindow($Handle) | Out-Null
+    Start-Sleep -Milliseconds 250
+}
+
+function Clear-CaptureTopMost {
+    param(
+        [IntPtr]$Handle
+    )
+
+    $notTopMost = [IntPtr]::op_Explicit(-2)
+    $flags = 0x0001 -bor 0x0002 -bor 0x0040
+    [FolderSyncrSmokeNative]::SetWindowPos($Handle, $notTopMost, 0, 0, 0, 0, $flags) | Out-Null
 }
 
 function Capture-Rectangle {
@@ -371,6 +459,8 @@ function Capture-Window {
         [string]$Path
     )
 
+    Focus-MainWindow $Process | Out-Null
+    Start-Sleep -Milliseconds 250
     Capture-Handle ([IntPtr]$Process.MainWindowHandle) $Path
 }
 
@@ -383,14 +473,43 @@ function Capture-AutomationWindow {
     Capture-Handle ([IntPtr]$Window.Current.NativeWindowHandle) $Path
 }
 
+function Scroll-WindowContentToBottom {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window
+    )
+
+    $scrollCondition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::ScrollBar)
+    $scrollBars = $Window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $scrollCondition)
+    for ($i = 0; $i -lt $scrollBars.Count; $i++) {
+        $bar = $scrollBars.Item($i)
+        try {
+            if ($bar.Current.Orientation -ne [System.Windows.Automation.OrientationType]::Vertical) {
+                continue
+            }
+
+            $range = $bar.GetCurrentPattern([System.Windows.Automation.RangeValuePattern]::Pattern)
+            $range.SetValue($range.Current.Maximum)
+            Start-Sleep -Milliseconds 250
+            return
+        }
+        catch {
+            continue
+        }
+    }
+}
+
 function Capture-AutomationWindowWithDropdown {
     param(
         [System.Windows.Automation.AutomationElement]$Window,
         [string]$Path
     )
 
+    Set-CaptureForeground ([IntPtr]$Window.Current.NativeWindowHandle)
     $bounds = $Window.Current.BoundingRectangle
     Capture-Rectangle $bounds.Left $bounds.Top $bounds.Width ($bounds.Height + 260) $Path
+    Clear-CaptureTopMost ([IntPtr]$Window.Current.NativeWindowHandle)
 }
 
 New-SmokeData -LeftPath $sampleLeft -RightPath $sampleRight
@@ -398,13 +517,16 @@ $process = Start-Process -FilePath $exe -ArgumentList @('-dirpair', $sampleLeft,
 try {
     $root = Wait-MainWindow -Process $process
 
-    Close-Window (Open-DialogByHelp $process 'Comparison settings' 'Comparison settings' 'Comparison settings button')
+    Close-Window (Open-DialogByHelp $process 'Comparison settings' 'Synchronization settings' 'Comparison settings button')
+
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+    Close-Window (Open-DialogByHelp $process 'Filter files' 'Synchronization settings' 'Filter settings button')
+
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+    Close-Window (Open-DialogByHelp $process 'Synchronization settings' 'Synchronization settings' 'Synchronization settings button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Close-Window (Open-DialogByHelp $process 'Edit folder pairs' 'Folder pairs' 'Folder pairs button')
-
-    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
-    Close-Window (Open-DialogByHelp $process 'Filter files' 'File filters' 'Filter files button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Invoke-Element (Find-ByHelp $root 'Cloud path') 'Cloud path button'
@@ -453,17 +575,10 @@ try {
     $fileMenu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse()
     Start-Sleep -Milliseconds 200
 
-    $settingsWindow = Open-DialogByHelp $process 'Comparison settings' 'Comparison settings' 'Dark comparison settings button'
-    $comboCondition = New-Object System.Windows.Automation.PropertyCondition(
-        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
-        [System.Windows.Automation.ControlType]::ComboBox)
-    $modeCombo = $settingsWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $comboCondition)
-    if ($null -eq $modeCombo) {
-        throw 'Settings mode ComboBox was not found.'
-    }
-    $modeCombo.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    $settingsWindow = Open-DialogByHelp $process 'Synchronization settings' 'Synchronization settings' 'Dark synchronization settings button'
     Start-Sleep -Milliseconds 300
-    Capture-AutomationWindowWithDropdown $settingsWindow $darkSettingsScreenshot
+    Scroll-WindowContentToBottom $settingsWindow
+    Capture-AutomationWindow $settingsWindow $darkSettingsScreenshot
     Close-Window $settingsWindow
 
     Write-Host 'FolderSyncr UI smoke passed.'

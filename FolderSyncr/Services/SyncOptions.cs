@@ -7,6 +7,7 @@ public sealed class SyncOptions
     public required string LeftPath { get; init; }
     public required string RightPath { get; init; }
     public SyncMode Mode { get; init; }
+    public bool UseSynchronizationDatabase { get; init; } = true;
     public CustomSyncRules CustomRules { get; init; } = CustomSyncRules.Default;
     public CompareMethod CompareMethod { get; init; }
     public int FileTimeToleranceSeconds { get; init; } = 2;
