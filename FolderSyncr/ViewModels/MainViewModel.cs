@@ -25,6 +25,7 @@ public sealed class MainViewModel : ObservableObject
     private string _rightPath = string.Empty;
     private SyncMode _selectedMode = SyncMode.TwoWay;
     private CompareMethod _selectedCompareMethod = CompareMethod.TimeAndSize;
+    private int _fileTimeToleranceSeconds = 2;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -144,6 +145,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _selectedCompareMethod;
         set => SetProperty(ref _selectedCompareMethod, value);
+    }
+
+    public int FileTimeToleranceSeconds
+    {
+        get => _fileTimeToleranceSeconds;
+        set => SetProperty(ref _fileTimeToleranceSeconds, Math.Max(0, value));
     }
 
     public string IncludePatterns
@@ -355,17 +362,32 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var toleranceBox = new TextBox
+        {
+            Text = FileTimeToleranceSeconds.ToString(),
+            Margin = new Thickness(0, 4, 0, 16),
+            MinWidth = 260
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
         content.Children.Add(new TextBlock { Text = "Compare method", FontWeight = FontWeights.SemiBold });
         content.Children.Add(compareBox);
+        content.Children.Add(new TextBlock { Text = "File time tolerance in seconds", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(toleranceBox);
 
         if (ShowDialog("Comparison settings", content))
         {
             SelectedMode = (SyncMode)modeBox.SelectedItem;
             SelectedCompareMethod = (CompareMethod)compareBox.SelectedItem;
-            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}.").GetAwaiter().GetResult();
+            if (!int.TryParse(toleranceBox.Text, out var toleranceSeconds) || toleranceSeconds < 0)
+            {
+                toleranceSeconds = 2;
+            }
+
+            FileTimeToleranceSeconds = toleranceSeconds;
+            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {FileTimeToleranceSeconds}s tolerance.").GetAwaiter().GetResult();
         }
 
         return Task.CompletedTask;
@@ -496,6 +518,7 @@ public sealed class MainViewModel : ObservableObject
         RightPath = string.Empty;
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
+        FileTimeToleranceSeconds = 2;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         Operations.Clear();
@@ -567,12 +590,13 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 1,
+            Version: 2,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
             SelectedMode,
             SelectedCompareMethod,
+            FileTimeToleranceSeconds,
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode);
@@ -585,6 +609,7 @@ public sealed class MainViewModel : ObservableObject
         RightPath = configuration.RightPath;
         SelectedMode = configuration.SyncMode;
         SelectedCompareMethod = configuration.CompareMethod;
+        FileTimeToleranceSeconds = configuration.Version < 2 ? 2 : configuration.FileTimeToleranceSeconds;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
         Operations.Clear();
@@ -966,6 +991,7 @@ public sealed class MainViewModel : ObservableObject
             RightPath = RightPath,
             Mode = SelectedMode,
             CompareMethod = SelectedCompareMethod,
+            FileTimeToleranceSeconds = FileTimeToleranceSeconds,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

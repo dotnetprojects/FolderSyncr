@@ -62,6 +62,8 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 - `ContentHash`: slower comparison using SHA-256 hashes.
 - `SizeOnly`: compares only file length, useful when modification times are unreliable.
 
+The settings dialog also includes a file time tolerance in seconds. The default is `2`, which avoids false differences on file systems with coarse timestamp precision.
+
 ## Preview Actions
 
 - `=>`: copy from left to right.

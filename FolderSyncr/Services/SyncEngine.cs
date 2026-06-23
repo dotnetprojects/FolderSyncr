@@ -6,8 +6,6 @@ namespace FolderSyncr.Services;
 
 public sealed class SyncEngine
 {
-    private static readonly TimeSpan TimestampTolerance = TimeSpan.FromSeconds(2);
-
     public async Task<IReadOnlyList<SyncOperation>> CompareAsync(
         SyncOptions options,
         IProgress<string>? progress,
@@ -22,7 +20,7 @@ public sealed class SyncEngine
         var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
-        return BuildOperations(leftFiles, rightFiles, options.Mode, options.CompareMethod);
+        return BuildOperations(leftFiles, rightFiles, options.Mode, options.CompareMethod, GetFileTimeTolerance(options));
     }
 
     public async Task ExecuteAsync(
@@ -116,7 +114,8 @@ public sealed class SyncEngine
         IReadOnlyDictionary<string, FileSnapshot> leftFiles,
         IReadOnlyDictionary<string, FileSnapshot> rightFiles,
         SyncMode mode,
-        CompareMethod compareMethod)
+        CompareMethod compareMethod,
+        TimeSpan fileTimeTolerance)
     {
         var allPaths = leftFiles.Keys
             .Union(rightFiles.Keys, StringComparer.OrdinalIgnoreCase)
@@ -133,26 +132,26 @@ public sealed class SyncEngine
                 RelativePath = relativePath,
                 Left = left,
                 Right = right,
-                Kind = DetermineOperation(left, right, mode, compareMethod)
+                Kind = DetermineOperation(left, right, mode, compareMethod, fileTimeTolerance)
             });
         }
 
         return operations;
     }
 
-    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CompareMethod compareMethod)
+    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CompareMethod compareMethod, TimeSpan fileTimeTolerance)
     {
         return mode switch
         {
-            SyncMode.MirrorLeftToRight => DetermineMirrorOperation(left, right, leftIsSource: true, compareMethod),
-            SyncMode.MirrorRightToLeft => DetermineMirrorOperation(left, right, leftIsSource: false, compareMethod),
-            SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true, compareMethod),
-            SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false, compareMethod),
-            _ => DetermineTwoWayOperation(left, right, compareMethod)
+            SyncMode.MirrorLeftToRight => DetermineMirrorOperation(left, right, leftIsSource: true, compareMethod, fileTimeTolerance),
+            SyncMode.MirrorRightToLeft => DetermineMirrorOperation(left, right, leftIsSource: false, compareMethod, fileTimeTolerance),
+            SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true, compareMethod, fileTimeTolerance),
+            SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false, compareMethod, fileTimeTolerance),
+            _ => DetermineTwoWayOperation(left, right, compareMethod, fileTimeTolerance)
         };
     }
 
-    private static OperationKind DetermineMirrorOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod)
+    private static OperationKind DetermineMirrorOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod, TimeSpan fileTimeTolerance)
     {
         var source = leftIsSource ? left : right;
         var target = leftIsSource ? right : left;
@@ -167,7 +166,7 @@ public sealed class SyncEngine
             return leftIsSource ? OperationKind.DeleteRight : OperationKind.DeleteLeft;
         }
 
-        if (target is null || !AreEquivalent(source, target, compareMethod))
+        if (target is null || !AreEquivalent(source, target, compareMethod, fileTimeTolerance))
         {
             return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
         }
@@ -175,7 +174,7 @@ public sealed class SyncEngine
         return OperationKind.Equal;
     }
 
-    private static OperationKind DetermineUpdateOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod)
+    private static OperationKind DetermineUpdateOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod, TimeSpan fileTimeTolerance)
     {
         var source = leftIsSource ? left : right;
         var target = leftIsSource ? right : left;
@@ -190,12 +189,12 @@ public sealed class SyncEngine
             return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
         }
 
-        if (AreEquivalent(source, target, compareMethod))
+        if (AreEquivalent(source, target, compareMethod, fileTimeTolerance))
         {
             return OperationKind.Equal;
         }
 
-        if (IsNewer(source, target))
+        if (IsNewer(source, target, fileTimeTolerance))
         {
             return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
         }
@@ -203,7 +202,7 @@ public sealed class SyncEngine
         return OperationKind.Equal;
     }
 
-    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right, CompareMethod compareMethod)
+    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right, CompareMethod compareMethod, TimeSpan fileTimeTolerance)
     {
         if (left is null && right is null)
         {
@@ -220,17 +219,17 @@ public sealed class SyncEngine
             return OperationKind.CopyLeftToRight;
         }
 
-        if (AreEquivalent(left, right, compareMethod))
+        if (AreEquivalent(left, right, compareMethod, fileTimeTolerance))
         {
             return OperationKind.Equal;
         }
 
-        if (IsNewer(left, right))
+        if (IsNewer(left, right, fileTimeTolerance))
         {
             return OperationKind.CopyLeftToRight;
         }
 
-        if (IsNewer(right, left))
+        if (IsNewer(right, left, fileTimeTolerance))
         {
             return OperationKind.CopyRightToLeft;
         }
@@ -238,7 +237,7 @@ public sealed class SyncEngine
         return OperationKind.Conflict;
     }
 
-    private static bool AreEquivalent(FileSnapshot left, FileSnapshot right, CompareMethod compareMethod)
+    private static bool AreEquivalent(FileSnapshot left, FileSnapshot right, CompareMethod compareMethod, TimeSpan fileTimeTolerance)
     {
         if (compareMethod == CompareMethod.SizeOnly)
         {
@@ -251,12 +250,17 @@ public sealed class SyncEngine
         }
 
         return left.Length == right.Length
-            && Math.Abs((left.LastWriteTimeUtc - right.LastWriteTimeUtc).TotalSeconds) <= TimestampTolerance.TotalSeconds;
+            && Math.Abs((left.LastWriteTimeUtc - right.LastWriteTimeUtc).TotalSeconds) <= fileTimeTolerance.TotalSeconds;
     }
 
-    private static bool IsNewer(FileSnapshot source, FileSnapshot target)
+    private static bool IsNewer(FileSnapshot source, FileSnapshot target, TimeSpan fileTimeTolerance)
     {
-        return source.LastWriteTimeUtc - target.LastWriteTimeUtc > TimestampTolerance;
+        return source.LastWriteTimeUtc - target.LastWriteTimeUtc > fileTimeTolerance;
+    }
+
+    private static TimeSpan GetFileTimeTolerance(SyncOptions options)
+    {
+        return TimeSpan.FromSeconds(Math.Max(0, options.FileTimeToleranceSeconds));
     }
 
     private static async Task CopyAsync(

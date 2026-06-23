@@ -97,6 +97,38 @@ public sealed class SyncEngineTests
         AssertOperation(operations, "different-size.txt", OperationKind.Conflict);
     }
 
+    [TestMethod]
+    public async Task TimeAndSizeUsesConfiguredFileTimeTolerance()
+    {
+        using var workspace = TestWorkspace.Create();
+        var timestamp = DateTime.UtcNow;
+        workspace.WriteLeft("near.txt", "same", timestamp);
+        workspace.WriteRight("near.txt", "same", timestamp.AddSeconds(-5));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, CompareMethod.TimeAndSize, fileTimeToleranceSeconds: 10);
+        var engine = new SyncEngine();
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "near.txt", OperationKind.Equal);
+    }
+
+    [TestMethod]
+    public async Task TimeAndSizeMarksDifferenceOutsideConfiguredTolerance()
+    {
+        using var workspace = TestWorkspace.Create();
+        var timestamp = DateTime.UtcNow;
+        workspace.WriteLeft("outside.txt", "same", timestamp);
+        workspace.WriteRight("outside.txt", "same", timestamp.AddSeconds(-5));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, CompareMethod.TimeAndSize, fileTimeToleranceSeconds: 1);
+        var engine = new SyncEngine();
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "outside.txt", OperationKind.CopyLeftToRight);
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -130,7 +162,10 @@ public sealed class SyncEngineTests
 
         public string RightPath(string relativePath) => Path.Combine(_right, relativePath);
 
-        public SyncOptions CreateOptions(SyncMode mode, CompareMethod compareMethod = CompareMethod.TimeAndSize)
+        public SyncOptions CreateOptions(
+            SyncMode mode,
+            CompareMethod compareMethod = CompareMethod.TimeAndSize,
+            int fileTimeToleranceSeconds = 2)
         {
             return new SyncOptions
             {
@@ -138,6 +173,7 @@ public sealed class SyncEngineTests
                 RightPath = _right,
                 Mode = mode,
                 CompareMethod = compareMethod,
+                FileTimeToleranceSeconds = fileTimeToleranceSeconds,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false

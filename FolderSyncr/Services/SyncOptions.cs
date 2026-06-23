@@ -8,6 +8,7 @@ public sealed class SyncOptions
     public required string RightPath { get; init; }
     public SyncMode Mode { get; init; }
     public CompareMethod CompareMethod { get; init; }
+    public int FileTimeToleranceSeconds { get; init; } = 2;
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

@@ -19,6 +19,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 RightPath: @"D:\Target",
                 SyncMode.MirrorLeftToRight,
                 CompareMethod.ContentHash,
+                FileTimeToleranceSeconds: 7,
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
                 IsDarkMode: true);

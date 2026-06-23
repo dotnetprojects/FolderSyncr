@@ -9,6 +9,7 @@ public sealed record FolderSyncrConfiguration(
     string RightPath,
     SyncMode SyncMode,
     CompareMethod CompareMethod,
+    int FileTimeToleranceSeconds,
     string IncludePatterns,
     string ExcludePatterns,
     bool IsDarkMode);
