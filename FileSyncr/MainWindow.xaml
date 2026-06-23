@@ -1,0 +1,410 @@
+<Window x:Class="FileSyncr.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="FileSyncr"
+        Height="780"
+        Width="1220"
+        MinHeight="700"
+        MinWidth="1040"
+        Background="#EEF1F5"
+        FontFamily="Segoe UI"
+        TextElement.Foreground="#17202A">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="PanelBorderBrush" Color="#DDE3EA" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#667085" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB" />
+        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#1D4ED8" />
+        <SolidColorBrush x:Key="SoftBlueBrush" Color="#EFF6FF" />
+        <SolidColorBrush x:Key="SoftGreenBrush" Color="#ECFDF3" />
+        <SolidColorBrush x:Key="SoftAmberBrush" Color="#FFFBEB" />
+        <SolidColorBrush x:Key="SoftRedBrush" Color="#FEF2F2" />
+        <SolidColorBrush x:Key="SoftGrayBrush" Color="#F8FAFC" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+
+        <Style x:Key="LabelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+
+        <Style x:Key="InputBox" TargetType="TextBox">
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+        </Style>
+
+        <Style x:Key="CommandButton" TargetType="Button">
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#17202A" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#F8FAFC" />
+                                <Setter Property="BorderBrush" Value="#94A3B8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="Arrow" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource CommandButton}">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+                    <Setter Property="BorderBrush" Value="{StaticResource PrimaryHoverBrush}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource CommandButton}">
+            <Setter Property="Foreground" Value="#991B1B" />
+            <Setter Property="Background" Value="#FFF7F7" />
+            <Setter Property="BorderBrush" Value="#FECACA" />
+        </Style>
+
+        <Style x:Key="IconText" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="SummaryTile" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="{StaticResource PanelBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinWidth" Value="104" />
+        </Style>
+
+        <Style x:Key="ActionPill" TargetType="Border">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Background" Value="{StaticResource SoftGrayBrush}" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Kind}" Value="CopyLeftToRight">
+                    <Setter Property="Background" Value="{StaticResource SoftBlueBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="CopyRightToLeft">
+                    <Setter Property="Background" Value="{StaticResource SoftBlueBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="DeleteLeft">
+                    <Setter Property="Background" Value="{StaticResource SoftRedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="DeleteRight">
+                    <Setter Property="Background" Value="{StaticResource SoftRedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Conflict">
+                    <Setter Property="Background" Value="{StaticResource SoftAmberBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="GridLinesVisibility" Value="None" />
+            <Setter Property="HeadersVisibility" Value="Column" />
+            <Setter Property="RowHeaderWidth" Value="0" />
+            <Setter Property="AlternatingRowBackground" Value="#FAFBFC" />
+            <Setter Property="HorizontalGridLinesBrush" Value="#EDF1F5" />
+            <Setter Property="VerticalGridLinesBrush" Value="#EDF1F5" />
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="12,10" />
+            <Setter Property="BorderBrush" Value="#E5EAF0" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="DataGridRow">
+            <Setter Property="MinHeight" Value="42" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="BorderBrush" Value="#EDF1F5" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F1F5F9" />
+                </Trigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Conflict">
+                    <Setter Property="Background" Value="#FFFBEB" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0"
+                Background="#FFFFFF"
+                BorderBrush="{StaticResource PanelBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="22,18">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="FileSyncr" FontSize="24" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedTextBrush}" Margin="0,3,0,0" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Border Style="{StaticResource SummaryTile}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding TotalCount}" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="Items" Foreground="{StaticResource MutedTextBrush}" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource SummaryTile}" Background="#EFF6FF" BorderBrush="#BFDBFE">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ChangeCount}" FontSize="20" FontWeight="SemiBold" Foreground="#1D4ED8" />
+                            <TextBlock Text="Changes" Foreground="#3B82F6" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource SummaryTile}" Background="#FFFBEB" BorderBrush="#FDE68A">
+                        <StackPanel>
+                            <TextBlock Text="{Binding ConflictCount}" FontSize="20" FontWeight="SemiBold" Foreground="#B45309" />
+                            <TextBlock Text="Conflicts" Foreground="#D97706" FontSize="12" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="16" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="142" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Grid.Column="0"
+                    Grid.RowSpan="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Folders" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="Pick the two roots to compare." Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,18" />
+
+                        <TextBlock Text="Left folder" Style="{StaticResource LabelText}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Style="{StaticResource InputBox}" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="1" Style="{StaticResource CommandButton}" Command="{Binding BrowseLeftCommand}" Margin="8,0,0,0" ToolTip="Browse left folder">
+                                <StackPanel Style="{StaticResource IconText}">
+                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" />
+                                    <TextBlock Text="Browse" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <TextBlock Text="Right folder" Style="{StaticResource LabelText}" Margin="0,16,0,6" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Style="{StaticResource InputBox}" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="1" Style="{StaticResource CommandButton}" Command="{Binding BrowseRightCommand}" Margin="8,0,0,0" ToolTip="Browse right folder">
+                                <StackPanel Style="{StaticResource IconText}">
+                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" />
+                                    <TextBlock Text="Browse" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <Rectangle Height="1" Fill="#E5EAF0" Margin="0,22,0,18" />
+
+                        <TextBlock Text="Sync mode" Style="{StaticResource LabelText}" />
+                        <ComboBox ItemsSource="{Binding SyncModes}" SelectedItem="{Binding SelectedMode}" />
+
+                        <TextBlock Text="Compare by" Style="{StaticResource LabelText}" Margin="0,16,0,6" />
+                        <ComboBox ItemsSource="{Binding CompareMethods}" SelectedItem="{Binding SelectedCompareMethod}" />
+
+                        <TextBlock Text="Include filters" Style="{StaticResource LabelText}" Margin="0,16,0,6" />
+                        <TextBox Style="{StaticResource InputBox}" Text="{Binding IncludePatterns, UpdateSourceTrigger=PropertyChanged}" />
+
+                        <TextBlock Text="Exclude filters" Style="{StaticResource LabelText}" Margin="0,16,0,6" />
+                        <TextBox Style="{StaticResource InputBox}" MinHeight="70" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Text="{Binding ExcludePatterns, UpdateSourceTrigger=PropertyChanged}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Row="0"
+                    Grid.Column="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    ClipToBounds="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Background="#FFFFFF" LastChildFill="False" Margin="16,14,16,12">
+                        <StackPanel DockPanel.Dock="Left">
+                            <TextBlock Text="Preview" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock Text="Review actions before writing changes." Foreground="{StaticResource MutedTextBrush}" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Style="{StaticResource CommandButton}" Command="{Binding CompareCommand}" ToolTip="Compare folders">
+                                <StackPanel Style="{StaticResource IconText}">
+                                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" />
+                                    <TextBlock Text="Compare" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource PrimaryButton}" Command="{Binding SyncCommand}" ToolTip="Synchronize selected folder pair">
+                                <StackPanel Style="{StaticResource IconText}">
+                                    <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" />
+                                    <TextBlock Text="Synchronize" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource DangerButton}" Command="{Binding CancelCommand}" Margin="0" ToolTip="Cancel current operation">
+                                <StackPanel Style="{StaticResource IconText}">
+                                    <TextBlock Text="&#xE711;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" />
+                                    <TextBlock Text="Cancel" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding Operations}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              IsReadOnly="True"
+                              Margin="1,0,1,1">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="Action" Width="150">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource ActionPill}">
+                                            <TextBlock Text="{Binding Direction}" FontWeight="SemiBold" FontSize="12" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="Relative path" Binding="{Binding RelativePath}" Width="*" />
+                            <DataGridTextColumn Header="Left" Binding="{Binding LeftInfo}" Width="190" />
+                            <DataGridTextColumn Header="Right" Binding="{Binding RightInfo}" Width="190" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="110" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1"
+                    Grid.Column="2"
+                    Background="{StaticResource PanelBrush}"
+                    BorderBrush="{StaticResource PanelBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Margin="0,14,0,0"
+                    Padding="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="Activity" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,8" />
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding LogEntries}"
+                             BorderThickness="0"
+                             Background="#FFFFFF"
+                             FontFamily="Consolas"
+                             FontSize="12"
+                             Foreground="#334155" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <StatusBar Grid.Row="2"
+                   Background="#FFFFFF"
+                   BorderBrush="{StaticResource PanelBorderBrush}"
+                   BorderThickness="0,1,0,0"
+                   Padding="12,6">
+            <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedTextBrush}" />
+        </StatusBar>
+    </Grid>
+</Window>
