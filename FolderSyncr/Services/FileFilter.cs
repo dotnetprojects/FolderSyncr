@@ -23,7 +23,7 @@ public sealed class FileFilter
     private static Regex[] BuildRegexes(string patterns)
     {
         return patterns
-            .Split([';', ',', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .Select(ToRegex)
             .ToArray();
     }

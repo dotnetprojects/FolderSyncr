@@ -16,6 +16,7 @@ namespace FolderSyncr.ViewModels;
 public sealed class MainViewModel : ObservableObject
 {
     private readonly SyncEngine _syncEngine = new();
+    private readonly FreeFileSyncConfigurationImporter _configurationImporter = new();
     private CancellationTokenSource? _cancellation;
     private string _leftPath = string.Empty;
     private string _rightPath = string.Empty;
@@ -46,7 +47,7 @@ public sealed class MainViewModel : ObservableObject
         SwapSidesCommand = new RelayCommand(SwapSidesAsync);
         CloudPathCommand = new RelayCommand(() => SetStatusAsync("Cloud path integration is not implemented yet. Use Browse or paste a local/cloud-synced folder path."));
         NewConfigurationCommand = new RelayCommand(() => SetStatusAsync("New configuration is not implemented yet."));
-        OpenConfigurationCommand = new RelayCommand(() => SetStatusAsync("Open configuration is not implemented yet."));
+        OpenConfigurationCommand = new RelayCommand(OpenConfigurationAsync);
         SaveConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save configuration is not implemented yet."));
         SaveAsConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save as is not implemented yet."));
         ReloadConfigurationCommand = new RelayCommand(() => SetStatusAsync("Configuration list refreshed."));
@@ -374,6 +375,60 @@ public sealed class MainViewModel : ObservableObject
         (LeftPath, RightPath) = (RightPath, LeftPath);
         SetStatusAsync("Left and right folders swapped.").GetAwaiter().GetResult();
         return Task.CompletedTask;
+    }
+
+    private Task OpenConfigurationAsync()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Open FreeFileSync configuration",
+            Filter = "FreeFileSync configurations (*.ffs_gui;*.ffs_batch)|*.ffs_gui;*.ffs_batch|XML files (*.xml)|*.xml|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return Task.CompletedTask;
+        }
+
+        var configuration = _configurationImporter.Import(dialog.FileName);
+        var firstPair = configuration.FolderPairs.FirstOrDefault();
+        if (firstPair is null)
+        {
+            return SetStatusAsync("No folder pair could be imported from the selected FreeFileSync configuration.");
+        }
+
+        LeftPath = firstPair.LeftPath;
+        RightPath = firstPair.RightPath;
+
+        if (configuration.SyncMode is { } syncMode)
+        {
+            SelectedMode = syncMode;
+        }
+
+        if (configuration.CompareMethod is { } compareMethod)
+        {
+            SelectedCompareMethod = compareMethod;
+        }
+
+        IncludePatterns = configuration.IncludePatterns;
+        ExcludePatterns = configuration.ExcludePatterns;
+        Operations.Clear();
+        OnOperationSummaryChanged();
+
+        Configurations.Insert(0, new ConfigurationItem
+        {
+            Name = Path.GetFileNameWithoutExtension(configuration.SourcePath),
+            LastSync = "Imported"
+        });
+
+        foreach (var warning in configuration.Warnings)
+        {
+            AddLog($"Import warning: {warning}");
+        }
+
+        return SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.");
     }
 
     private bool ShowDialog(string title, UIElement body)

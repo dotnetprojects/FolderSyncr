@@ -7,7 +7,7 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 1. Configuration and command-line compatibility
 
-- [ ] Import `.ffs_gui` and `.ffs_batch` XML files.
+- [x] Import `.ffs_gui` and `.ffs_batch` XML files.
 - [ ] Preserve multiple folder pairs from imported configurations instead of only the first pair.
 - [ ] Export FolderSyncr configurations to a native format.
 - [ ] Optionally export compatible FreeFileSync configuration files where the format is understood.
@@ -40,7 +40,7 @@ This list tracks the work needed to support the main features documented in the 
 
 - [x] Basic include/exclude filtering.
 - [ ] Match FreeFileSync filter syntax exactly.
-- [ ] Accept filter items separated by `|` or newlines.
+- [x] Accept filter items separated by `|` or newlines.
 - [ ] Support `*`, `?`, and `?*` wildcard semantics.
 - [ ] Support file-only filters with `:`.
 - [ ] Support folder-only filters with trailing `/` or `\`.
