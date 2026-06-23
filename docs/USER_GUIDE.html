@@ -169,17 +169,20 @@
 
     <section>
       <h2>Command Line</h2>
-      <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to open it at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair.</p>
+      <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair.</p>
+      <p>Use <code>FolderSyncr.Cli.exe</code> for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation.</p>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target</code></pre>
+      <pre><code>FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
+FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
+FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target</code></pre>
     </section>
 
     <section>
       <h2>Windows Task Scheduler</h2>
-      <p>FolderSyncr can be opened by Task Scheduler with a saved configuration. Create a basic task, choose <code>Start a program</code>, set the program to the full path of <code>FolderSyncr.exe</code>, and put the configuration path in <code>Add arguments</code>.</p>
+      <p>FolderSyncr can run unattended from Task Scheduler with a saved configuration. Create a basic task, choose <code>Start a program</code>, set the program to the full path of <code>FolderSyncr.Cli.exe</code>, and put the configuration path in <code>Add arguments</code>.</p>
       <pre><code>"C:\Path\To\Backup.foldersyncr.json"</code></pre>
       <p>To override the configured folders for a scheduled run, add <code>-dirpair</code> after the configuration path.</p>
       <pre><code>"C:\Path\To\Backup.foldersyncr.json" -dirpair "C:\Source" "D:\Target"</code></pre>
-      <p>FolderSyncr currently opens the UI for scheduled runs. A dedicated unattended runner with FreeFileSync-like exit codes is tracked in <code>TODO.md</code>.</p>
     </section>
 
     <section>

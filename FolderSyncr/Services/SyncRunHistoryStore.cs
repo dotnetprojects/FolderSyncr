@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace FolderSyncr.Services;
 
-public sealed class SyncRunHistoryStore
+public sealed class SyncRunHistoryStore(string? historyDirectory = null)
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
@@ -12,7 +12,7 @@ public sealed class SyncRunHistoryStore
 
     public string Save(SyncRunResult result)
     {
-        var directory = GetHistoryDirectory();
+        var directory = GetTargetHistoryDirectory();
         Directory.CreateDirectory(directory);
 
         var fileName = $"{result.StartTime:yyyyMMdd-HHmmss-fff}-{result.SyncResult}.json";
@@ -24,7 +24,7 @@ public sealed class SyncRunHistoryStore
 
     public IReadOnlyList<string> ListNewestFirst()
     {
-        var directory = GetHistoryDirectory();
+        var directory = GetTargetHistoryDirectory();
         return Directory.Exists(directory)
             ? Directory.EnumerateFiles(directory, "*.json").OrderByDescending(File.GetLastWriteTimeUtc).ToList()
             : [];
@@ -36,6 +36,11 @@ public sealed class SyncRunHistoryStore
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "FolderSyncr",
             "History");
+    }
+
+    private string GetTargetHistoryDirectory()
+    {
+        return string.IsNullOrWhiteSpace(historyDirectory) ? GetHistoryDirectory() : historyDirectory;
     }
 
     private static string SanitizeFileName(string fileName)

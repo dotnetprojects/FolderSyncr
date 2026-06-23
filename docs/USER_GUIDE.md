@@ -52,15 +52,23 @@ Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, c
 
 ## Command Line
 
-Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to open it at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.
+Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to `FolderSyncr.exe` to open it in the UI at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.
 
 ```powershell
 FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
 
+Use `FolderSyncr.Cli.exe` for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation.
+
+```powershell
+FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
+FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
+FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
+```
+
 ## Windows Task Scheduler
 
-FolderSyncr can be opened by Task Scheduler with a saved configuration. Create a basic task, choose `Start a program`, set the program to the full path of `FolderSyncr.exe`, and put the configuration path in `Add arguments`.
+FolderSyncr can run unattended from Task Scheduler with a saved configuration. Create a basic task, choose `Start a program`, set the program to the full path of `FolderSyncr.Cli.exe`, and put the configuration path in `Add arguments`.
 
 ```text
 "C:\Path\To\Backup.foldersyncr.json"
@@ -71,8 +79,6 @@ To override the configured folders for a scheduled run, add `-dirpair` after the
 ```text
 "C:\Path\To\Backup.foldersyncr.json" -dirpair "C:\Source" "D:\Target"
 ```
-
-FolderSyncr currently opens the UI for scheduled runs. A dedicated unattended runner with FreeFileSync-like exit codes is tracked in `TODO.md`.
 
 ## Path Macros
 

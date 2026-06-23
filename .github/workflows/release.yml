@@ -37,9 +37,23 @@ jobs:
       - name: Restore
         run: dotnet restore .\FolderSyncr.slnx
 
-      - name: Publish
+      - name: Publish WPF app
         run: >
           dotnet publish .\FolderSyncr\FolderSyncr.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --output .\artifacts\publish\FolderSyncr
+          /p:Version=${{ env.PACKAGE_VERSION }}
+          /p:AssemblyVersion=${{ env.ASSEMBLY_VERSION }}
+          /p:FileVersion=${{ env.ASSEMBLY_VERSION }}
+          /p:InformationalVersion=${{ env.PACKAGE_VERSION }}+${{ github.sha }}
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Publish CLI runner
+        run: >
+          dotnet publish .\FolderSyncr.Cli\FolderSyncr.Cli.csproj
           --configuration Release
           --runtime win-x64
           --self-contained true

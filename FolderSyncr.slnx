@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="FolderSyncr.Tests/FolderSyncr.Tests.csproj" />
+  <Project Path="FolderSyncr.Cli/FolderSyncr.Cli.csproj" />
   <Project Path="FolderSyncr/FolderSyncr.csproj" />
 </Solution>

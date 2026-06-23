@@ -15,12 +15,12 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Support `-dirpair <left> <right>` style path overrides.
 - [ ] Support merging multiple configuration files into one in-memory session.
 - [ ] Support alternate global settings files similar to `GlobalSettings.xml`.
-- [ ] Return process exit codes equivalent to FreeFileSync batch mode:
+- [x] Return process exit codes equivalent to FreeFileSync batch mode:
   - `0` success
   - `1` warnings
   - `2` errors
   - `3` cancelled
-- [ ] Emit script-friendly JSON after unattended synchronizations.
+- [x] Emit script-friendly JSON after unattended synchronizations.
 
 ## 2. Comparison features
 
@@ -69,7 +69,7 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 5. Batch jobs and automation
 
-- [ ] Create and run FolderSyncr batch jobs.
+- [x] Create and run FolderSyncr batch jobs.
 - [ ] Add minimized/background run mode.
 - [ ] Add auto-close after successful unattended sync.
 - [ ] Add configurable error handling:
@@ -77,7 +77,7 @@ This list tracks the work needed to support the main features documented in the 
   - [ ] Ignore errors
   - [ ] Cancel on first error
 - [x] Document Windows Task Scheduler usage.
-- [ ] Add a CLI runner project or app mode for scheduled jobs.
+- [x] Add a CLI runner project or app mode for scheduled jobs.
 
 ## 6. Logs and scripting
 

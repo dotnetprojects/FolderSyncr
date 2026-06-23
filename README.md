@@ -33,6 +33,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Import FreeFileSync `.ffs_gui`, `.ffs_batch`, and `.ffs_real` configurations.
 - Import FreeFileSync JSON results and log files.
 - Store local sync run history as FreeFileSync-like JSON.
+- Run saved configurations unattended with `FolderSyncr.Cli`, FreeFileSync-like exit codes, and JSON output.
 - Save, open, and reload native `.foldersyncr.json` configurations.
 - Expand environment variables in folder paths.
 - Expand date/time macros in folder paths.
@@ -67,7 +68,7 @@ dotnet test .\FolderSyncr.slnx
 
 ## Release Builds
 
-When a GitHub release is published, the release workflow builds `FolderSyncr` for `win-x64`, applies the release tag as the application version, creates a ZIP, and uploads it to the release assets.
+When a GitHub release is published, the release workflow builds `FolderSyncr.exe` and `FolderSyncr.Cli.exe` for `win-x64`, applies the release tag as the application version, creates a ZIP, and uploads it to the release assets.
 
 Recommended release tag format:
 
@@ -98,6 +99,14 @@ Override the left and right folders at startup:
 ```powershell
 dotnet run --project .\FolderSyncr\FolderSyncr.csproj -- .\Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
+
+Run a saved configuration unattended:
+
+```powershell
+dotnet run --project .\FolderSyncr.Cli\FolderSyncr.Cli.csproj -- .\Backup.foldersyncr.json --json .\result.json
+```
+
+`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, and exits with `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--dry-run` to compare without applying changes.
 
 ## How To Use
 
