@@ -190,6 +190,15 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
     </section>
 
     <section>
+      <h2>Startup And Service-Style Usage</h2>
+      <p><code>FolderSyncr.Cli</code> is the recommended executable for unattended background jobs. It runs one saved configuration, writes a machine-readable JSON result, returns a process exit code, and exits. For service-style operation, create one or more Task Scheduler tasks with triggers such as <code>At log on</code>, <code>On a schedule</code>, <code>On workstation unlock</code>, or <code>On idle</code>.</p>
+      <p>Use the WPF app when someone should review the comparison preview. You can start it with a saved configuration and <code>--minimized</code> when you want the session loaded but do not want the window in front immediately.</p>
+      <pre><code>FolderSyncr.exe Backup.foldersyncr.json --minimized
+FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\History\latest.json"</code></pre>
+      <p>If a task must use a different folder pair than the saved configuration, add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to either executable.</p>
+    </section>
+
+    <section>
       <h2>Path Macros</h2>
       <p>Folder paths can use Windows environment variables such as <code>%USERPROFILE%\Documents</code> or <code>%OneDrive%\Backup</code>. FolderSyncr expands them before comparing or synchronizing.</p>
       <p>FolderSyncr also expands date/time macros: <code>%Date%</code>, <code>%Time%</code>, <code>%TimeStamp%</code>, <code>%Year%</code>, <code>%Month%</code>, <code>%MonthName%</code>, <code>%Day%</code>, <code>%Hour%</code>, <code>%Min%</code>, <code>%Sec%</code>, <code>%WeekDay%</code>, <code>%WeekDayName%</code>, and <code>%Week%</code>.</p>

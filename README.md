@@ -115,6 +115,8 @@ dotnet run --project .\FolderSyncr.Cli\FolderSyncr.Cli.csproj -- .\Backup.folder
 
 `FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--dry-run` to compare without applying changes, `--error-handling show|ignore|cancel` to control per-item sync errors, and `--symbolic-links skip|follow|copy` to control symbolic links.
 
+For service-style usage, run `FolderSyncr.Cli` from Windows Task Scheduler at logon, on a schedule, on workstation unlock, or on idle. Use the WPF app with `--minimized` only when a user should still be able to review the session interactively.
+
 ## How To Use
 
 The short version is: choose two folders, click `Compare`, review the preview, then click `Synchronize`.

@@ -85,6 +85,19 @@ To override the configured folders for a scheduled run, add `-dirpair` after the
 "C:\Path\To\Backup.foldersyncr.json" -dirpair "C:\Source" "D:\Target"
 ```
 
+## Startup And Service-Style Usage
+
+FolderSyncr.Cli is the recommended executable for unattended background jobs. It runs one saved configuration, writes a machine-readable JSON result, returns a process exit code, and exits. For service-style operation, create one or more Task Scheduler tasks with triggers such as `At log on`, `On a schedule`, `On workstation unlock`, or `On idle`.
+
+Use the WPF app when someone should review the comparison preview. You can start it with a saved configuration and `--minimized` when you want the session loaded but do not want the window in front immediately.
+
+```powershell
+FolderSyncr.exe Backup.foldersyncr.json --minimized
+FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\History\latest.json"
+```
+
+If a task must use a different folder pair than the saved configuration, add `-dirpair <left> <right>` to either executable.
+
 ## Path Macros
 
 Folder paths can use Windows environment variables such as `%USERPROFILE%\Documents` or `%OneDrive%\Backup`. FolderSyncr expands them before comparing or synchronizing.

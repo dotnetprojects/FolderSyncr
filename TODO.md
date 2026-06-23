@@ -123,7 +123,7 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Monitor configured folders for changes.
 - [ ] Run a configured sync after an idle delay.
 - [ ] Expose change variables such as changed path and action.
-- [ ] Document startup and service-style usage.
+- [x] Document startup and service-style usage.
 
 ## 11. Variable drive letters and shadow copy
 
