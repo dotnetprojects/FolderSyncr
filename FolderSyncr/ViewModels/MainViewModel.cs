@@ -222,6 +222,38 @@ public sealed class MainViewModel : ObservableObject
     public int LeftFileCount => Operations.Count(operation => operation.Left is not null);
     public int RightFileCount => Operations.Count(operation => operation.Right is not null);
 
+    public Task ApplyStartupOptionsAsync(CommandLineStartupOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.ConfigurationPath))
+        {
+            if (!File.Exists(options.ConfigurationPath))
+            {
+                return SetStatusAsync($"Startup configuration was not found: {options.ConfigurationPath}");
+            }
+
+            OpenConfigurationFile(options.ConfigurationPath);
+        }
+
+        if (!string.IsNullOrWhiteSpace(options.OverrideLeftPath) || !string.IsNullOrWhiteSpace(options.OverrideRightPath))
+        {
+            if (!string.IsNullOrWhiteSpace(options.OverrideLeftPath))
+            {
+                LeftPath = options.OverrideLeftPath;
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.OverrideRightPath))
+            {
+                RightPath = options.OverrideRightPath;
+            }
+
+            Operations.Clear();
+            OnOperationSummaryChanged();
+            return SetStatusAsync("Startup folder pair override applied.");
+        }
+
+        return Task.CompletedTask;
+    }
+
     private async Task BrowseAsync(bool isLeft)
     {
         var dialog = new Microsoft.Win32.OpenFolderDialog
@@ -397,16 +429,31 @@ public sealed class MainViewModel : ObservableObject
             return Task.CompletedTask;
         }
 
-        if (IsNativeConfigurationPath(dialog.FileName))
+        return OpenConfigurationFileAsync(dialog.FileName);
+    }
+
+    private Task OpenConfigurationFileAsync(string path)
+    {
+        OpenConfigurationFile(path);
+        return Task.CompletedTask;
+    }
+
+    private void OpenConfigurationFile(string path)
+    {
+        if (IsNativeConfigurationPath(path))
         {
-            return LoadNativeConfigurationAsync(dialog.FileName);
+            var nativeConfiguration = _configurationStore.Load(path);
+            ApplyNativeConfiguration(path, nativeConfiguration);
+            SetStatusAsync($"Opened {Path.GetFileName(path)}.").GetAwaiter().GetResult();
+            return;
         }
 
-        var configuration = _configurationImporter.Import(dialog.FileName);
+        var configuration = _configurationImporter.Import(path);
         var firstPair = configuration.FolderPairs.FirstOrDefault();
         if (firstPair is null)
         {
-            return SetStatusAsync("No folder pair could be imported from the selected FreeFileSync configuration.");
+            SetStatusAsync("No folder pair could be imported from the selected FreeFileSync configuration.").GetAwaiter().GetResult();
+            return;
         }
 
         LeftPath = firstPair.LeftPath;
@@ -439,7 +486,7 @@ public sealed class MainViewModel : ObservableObject
             AddLog($"Import warning: {warning}");
         }
 
-        return SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.");
+        SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.").GetAwaiter().GetResult();
     }
 
     private Task NewConfigurationAsync()

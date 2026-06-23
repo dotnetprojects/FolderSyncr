@@ -71,6 +71,18 @@ FolderSyncr-v1.2.3-win-x64.zip
 dotnet run --project .\FolderSyncr\FolderSyncr.csproj
 ```
 
+Open a configuration at startup:
+
+```powershell
+dotnet run --project .\FolderSyncr\FolderSyncr.csproj -- .\Backup.foldersyncr.json
+```
+
+Override the left and right folders at startup:
+
+```powershell
+dotnet run --project .\FolderSyncr\FolderSyncr.csproj -- .\Backup.foldersyncr.json -dirpair C:\Source D:\Target
+```
+
 ## How To Use
 
 The short version is: choose two folders, click `Compare`, review the preview, then click `Synchronize`.

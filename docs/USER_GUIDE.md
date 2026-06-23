@@ -40,6 +40,14 @@ Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or l
 
 Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, compare method, filters, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
 
+## Command Line
+
+Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to open it at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.
+
+```powershell
+FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
+```
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.

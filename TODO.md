@@ -11,8 +11,8 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Preserve multiple folder pairs from imported configurations instead of only the first pair.
 - [x] Export FolderSyncr configurations to a native format.
 - [ ] Optionally export compatible FreeFileSync configuration files where the format is understood.
-- [ ] Support command-line startup with a configuration file.
-- [ ] Support `-dirpair <left> <right>` style path overrides.
+- [x] Support command-line startup with a configuration file.
+- [x] Support `-dirpair <left> <right>` style path overrides.
 - [ ] Support merging multiple configuration files into one in-memory session.
 - [ ] Support alternate global settings files similar to `GlobalSettings.xml`.
 - [ ] Return process exit codes equivalent to FreeFileSync batch mode:
