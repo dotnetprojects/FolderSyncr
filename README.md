@@ -125,6 +125,8 @@ The short version is: choose two folders, click `Compare`, review the preview, t
 
 For the full walkthrough, see [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
+For the MTP/portable-device implementation investigation, see [docs/MTP_SUPPORT_INVESTIGATION.md](docs/MTP_SUPPORT_INVESTIGATION.md).
+
 ## Filters
 
 Filters follow the FreeFileSync wildcard syntax. Use `|` or new lines between items; FolderSyncr also accepts semicolons and commas for older native configurations. Folder rules match all descendant files.
