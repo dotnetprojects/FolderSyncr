@@ -169,7 +169,7 @@ Use the funnel button in the top command bar to edit include and exclude filters
 
 - Use the gear button to edit synchronization mode and comparison method.
 - Use the `View` menu to reopen the Configuration and Overview panes after closing them.
-- Use the bottom overview button to reopen the Overview pane.
+- Use the bottom overview button to reopen the Overview pane, and select an Overview row to show only that folder group in the file grid.
 - Use the bottom `*`, `==`, `=>`, `<=`, `X<`, `>X`, and `!` buttons to filter the file grid by all items, equal items, left-to-right copies, right-to-left copies, left deletes, right deletes, or conflicts.
 
 ## Theme

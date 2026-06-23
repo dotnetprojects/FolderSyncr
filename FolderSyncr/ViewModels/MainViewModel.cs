@@ -41,6 +41,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _isConfigurationVisible = true;
     private bool _isOverviewVisible = true;
     private OperationViewFilter _operationViewFilter = OperationViewFilter.All;
+    private string? _overviewFolderFilter;
+    private OverviewItem? _selectedOverviewItem;
 
     public MainViewModel()
     {
@@ -93,6 +95,18 @@ public sealed class MainViewModel : ObservableObject
     ];
 
     public ObservableCollection<OverviewItem> OverviewRows { get; } = [];
+
+    public OverviewItem? SelectedOverviewItem
+    {
+        get => _selectedOverviewItem;
+        set
+        {
+            if (SetProperty(ref _selectedOverviewItem, value))
+            {
+                SetOverviewFolderFilter(value);
+            }
+        }
+    }
 
     public IReadOnlyList<SyncMode> SyncModes { get; } = Enum.GetValues<SyncMode>();
     public IReadOnlyList<CompareMethod> CompareMethods { get; } = Enum.GetValues<CompareMethod>();
@@ -1082,6 +1096,12 @@ public sealed class MainViewModel : ObservableObject
     private Task SetOperationViewFilterAsync(OperationViewFilter filter)
     {
         _operationViewFilter = filter;
+        if (filter == OperationViewFilter.All && _overviewFolderFilter is not null)
+        {
+            _overviewFolderFilter = null;
+            SetSelectedOverviewItemSilently(null);
+        }
+
         OperationsView.Refresh();
 
         var label = filter switch
@@ -1097,6 +1117,21 @@ public sealed class MainViewModel : ObservableObject
         };
 
         return SetStatusAsync($"Showing {label}.");
+    }
+
+    private void SetOverviewFolderFilter(OverviewItem? item)
+    {
+        _overviewFolderFilter = item?.Folder;
+        if (item is not null)
+        {
+            _operationViewFilter = OperationViewFilter.All;
+        }
+
+        OperationsView.Refresh();
+        if (item is not null)
+        {
+            SetStatusAsync($"Showing overview folder {item.Folder}.").GetAwaiter().GetResult();
+        }
     }
 
     public Task OpenOperationSideAsync(SyncOperation operation, bool openLeftSide)
@@ -1338,6 +1373,8 @@ public sealed class MainViewModel : ObservableObject
             operation.PropertyChanged -= Operation_PropertyChanged;
         }
 
+        _overviewFolderFilter = null;
+        SetSelectedOverviewItemSilently(null);
         Operations.Clear();
     }
 
@@ -1352,6 +1389,12 @@ public sealed class MainViewModel : ObservableObject
     private bool FilterOperation(object item)
     {
         if (item is not SyncOperation operation)
+        {
+            return false;
+        }
+
+        if (_overviewFolderFilter is not null
+            && !string.Equals(GetTopFolder(operation.RelativePath), _overviewFolderFilter, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -1402,6 +1445,12 @@ public sealed class MainViewModel : ObservableObject
         var normalized = relativePath.Replace('\\', '/');
         var slash = normalized.IndexOf('/');
         return slash > 0 ? normalized[..slash] : "Files";
+    }
+
+    private void SetSelectedOverviewItemSilently(OverviewItem? item)
+    {
+        _selectedOverviewItem = item;
+        OnPropertyChanged(nameof(SelectedOverviewItem));
     }
 
     private static string FormatBytes(long bytes)

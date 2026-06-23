@@ -641,6 +641,8 @@
                         </Border>
                         <DataGrid Grid.Row="1"
                                   ItemsSource="{Binding OverviewRows}"
+                                  SelectedItem="{Binding SelectedOverviewItem, Mode=TwoWay}"
+                                  SelectionMode="Single"
                                   Margin="1">
                             <DataGrid.Columns>
                                 <DataGridTemplateColumn Header="Folder" Width="*">
