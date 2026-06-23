@@ -54,6 +54,8 @@ Folder paths can use Windows environment variables such as `%USERPROFILE%\Docume
 
 FolderSyncr also expands date/time macros: `%Date%`, `%Time%`, `%TimeStamp%`, `%Year%`, `%Month%`, `%MonthName%`, `%Day%`, `%Hour%`, `%Min%`, `%Sec%`, `%WeekDay%`, `%WeekDayName%`, and `%Week%`.
 
+Windows special-folder macros are supported for common locations, including `%csidl_Desktop%`, `%csidl_Documents%`, `%csidl_Pictures%`, `%csidl_Music%`, `%csidl_Videos%`, `%csidl_Downloads%`, `%csidl_Favorites%`, `%csidl_StartMenu%`, `%csidl_Programs%`, `%csidl_Startup%`, `%csidl_Templates%`, and public document/media variants.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.

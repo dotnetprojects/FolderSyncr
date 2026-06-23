@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 
 namespace FolderSyncr.Services;
@@ -22,6 +23,11 @@ public static partial class PathMacroExpander
         return MacroRegex().Replace(path, match =>
         {
             var macro = match.Groups["name"].Value;
+            if (TryExpandSpecialFolder(macro, out var specialFolderPath))
+            {
+                return specialFolderPath;
+            }
+
             return macro.ToUpperInvariant() switch
             {
                 "DATE" => now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
@@ -42,11 +48,43 @@ public static partial class PathMacroExpander
         });
     }
 
+    private static bool TryExpandSpecialFolder(string macro, out string path)
+    {
+        path = string.Empty;
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+        path = macro.ToUpperInvariant() switch
+        {
+            "CSIDL_DESKTOP" => Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            "CSIDL_DOCUMENTS" => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "CSIDL_PICTURES" => Environment.GetFolderPath(Environment.SpecialFolder.MyPictures),
+            "CSIDL_MUSIC" => Environment.GetFolderPath(Environment.SpecialFolder.MyMusic),
+            "CSIDL_VIDEOS" => Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CSIDL_DOWNLOADS" => Path.Combine(userProfile, "Downloads"),
+            "CSIDL_FAVORITES" => Environment.GetFolderPath(Environment.SpecialFolder.Favorites),
+            "CSIDL_RESOURCES" => Environment.GetFolderPath(Environment.SpecialFolder.Resources),
+            "CSIDL_QUICKLAUNCH" => Path.Combine(appData, "Microsoft", "Internet Explorer", "Quick Launch"),
+            "CSIDL_STARTMENU" => Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
+            "CSIDL_PROGRAMS" => Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+            "CSIDL_STARTUP" => Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+            "CSIDL_NETHOOD" => Environment.GetFolderPath(Environment.SpecialFolder.NetworkShortcuts),
+            "CSIDL_TEMPLATES" => Environment.GetFolderPath(Environment.SpecialFolder.Templates),
+            "CSIDL_PUBLICDOCUMENTS" => Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments),
+            "CSIDL_PUBLICPICTURES" => Environment.GetFolderPath(Environment.SpecialFolder.CommonPictures),
+            "CSIDL_PUBLICMUSIC" => Environment.GetFolderPath(Environment.SpecialFolder.CommonMusic),
+            "CSIDL_PUBLICVIDEOS" => Environment.GetFolderPath(Environment.SpecialFolder.CommonVideos),
+            _ => string.Empty
+        };
+
+        return !string.IsNullOrWhiteSpace(path);
+    }
+
     private static int GetWeekDay(DateTime now)
     {
         return now.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)now.DayOfWeek;
     }
 
-    [GeneratedRegex("%(?<name>Date|Time|TimeStamp|Year|Month|MonthName|Day|Hour|Min|Sec|WeekDay|WeekDayName|Week)%", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    [GeneratedRegex("%(?<name>Date|Time|TimeStamp|Year|Month|MonthName|Day|Hour|Min|Sec|WeekDay|WeekDayName|Week|csidl_[A-Za-z]+)%", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex MacroRegex();
 }

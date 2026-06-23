@@ -52,4 +52,34 @@ public sealed class PathMacroExpanderTests
 
         Assert.AreEqual("2-Tue-26", expanded);
     }
+
+    [TestMethod]
+    public void ExpandResolvesSpecialFolderMacros()
+    {
+        var expected = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+            "Backup");
+
+        var expanded = PathMacroExpander.Expand(@"%csidl_Desktop%\Backup");
+
+        Assert.AreEqual(expected, expanded);
+    }
+
+    [TestMethod]
+    public void ExpandResolvesPublicSpecialFolderMacros()
+    {
+        var expected = Environment.GetFolderPath(Environment.SpecialFolder.CommonDocuments);
+
+        var expanded = PathMacroExpander.Expand("%csidl_PublicDocuments%");
+
+        Assert.AreEqual(expected, expanded);
+    }
+
+    [TestMethod]
+    public void ExpandLeavesUnknownSpecialFolderMacrosUnchanged()
+    {
+        var expanded = PathMacroExpander.Expand("%csidl_NotARealFolder%");
+
+        Assert.AreEqual("%csidl_NotARealFolder%", expanded);
+    }
 }
