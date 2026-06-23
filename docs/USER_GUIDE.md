@@ -64,6 +64,17 @@ Use `File` -> `Save` or `Save as` to store the current folder pair, any preserve
 
 Use `File` -> `Export FreeFileSync configuration` to write a compatible `.ffs_gui` file. The export includes the current or preserved folder pairs, comparison method, standard synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as custom rules, theme, recycle-bin deletion, and versioning options stay in the native `.foldersyncr.json` format.
 
+## Remote Folders
+
+Use an SFTP URI in either folder field to compare and synchronize with an SSH file server:
+
+```text
+sftp://user:password@example.com/backups
+sftp://user:p%40ss@example.com:2222/backups
+```
+
+FolderSyncr supports SFTP scanning, time/size or content-hash comparison, copying in either direction, and permanent remote delete. Recycle-bin and versioning-folder deletion are local-folder features, so choose permanent delete when a synchronization can delete files on an SFTP side.
+
 ## Command Line
 
 Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to `FolderSyncr.exe` to open it in the UI at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.

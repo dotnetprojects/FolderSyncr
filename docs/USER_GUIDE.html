@@ -181,6 +181,14 @@
     </section>
 
     <section>
+      <h2>Remote Folders</h2>
+      <p>Use an SFTP URI in either folder field to compare and synchronize with an SSH file server:</p>
+      <pre><code>sftp://user:password@example.com/backups
+sftp://user:p%40ss@example.com:2222/backups</code></pre>
+      <p>FolderSyncr supports SFTP scanning, time/size or content-hash comparison, copying in either direction, and permanent remote delete. Recycle-bin and versioning-folder deletion are local-folder features, so choose permanent delete when a synchronization can delete files on an SFTP side.</p>
+    </section>
+
+    <section>
       <h2>Command Line</h2>
       <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair, or <code>--minimized</code> to start the WPF app minimized.</p>
       <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--var NAME=VALUE</code> to define temporary environment variables for this run, <code>--watch</code> to monitor configured folders continuously, <code>--idle &lt;seconds&gt;</code> to set the realtime idle delay, <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error, and <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>

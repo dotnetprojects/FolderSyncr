@@ -30,6 +30,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Result-grid double-click plus context menu actions for opening items, copying relative paths, and include/exclude filters.
 - Volume-label paths like `[Backup-Disk]\folder` and volume GUID paths like `\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder` for removable drives.
 - UNC paths like `\\server\share\folder` and extended UNC paths like `\\?\UNC\server\share\folder`, with clear unavailable-share errors.
+- SFTP roots such as `sftp://user:password@example.com/backups` for comparing, copying, and permanently deleting remote files.
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui`, `.ffs_batch`, and `.ffs_real` configurations.

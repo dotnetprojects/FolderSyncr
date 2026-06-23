@@ -24,15 +24,17 @@ public sealed class SyncEngine
     {
         options = ExpandOptions(options);
         ValidateOptions(options);
+        var leftStorage = CreateStorage(options.LeftPath);
+        var rightStorage = CreateStorage(options.RightPath);
 
         progress?.Report("Scanning left folder...");
-        var leftFiles = await ScanAsync(options.LeftPath, options.CompareMethod, options, progress, cancellationToken);
+        var leftFiles = await leftStorage.ScanAsync(options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Scanning right folder...");
-        var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
+        var rightFiles = await rightStorage.ScanAsync(options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
-        var syncDatabase = options.Mode == SyncMode.TwoWay
+        var syncDatabase = options.Mode == SyncMode.TwoWay && !leftStorage.IsRemote && !rightStorage.IsRemote
             ? _syncDatabaseStore.LoadPair(options.LeftPath, options.RightPath)
             : null;
         return BuildOperations(
@@ -54,8 +56,10 @@ public sealed class SyncEngine
     {
         options = ExpandOptions(options);
         ValidateOptions(options);
+        var leftStorage = CreateStorage(options.LeftPath);
+        var rightStorage = CreateStorage(options.RightPath);
 
-        var locks = AcquireSyncLocks(options);
+        var locks = AcquireSyncLocks(options, leftStorage, rightStorage);
         try
         {
             var executable = operations.Where(operation => operation.ShouldExecute).ToList();
@@ -77,7 +81,7 @@ public sealed class SyncEngine
                 operation.Status = "Running";
                 try
                 {
-                    await ExecuteOperationAsync(operation, options, progress, cancellationToken);
+                    await ExecuteOperationAsync(operation, options, leftStorage, rightStorage, progress, cancellationToken);
                     operation.Status = "Done";
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException && options.ErrorHandling == SyncErrorHandling.IgnoreErrors)
@@ -112,22 +116,24 @@ public sealed class SyncEngine
     private static async Task ExecuteOperationAsync(
         SyncOperation operation,
         SyncOptions options,
+        ISyncStorage leftStorage,
+        ISyncStorage rightStorage,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
         switch (operation.Kind)
         {
             case OperationKind.CopyLeftToRight:
-                await CopyAsync(operation.Left!, options.RightPath, options, progress, cancellationToken);
+                await CopyAsync(operation.Left!, leftStorage, rightStorage, options, progress, cancellationToken);
                 break;
             case OperationKind.CopyRightToLeft:
-                await CopyAsync(operation.Right!, options.LeftPath, options, progress, cancellationToken);
+                await CopyAsync(operation.Right!, rightStorage, leftStorage, options, progress, cancellationToken);
                 break;
             case OperationKind.DeleteLeft:
-                DeleteFile(operation.Left!, options, progress);
+                await leftStorage.DeleteFileAsync(operation.Left!, options, progress, cancellationToken);
                 break;
             case OperationKind.DeleteRight:
-                DeleteFile(operation.Right!, options, progress);
+                await rightStorage.DeleteFileAsync(operation.Right!, options, progress, cancellationToken);
                 break;
         }
     }
@@ -621,13 +627,11 @@ public sealed class SyncEngine
         };
     }
 
-    private static IReadOnlyList<FileStream> AcquireSyncLocks(SyncOptions options)
+    private static IReadOnlyList<FileStream> AcquireSyncLocks(SyncOptions options, ISyncStorage leftStorage, ISyncStorage rightStorage)
     {
-        var lockPaths = new[]
-        {
-            Path.Combine(options.LeftPath, LockFileName),
-            Path.Combine(options.RightPath, LockFileName)
-        }
+        var lockPaths = new[] { (Path: options.LeftPath, Storage: leftStorage), (Path: options.RightPath, Storage: rightStorage) }
+        .Where(item => !item.Storage.IsRemote)
+        .Select(item => Path.Combine(item.Path, LockFileName))
         .Distinct(StringComparer.OrdinalIgnoreCase)
         .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
         .ToList();
@@ -661,43 +665,45 @@ public sealed class SyncEngine
 
     private static async Task CopyAsync(
         FileSnapshot source,
-        string destinationRoot,
+        ISyncStorage sourceStorage,
+        ISyncStorage destinationStorage,
         SyncOptions options,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
-        var destinationPath = Path.Combine(destinationRoot, source.RelativePath);
-        var destinationDirectory = Path.GetDirectoryName(destinationPath);
-
-        if (!string.IsNullOrEmpty(destinationDirectory))
-        {
-            Directory.CreateDirectory(destinationDirectory);
-        }
-
         progress?.Report($"Copy {source.RelativePath}");
         if (source.IsSymbolicLink && source.LinkTarget is not null && options.SymbolicLinkHandling == SymbolicLinkHandling.CopyLinksAsLinks)
         {
-            if (File.Exists(destinationPath))
+            if (!sourceStorage.IsRemote && !destinationStorage.IsRemote)
             {
-                File.Delete(destinationPath);
+                var destinationPath = GetFullDestinationPath(destinationStorage, source.RelativePath);
+                var destinationDirectory = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(destinationDirectory))
+                {
+                    Directory.CreateDirectory(destinationDirectory);
+                }
+
+                if (File.Exists(destinationPath))
+                {
+                    File.Delete(destinationPath);
+                }
+
+                File.CreateSymbolicLink(destinationPath, source.LinkTarget);
+                return;
             }
 
-            File.CreateSymbolicLink(destinationPath, source.LinkTarget);
-            return;
+            throw new NotSupportedException("Copying symbolic links as links is supported only for local folder pairs.");
         }
 
-        await using (var input = File.Open(source.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-        await using (var output = File.Open(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        await using (var input = await sourceStorage.OpenReadAsync(source, cancellationToken))
         {
-            await input.CopyToAsync(output, cancellationToken);
+            await destinationStorage.WriteFileAsync(source.RelativePath, input, source.LastWriteTimeUtc, options, cancellationToken);
         }
-
-        File.SetLastWriteTimeUtc(destinationPath, source.LastWriteTimeUtc);
 
         if (options.VerifyCopiedFiles)
         {
             progress?.Report($"Verify {source.RelativePath}");
-            if (!await FilesAreEqualAsync(source.FullPath, destinationPath, cancellationToken))
+            if (!await FilesAreEqualAsync(source, sourceStorage, destinationStorage, cancellationToken))
             {
                 throw new IOException($"Verification failed after copying {source.RelativePath}.");
             }
@@ -808,14 +814,17 @@ public sealed class SyncEngine
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
-        if (options.DryRun || options.Mode != SyncMode.TwoWay)
+        if (options.DryRun
+            || options.Mode != SyncMode.TwoWay
+            || RemoteSyncRoot.IsRemotePath(options.LeftPath)
+            || RemoteSyncRoot.IsRemotePath(options.RightPath))
         {
             return;
         }
 
         progress?.Report("Updating sync database...");
-        var leftFiles = await ScanAsync(options.LeftPath, options.CompareMethod, options, progress, cancellationToken);
-        var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
+        var leftFiles = await new LocalSyncStorage(options.LeftPath).ScanAsync(options.CompareMethod, options, progress, cancellationToken);
+        var rightFiles = await new LocalSyncStorage(options.RightPath).ScanAsync(options.CompareMethod, options, progress, cancellationToken);
         _syncDatabaseStore.SavePair(options.LeftPath, options.RightPath, leftFiles, rightFiles);
     }
 
@@ -840,17 +849,16 @@ public sealed class SyncEngine
         return Convert.ToHexString(hash);
     }
 
-    private static async Task<bool> FilesAreEqualAsync(string leftPath, string rightPath, CancellationToken cancellationToken)
+    private static async Task<bool> FilesAreEqualAsync(
+        FileSnapshot source,
+        ISyncStorage sourceStorage,
+        ISyncStorage destinationStorage,
+        CancellationToken cancellationToken)
     {
-        var leftInfo = new FileInfo(leftPath);
-        var rightInfo = new FileInfo(rightPath);
-        if (leftInfo.Length != rightInfo.Length)
-        {
-            return false;
-        }
-
-        await using var left = File.Open(leftPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await using var right = File.Open(rightPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var left = await sourceStorage.OpenReadAsync(source, cancellationToken);
+        await using var right = await destinationStorage.OpenReadAsync(
+            new FileSnapshot(destinationStorage.Root, source.RelativePath, GetFullDestinationPath(destinationStorage, source.RelativePath), source.Length, source.LastWriteTimeUtc, null),
+            cancellationToken);
 
         var leftBuffer = new byte[81920];
         var rightBuffer = new byte[81920];
@@ -877,44 +885,68 @@ public sealed class SyncEngine
 
     private static void ValidateOptions(SyncOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.LeftPath) || !Directory.Exists(options.LeftPath))
+        ValidatePath(options.LeftPath, "left");
+        ValidatePath(options.RightPath, "right");
+    }
+
+    private static void ValidatePath(string path, string side)
+    {
+        if (RemoteSyncRoot.TryParse(path, out var remoteRoot))
         {
-            if (PathMacroExpander.GetVolumeLabelReference(options.LeftPath) is { } volumeLabel)
+            var parsedRoot = remoteRoot ?? throw new InvalidOperationException($"The {side} remote path is invalid.");
+            if (parsedRoot.Protocol == RemoteSyncProtocol.Ftp)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(parsedRoot.Username) || string.IsNullOrEmpty(parsedRoot.Password))
+            {
+                throw new InvalidOperationException($"The {side} SFTP path must include a user name and password.");
+            }
+
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
+        {
+            if (PathMacroExpander.GetVolumeLabelReference(path) is { } volumeLabel)
             {
                 throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
             }
 
-            if (PathMacroExpander.GetVolumeGuidReference(options.LeftPath) is { } volumeGuid)
+            if (PathMacroExpander.GetVolumeGuidReference(path) is { } volumeGuid)
             {
                 throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
             }
 
-            if (PathMacroExpander.GetUncShareRoot(options.LeftPath) is { } uncRoot && !Directory.Exists(uncRoot))
+            if (PathMacroExpander.GetUncShareRoot(path) is { } uncRoot && !Directory.Exists(uncRoot))
             {
                 throw new DirectoryNotFoundException($"Network share '{uncRoot}' is not available.");
             }
 
-            throw new DirectoryNotFoundException("Choose an existing left folder.");
+            throw new DirectoryNotFoundException($"Choose an existing {side} folder.");
         }
+    }
 
-        if (string.IsNullOrWhiteSpace(options.RightPath) || !Directory.Exists(options.RightPath))
+    private static ISyncStorage CreateStorage(string root)
+    {
+        if (RemoteSyncRoot.TryParse(root, out var remoteRoot))
         {
-            if (PathMacroExpander.GetVolumeLabelReference(options.RightPath) is { } volumeLabel)
+            var parsedRoot = remoteRoot ?? throw new InvalidOperationException("The remote path is invalid.");
+            return parsedRoot.Protocol switch
             {
-                throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
-            }
-
-            if (PathMacroExpander.GetVolumeGuidReference(options.RightPath) is { } volumeGuid)
-            {
-                throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
-            }
-
-            if (PathMacroExpander.GetUncShareRoot(options.RightPath) is { } uncRoot && !Directory.Exists(uncRoot))
-            {
-                throw new DirectoryNotFoundException($"Network share '{uncRoot}' is not available.");
-            }
-
-            throw new DirectoryNotFoundException("Choose an existing right folder.");
+                RemoteSyncProtocol.Sftp => new SftpSyncStorage(parsedRoot),
+                _ => throw new NotSupportedException("FTP support is not implemented yet.")
+            };
         }
+
+        return new LocalSyncStorage(root);
+    }
+
+    private static string GetFullDestinationPath(ISyncStorage destinationStorage, string relativePath)
+    {
+        return RemoteSyncRoot.TryParse(destinationStorage.Root, out var remoteRoot)
+            ? remoteRoot!.Combine(relativePath)
+            : Path.Combine(destinationStorage.Root, relativePath);
     }
 }
