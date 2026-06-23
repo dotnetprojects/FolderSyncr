@@ -88,6 +88,8 @@ Windows special-folder macros are supported for common locations, including `%cs
 
 The settings dialog also includes a file time tolerance in seconds. The default is `2`, which avoids false differences on file systems with coarse timestamp precision.
 
+Enable `Verify copied files by binary compare` in the settings dialog when you want FolderSyncr to read copied files back and compare them byte-for-byte before marking the copy operation as done.
+
 ## Preview Actions
 
 - `=>`: copy from left to right.

@@ -26,6 +26,7 @@ public sealed class MainViewModel : ObservableObject
     private SyncMode _selectedMode = SyncMode.TwoWay;
     private CompareMethod _selectedCompareMethod = CompareMethod.TimeAndSize;
     private int _fileTimeToleranceSeconds = 2;
+    private bool _verifyCopiedFiles;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -151,6 +152,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _fileTimeToleranceSeconds;
         set => SetProperty(ref _fileTimeToleranceSeconds, Math.Max(0, value));
+    }
+
+    public bool VerifyCopiedFiles
+    {
+        get => _verifyCopiedFiles;
+        set => SetProperty(ref _verifyCopiedFiles, value);
     }
 
     public string IncludePatterns
@@ -369,6 +376,13 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var verifyBox = new CheckBox
+        {
+            Content = "Verify copied files by binary compare",
+            IsChecked = VerifyCopiedFiles,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -376,6 +390,7 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(compareBox);
         content.Children.Add(new TextBlock { Text = "File time tolerance in seconds", FontWeight = FontWeights.SemiBold });
         content.Children.Add(toleranceBox);
+        content.Children.Add(verifyBox);
 
         if (ShowDialog("Comparison settings", content))
         {
@@ -387,7 +402,8 @@ public sealed class MainViewModel : ObservableObject
             }
 
             FileTimeToleranceSeconds = toleranceSeconds;
-            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {FileTimeToleranceSeconds}s tolerance.").GetAwaiter().GetResult();
+            VerifyCopiedFiles = verifyBox.IsChecked == true;
+            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {FileTimeToleranceSeconds}s tolerance, verify copies {VerifyCopiedFiles}.").GetAwaiter().GetResult();
         }
 
         return Task.CompletedTask;
@@ -519,6 +535,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         FileTimeToleranceSeconds = 2;
+        VerifyCopiedFiles = false;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         Operations.Clear();
@@ -590,13 +607,14 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 2,
+            Version: 3,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
             SelectedMode,
             SelectedCompareMethod,
             FileTimeToleranceSeconds,
+            VerifyCopiedFiles,
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode);
@@ -610,6 +628,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedMode = configuration.SyncMode;
         SelectedCompareMethod = configuration.CompareMethod;
         FileTimeToleranceSeconds = configuration.Version < 2 ? 2 : configuration.FileTimeToleranceSeconds;
+        VerifyCopiedFiles = configuration.Version >= 3 && configuration.VerifyCopiedFiles;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
         Operations.Clear();
@@ -769,6 +788,11 @@ public sealed class MainViewModel : ObservableObject
             }
         });
         window.Resources[typeof(ComboBoxItem)] = comboBoxItemStyle;
+
+        window.Resources[typeof(CheckBox)] = CreateStyle<CheckBox>(
+            (CheckBox.ForegroundProperty, textBrush),
+            (CheckBox.VerticalContentAlignmentProperty, VerticalAlignment.Center),
+            (CheckBox.MinHeightProperty, 28d));
 
         window.Resources[typeof(Button)] = CreateStyle<Button>(
             (Button.ForegroundProperty, textBrush),
@@ -992,6 +1016,7 @@ public sealed class MainViewModel : ObservableObject
             Mode = SelectedMode,
             CompareMethod = SelectedCompareMethod,
             FileTimeToleranceSeconds = FileTimeToleranceSeconds,
+            VerifyCopiedFiles = VerifyCopiedFiles,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

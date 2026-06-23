@@ -48,10 +48,10 @@ public sealed class SyncEngine
             switch (operation.Kind)
             {
                 case OperationKind.CopyLeftToRight:
-                    await CopyAsync(operation.Left!, options.RightPath, progress, cancellationToken);
+                    await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
                     break;
                 case OperationKind.CopyRightToLeft:
-                    await CopyAsync(operation.Right!, options.LeftPath, progress, cancellationToken);
+                    await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
                     break;
                 case OperationKind.DeleteLeft:
                     DeleteFile(operation.Left!.FullPath, progress);
@@ -274,6 +274,7 @@ public sealed class SyncEngine
             Mode = options.Mode,
             CompareMethod = options.CompareMethod,
             FileTimeToleranceSeconds = options.FileTimeToleranceSeconds,
+            VerifyCopiedFiles = options.VerifyCopiedFiles,
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun
@@ -283,6 +284,7 @@ public sealed class SyncEngine
     private static async Task CopyAsync(
         FileSnapshot source,
         string destinationRoot,
+        bool verifyCopiedFiles,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
@@ -295,10 +297,22 @@ public sealed class SyncEngine
         }
 
         progress?.Report($"Copy {source.RelativePath}");
-        await using var input = File.Open(source.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await using var output = File.Open(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        await input.CopyToAsync(output, cancellationToken);
+        await using (var input = File.Open(source.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        await using (var output = File.Open(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await input.CopyToAsync(output, cancellationToken);
+        }
+
         File.SetLastWriteTimeUtc(destinationPath, source.LastWriteTimeUtc);
+
+        if (verifyCopiedFiles)
+        {
+            progress?.Report($"Verify {source.RelativePath}");
+            if (!await FilesAreEqualAsync(source.FullPath, destinationPath, cancellationToken))
+            {
+                throw new IOException($"Verification failed after copying {source.RelativePath}.");
+            }
+        }
     }
 
     private static void DeleteFile(string path, IProgress<string>? progress)
@@ -322,6 +336,41 @@ public sealed class SyncEngine
         await using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
         var hash = await SHA256.HashDataAsync(stream, cancellationToken);
         return Convert.ToHexString(hash);
+    }
+
+    private static async Task<bool> FilesAreEqualAsync(string leftPath, string rightPath, CancellationToken cancellationToken)
+    {
+        var leftInfo = new FileInfo(leftPath);
+        var rightInfo = new FileInfo(rightPath);
+        if (leftInfo.Length != rightInfo.Length)
+        {
+            return false;
+        }
+
+        await using var left = File.Open(leftPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        await using var right = File.Open(rightPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        var leftBuffer = new byte[81920];
+        var rightBuffer = new byte[81920];
+        while (true)
+        {
+            var leftRead = await left.ReadAsync(leftBuffer, cancellationToken);
+            var rightRead = await right.ReadAsync(rightBuffer, cancellationToken);
+            if (leftRead != rightRead)
+            {
+                return false;
+            }
+
+            if (leftRead == 0)
+            {
+                return true;
+            }
+
+            if (!leftBuffer.AsSpan(0, leftRead).SequenceEqual(rightBuffer.AsSpan(0, rightRead)))
+            {
+                return false;
+            }
+        }
     }
 
     private static void ValidateOptions(SyncOptions options)

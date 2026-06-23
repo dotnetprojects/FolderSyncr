@@ -160,6 +160,24 @@ public sealed class SyncEngineTests
         }
     }
 
+    [TestMethod]
+    public async Task ExecuteVerifiesCopiedFilesWhenEnabled()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("verify.txt", "verify me", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, verifyCopiedFiles: true);
+        var engine = new SyncEngine();
+        var messages = new List<string>();
+        var progress = new Progress<string>(messages.Add);
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(operations, options, progress, CancellationToken.None);
+
+        Assert.AreEqual("verify me", File.ReadAllText(workspace.RightPath("verify.txt")));
+        Assert.IsTrue(messages.Any(message => message.Contains("Verify verify.txt", StringComparison.OrdinalIgnoreCase)));
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -198,7 +216,8 @@ public sealed class SyncEngineTests
         public SyncOptions CreateOptions(
             SyncMode mode,
             CompareMethod compareMethod = CompareMethod.TimeAndSize,
-            int fileTimeToleranceSeconds = 2)
+            int fileTimeToleranceSeconds = 2,
+            bool verifyCopiedFiles = false)
         {
             return new SyncOptions
             {
@@ -207,6 +226,7 @@ public sealed class SyncEngineTests
                 Mode = mode,
                 CompareMethod = compareMethod,
                 FileTimeToleranceSeconds = fileTimeToleranceSeconds,
+                VerifyCopiedFiles = verifyCopiedFiles,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false

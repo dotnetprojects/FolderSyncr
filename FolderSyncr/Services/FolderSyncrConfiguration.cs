@@ -10,6 +10,7 @@ public sealed record FolderSyncrConfiguration(
     SyncMode SyncMode,
     CompareMethod CompareMethod,
     int FileTimeToleranceSeconds,
+    bool VerifyCopiedFiles,
     string IncludePatterns,
     string ExcludePatterns,
     bool IsDarkMode);

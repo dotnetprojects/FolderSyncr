@@ -63,7 +63,7 @@ This list tracks the work needed to support the main features documented in the 
   - [ ] Replace
   - [ ] Time stamp
   - [ ] File time
-- [ ] Verify copied files by binary compare after copy.
+- [x] Verify copied files by binary compare after copy.
 - [ ] Serialize sync jobs with lock files.
 - [ ] Store and maintain a `sync.ffs_db`-style database for two-way sync history.
 

@@ -20,6 +20,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 SyncMode.MirrorLeftToRight,
                 CompareMethod.ContentHash,
                 FileTimeToleranceSeconds: 7,
+                VerifyCopiedFiles: true,
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
                 IsDarkMode: true);
