@@ -32,6 +32,10 @@ Dark-mode dialogs are also checked.
 
 You can also drag a folder from Explorer onto either path box to set the left or right folder.
 
+## Synchronization Modes
+
+Use the gear button to choose `TwoWay`, mirror, update, or `Custom` synchronization. `Custom` lets you choose a separate action for left-only files, right-only files, left-newer files, right-newer files, and files that differ without a clear newer side. The available actions are do nothing, copy left to right, copy right to left, delete left, and delete right. Impossible actions are shown as conflicts during compare.
+
 ## Sample Data
 
 Use `Tools` -> `Create sample data` to create a disposable folder pair under `%LOCALAPPDATA%\FolderSyncr\Samples`. The sample includes equal files, left-only files, right-only files, newer files on each side, nested folders, and a conflict case.
@@ -48,9 +52,9 @@ Each synchronization writes a JSON run result to `%LOCALAPPDATA%\FolderSyncr\His
 
 ## FolderSyncr Configurations
 
-Use `File` -> `Save` or `Save as` to store the current folder pair, any preserved imported folder pairs, sync mode, compare method, filters, external commands, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
+Use `File` -> `Save` or `Save as` to store the current folder pair, any preserved imported folder pairs, sync mode, custom rules, compare method, filters, external commands, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
 
-Use `File` -> `Export FreeFileSync configuration` to write a compatible `.ffs_gui` file. The export includes the current or preserved folder pairs, comparison method, synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as theme, recycle-bin deletion, and versioning options stay in the native `.foldersyncr.json` format.
+Use `File` -> `Export FreeFileSync configuration` to write a compatible `.ffs_gui` file. The export includes the current or preserved folder pairs, comparison method, standard synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as custom rules, theme, recycle-bin deletion, and versioning options stay in the native `.foldersyncr.json` format.
 
 ## Command Line
 

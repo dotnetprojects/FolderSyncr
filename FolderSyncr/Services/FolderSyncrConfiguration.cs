@@ -21,4 +21,5 @@ public sealed record FolderSyncrConfiguration(
     string ExcludePatterns,
     bool IsDarkMode,
     IReadOnlyList<ExternalCommandDefinition>? ExternalCommands = null,
-    IReadOnlyList<FolderPairConfiguration>? FolderPairs = null);
+    IReadOnlyList<FolderPairConfiguration>? FolderPairs = null,
+    CustomSyncRules? CustomRules = null);

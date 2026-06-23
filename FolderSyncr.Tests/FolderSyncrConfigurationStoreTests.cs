@@ -38,7 +38,13 @@ public sealed class FolderSyncrConfigurationStoreTests
                 [
                     new FolderPairConfiguration(@"C:\Source", @"D:\Target", "*.txt", "cache\\"),
                     new FolderPairConfiguration(@"E:\More", @"F:\MoreBackup", "*.jpg", "thumbs.db")
-                ]);
+                ],
+                CustomRules: new CustomSyncRules(
+                    CustomSyncAction.DoNothing,
+                    CustomSyncAction.DeleteRight,
+                    CustomSyncAction.CopyLeftToRight,
+                    CustomSyncAction.CopyRightToLeft,
+                    CustomSyncAction.DeleteLeft));
 
             var store = new FolderSyncrConfigurationStore();
             store.Save(path, original);

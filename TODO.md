@@ -54,7 +54,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Mirror right to left.
 - [x] Update left to right.
 - [x] Update right to left.
-- [ ] Add custom synchronization rules.
+- [x] Add custom synchronization rules.
 - [x] Add deletion handling options:
   - [x] Permanent delete
   - [x] Recycle bin

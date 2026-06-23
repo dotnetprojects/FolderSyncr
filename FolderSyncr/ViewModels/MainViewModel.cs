@@ -37,6 +37,7 @@ public sealed class MainViewModel : ObservableObject
     private string _versioningFolderPath = string.Empty;
     private SyncErrorHandling _selectedErrorHandling = SyncErrorHandling.ShowErrors;
     private SymbolicLinkHandling _selectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
+    private CustomSyncRules _customRules = CustomSyncRules.Default;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -121,6 +122,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<VersioningMode> VersioningModes { get; } = Enum.GetValues<VersioningMode>();
     public IReadOnlyList<SyncErrorHandling> ErrorHandlingModes { get; } = Enum.GetValues<SyncErrorHandling>();
     public IReadOnlyList<SymbolicLinkHandling> SymbolicLinkHandlingModes { get; } = Enum.GetValues<SymbolicLinkHandling>();
+    public IReadOnlyList<CustomSyncAction> CustomSyncActions { get; } = Enum.GetValues<CustomSyncAction>();
 
     public RelayCommand BrowseLeftCommand { get; }
     public RelayCommand BrowseRightCommand { get; }
@@ -239,6 +241,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _selectedSymbolicLinkHandling;
         set => SetProperty(ref _selectedSymbolicLinkHandling, value);
+    }
+
+    public CustomSyncRules CustomRules
+    {
+        get => _customRules;
+        set => SetProperty(ref _customRules, value);
     }
 
     public string IncludePatterns
@@ -563,6 +571,23 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        ComboBox CreateCustomRuleBox(CustomSyncAction selectedAction)
+        {
+            return new ComboBox
+            {
+                ItemsSource = CustomSyncActions,
+                SelectedItem = selectedAction,
+                Margin = new Thickness(0, 4, 0, 12),
+                MinWidth = 260
+            };
+        }
+
+        var leftOnlyRuleBox = CreateCustomRuleBox(CustomRules.LeftOnly);
+        var rightOnlyRuleBox = CreateCustomRuleBox(CustomRules.RightOnly);
+        var leftNewerRuleBox = CreateCustomRuleBox(CustomRules.LeftNewer);
+        var rightNewerRuleBox = CreateCustomRuleBox(CustomRules.RightNewer);
+        var differentRuleBox = CreateCustomRuleBox(CustomRules.Different);
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -582,8 +607,25 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(errorHandlingBox);
         content.Children.Add(new TextBlock { Text = "Symbolic links", FontWeight = FontWeights.SemiBold });
         content.Children.Add(symbolicLinkBox);
+        content.Children.Add(new TextBlock { Text = "Left-only action", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(leftOnlyRuleBox);
+        content.Children.Add(new TextBlock { Text = "Right-only action", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(rightOnlyRuleBox);
+        content.Children.Add(new TextBlock { Text = "Left-newer action", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(leftNewerRuleBox);
+        content.Children.Add(new TextBlock { Text = "Right-newer action", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(rightNewerRuleBox);
+        content.Children.Add(new TextBlock { Text = "Different action", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(differentRuleBox);
 
-        if (ShowDialog("Comparison settings", content))
+        var scroller = new ScrollViewer
+        {
+            Content = content,
+            MaxHeight = 720,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        if (ShowDialog("Comparison settings", scroller))
         {
             SelectedMode = (SyncMode)modeBox.SelectedItem;
             SelectedCompareMethod = (CompareMethod)compareBox.SelectedItem;
@@ -600,6 +642,12 @@ public sealed class MainViewModel : ObservableObject
             SelectedErrorHandling = (SyncErrorHandling)errorHandlingBox.SelectedItem;
             SelectedSymbolicLinkHandling = (SymbolicLinkHandling)symbolicLinkBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
+            CustomRules = new CustomSyncRules(
+                (CustomSyncAction)leftOnlyRuleBox.SelectedItem,
+                (CustomSyncAction)rightOnlyRuleBox.SelectedItem,
+                (CustomSyncAction)leftNewerRuleBox.SelectedItem,
+                (CustomSyncAction)rightNewerRuleBox.SelectedItem,
+                (CustomSyncAction)differentRuleBox.SelectedItem);
             SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}, {SelectedErrorHandling}.").GetAwaiter().GetResult();
         }
 
@@ -786,6 +834,7 @@ public sealed class MainViewModel : ObservableObject
         VersioningFolderPath = string.Empty;
         SelectedErrorHandling = SyncErrorHandling.ShowErrors;
         SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
+        CustomRules = CustomSyncRules.Default;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         _folderPairs = [];
@@ -881,7 +930,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 11,
+            Version: 12,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -899,7 +948,8 @@ public sealed class MainViewModel : ObservableObject
             ExcludePatterns,
             IsDarkMode,
             ExternalCommands.ToArray(),
-            GetSavedFolderPairs());
+            GetSavedFolderPairs(),
+            CustomRules);
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
@@ -928,6 +978,9 @@ public sealed class MainViewModel : ObservableObject
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         SelectedErrorHandling = configuration.Version >= 7 ? configuration.ErrorHandling : SyncErrorHandling.ShowErrors;
         SelectedSymbolicLinkHandling = configuration.Version >= 8 ? configuration.SymbolicLinkHandling : SymbolicLinkHandling.Skip;
+        CustomRules = configuration.Version >= 12 && configuration.CustomRules is not null
+            ? configuration.CustomRules
+            : CustomSyncRules.Default;
         IncludePatterns = string.IsNullOrWhiteSpace(visiblePair?.IncludePatterns)
             ? string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns
             : visiblePair.IncludePatterns;
@@ -1007,6 +1060,7 @@ public sealed class MainViewModel : ObservableObject
         _folderPairs = [];
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
+        CustomRules = CustomSyncRules.Default;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         ClearOperations();
@@ -1556,6 +1610,7 @@ public sealed class MainViewModel : ObservableObject
             VersioningFolderPath = VersioningFolderPath,
             ErrorHandling = SelectedErrorHandling,
             SymbolicLinkHandling = SelectedSymbolicLinkHandling,
+            CustomRules = CustomRules,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

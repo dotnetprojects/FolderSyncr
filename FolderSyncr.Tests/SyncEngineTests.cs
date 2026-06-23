@@ -67,6 +67,58 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task CustomRulesSelectConfiguredActions()
+    {
+        using var workspace = TestWorkspace.Create();
+        var now = DateTime.UtcNow;
+        workspace.WriteLeft("left-only.txt", "left", now);
+        workspace.WriteRight("right-only.txt", "right", now);
+        workspace.WriteLeft("left-newer.txt", "new left", now);
+        workspace.WriteRight("left-newer.txt", "old right", now.AddMinutes(-10));
+        workspace.WriteLeft("right-newer.txt", "old left", now.AddMinutes(-10));
+        workspace.WriteRight("right-newer.txt", "new right", now);
+        workspace.WriteLeft("same-time-different.txt", "left", now);
+        workspace.WriteRight("same-time-different.txt", "right", now);
+
+        var options = workspace.CreateOptions(
+            SyncMode.Custom,
+            customRules: new CustomSyncRules(
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DeleteRight,
+                CustomSyncAction.CopyRightToLeft,
+                CustomSyncAction.CopyLeftToRight,
+                CustomSyncAction.DeleteLeft));
+
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "left-only.txt", OperationKind.Equal);
+        AssertOperation(operations, "right-only.txt", OperationKind.DeleteRight);
+        AssertOperation(operations, "left-newer.txt", OperationKind.CopyRightToLeft);
+        AssertOperation(operations, "right-newer.txt", OperationKind.CopyLeftToRight);
+        AssertOperation(operations, "same-time-different.txt", OperationKind.DeleteLeft);
+    }
+
+    [TestMethod]
+    public async Task CustomRulesMarkImpossibleActionsAsConflict()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("left-only.txt", "left", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(
+            SyncMode.Custom,
+            customRules: new CustomSyncRules(
+                CustomSyncAction.CopyRightToLeft,
+                CustomSyncAction.CopyRightToLeft,
+                CustomSyncAction.CopyLeftToRight,
+                CustomSyncAction.CopyRightToLeft,
+                CustomSyncAction.DoNothing));
+
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "left-only.txt", OperationKind.Conflict);
+    }
+
+    [TestMethod]
     public async Task SizeOnlyComparisonTreatsSameLengthFilesAsEqual()
     {
         using var workspace = TestWorkspace.Create();
@@ -457,13 +509,15 @@ public sealed class SyncEngineTests
             VersioningMode versioningMode = VersioningMode.TimeStampFolder,
             string versioningFolderPath = "",
             SyncErrorHandling errorHandling = SyncErrorHandling.ShowErrors,
-            SymbolicLinkHandling symbolicLinkHandling = SymbolicLinkHandling.Skip)
+            SymbolicLinkHandling symbolicLinkHandling = SymbolicLinkHandling.Skip,
+            CustomSyncRules? customRules = null)
         {
             return new SyncOptions
             {
                 LeftPath = _left,
                 RightPath = _right,
                 Mode = mode,
+                CustomRules = customRules ?? CustomSyncRules.Default,
                 CompareMethod = compareMethod,
                 FileTimeToleranceSeconds = fileTimeToleranceSeconds,
                 IgnoreDaylightSavingTimeShift = ignoreDaylightSavingTimeShift,

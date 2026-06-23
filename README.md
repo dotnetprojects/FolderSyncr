@@ -16,6 +16,8 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
   - `MirrorRightToLeft`
   - `UpdateLeftToRight`
   - `UpdateRightToLeft`
+  - `Custom` rule matrix
+- Custom synchronization rules for left-only, right-only, newer, and same-time-different files.
 - Compare by file time/size or SHA-256 content hash.
 - Configurable file time tolerance for time/size comparisons.
 - Optional binary verification after copying files.

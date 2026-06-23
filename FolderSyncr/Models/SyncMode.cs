@@ -6,5 +6,6 @@ public enum SyncMode
     MirrorLeftToRight,
     MirrorRightToLeft,
     UpdateLeftToRight,
-    UpdateRightToLeft
+    UpdateRightToLeft,
+    Custom
 }
