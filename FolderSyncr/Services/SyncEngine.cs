@@ -34,7 +34,10 @@ public sealed class SyncEngine
         var rightFiles = await rightStorage.ScanAsync(options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
-        var syncDatabase = options.UseSynchronizationDatabase && options.Mode == SyncMode.TwoWay && !leftStorage.IsRemote && !rightStorage.IsRemote
+        var syncDatabase = options.UseSynchronizationDatabase
+            && (options.Mode == SyncMode.TwoWay || options.Mode == SyncMode.Custom)
+            && !leftStorage.IsRemote
+            && !rightStorage.IsRemote
             ? _syncDatabaseStore.LoadPair(options.LeftPath, options.RightPath)
             : null;
         return BuildOperations(
@@ -375,7 +378,7 @@ public sealed class SyncEngine
             SyncMode.MirrorRightToLeft => DetermineMirrorOperation(left, right, leftIsSource: false, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
             SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
             SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
-            SyncMode.Custom => DetermineCustomOperation(left, right, customRules, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
+            SyncMode.Custom => DetermineCustomOperation(left, right, customRules, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
             _ => DetermineTwoWayOperation(left, right, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift)
         };
     }
@@ -546,8 +549,14 @@ public sealed class SyncEngine
         return !HasChangedSinceDatabase(current, previous, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
     }
 
-    private static OperationKind DetermineCustomOperation(FileSnapshot? left, FileSnapshot? right, CustomSyncRules customRules, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    private static OperationKind DetermineCustomOperation(FileSnapshot? left, FileSnapshot? right, CustomSyncRules customRules, SyncDatabaseEntry? databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
     {
+        if (databaseEntry is not null
+            && DetermineCustomOperationFromDatabase(left, right, customRules, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift) is { } databaseOperation)
+        {
+            return databaseOperation;
+        }
+
         if (left is null && right is null)
         {
             return OperationKind.Equal;
@@ -579,6 +588,47 @@ public sealed class SyncEngine
         }
 
         return MapCustomAction(customRules.Different, leftExists: true, rightExists: true);
+    }
+
+    private static OperationKind? DetermineCustomOperationFromDatabase(FileSnapshot? left, FileSnapshot? right, CustomSyncRules customRules, SyncDatabaseEntry databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    {
+        if (databaseEntry.Left is null && databaseEntry.Right is null)
+        {
+            return null;
+        }
+
+        if (left is not null
+            && right is not null
+            && AreEquivalent(left, right, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift))
+        {
+            return OperationKind.Equal;
+        }
+
+        var leftChanged = HasChangedSinceDatabase(left, databaseEntry.Left, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
+        var rightChanged = HasChangedSinceDatabase(right, databaseEntry.Right, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
+
+        if (!leftChanged && !rightChanged)
+        {
+            return OperationKind.Equal;
+        }
+
+        if (leftChanged && rightChanged)
+        {
+            return MapCustomAction(customRules.Different, left is not null, right is not null);
+        }
+
+        if (leftChanged)
+        {
+            var action = left is null
+                ? customRules.DeletedLeft
+                : databaseEntry.Left is null ? customRules.CreatedLeft : customRules.UpdatedLeft;
+            return MapCustomAction(action, left is not null, right is not null);
+        }
+
+        var rightAction = right is null
+            ? customRules.DeletedRight
+            : databaseEntry.Right is null ? customRules.CreatedRight : customRules.UpdatedRight;
+        return MapCustomAction(rightAction, left is not null, right is not null);
     }
 
     private static OperationKind MapCustomAction(CustomSyncAction action, bool leftExists, bool rightExists)
@@ -849,7 +899,7 @@ public sealed class SyncEngine
     {
         if (options.DryRun
             || !options.UseSynchronizationDatabase
-            || options.Mode != SyncMode.TwoWay
+            || options.Mode != SyncMode.TwoWay && options.Mode != SyncMode.Custom
             || RemoteSyncRoot.IsRemotePath(options.LeftPath)
             || RemoteSyncRoot.IsRemotePath(options.RightPath))
         {

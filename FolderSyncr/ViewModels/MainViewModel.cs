@@ -648,6 +648,12 @@ public sealed class MainViewModel : ObservableObject
         var leftNewerRule = CustomRules.LeftNewer;
         var rightNewerRule = CustomRules.RightNewer;
         var differentRule = CustomRules.Different;
+        var createdLeftRule = CustomRules.CreatedLeft;
+        var createdRightRule = CustomRules.CreatedRight;
+        var updatedLeftRule = CustomRules.UpdatedLeft;
+        var updatedRightRule = CustomRules.UpdatedRight;
+        var deletedLeftRule = CustomRules.DeletedLeft;
+        var deletedRightRule = CustomRules.DeletedRight;
 
         var comparePanel = CreateSettingsScrollPanel(
             CreateSettingsGrid(
@@ -710,6 +716,18 @@ public sealed class MainViewModel : ObservableObject
             value => rightNewerRule = value,
             () => differentRule,
             value => differentRule = value,
+            () => createdLeftRule,
+            value => createdLeftRule = value,
+            () => createdRightRule,
+            value => createdRightRule = value,
+            () => updatedLeftRule,
+            value => updatedLeftRule = value,
+            () => updatedRightRule,
+            value => updatedRightRule = value,
+            () => deletedLeftRule,
+            value => deletedLeftRule = value,
+            () => deletedRightRule,
+            value => deletedRightRule = value,
             () => selectedDeletionHandling,
             value => selectedDeletionHandling = value,
             versioningModeBox,
@@ -765,7 +783,15 @@ public sealed class MainViewModel : ObservableObject
                 rightOnlyRule,
                 leftNewerRule,
                 rightNewerRule,
-                differentRule);
+                differentRule)
+            {
+                CreatedLeft = createdLeftRule,
+                CreatedRight = createdRightRule,
+                UpdatedLeft = updatedLeftRule,
+                UpdatedRight = updatedRightRule,
+                DeletedLeft = deletedLeftRule,
+                DeletedRight = deletedRightRule
+            };
             SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}, {SelectedErrorHandling}.").GetAwaiter().GetResult();
         }
 
@@ -936,6 +962,18 @@ public sealed class MainViewModel : ObservableObject
         Action<CustomSyncAction> setRightNewer,
         Func<CustomSyncAction> getDifferent,
         Action<CustomSyncAction> setDifferent,
+        Func<CustomSyncAction> getCreatedLeft,
+        Action<CustomSyncAction> setCreatedLeft,
+        Func<CustomSyncAction> getCreatedRight,
+        Action<CustomSyncAction> setCreatedRight,
+        Func<CustomSyncAction> getUpdatedLeft,
+        Action<CustomSyncAction> setUpdatedLeft,
+        Func<CustomSyncAction> getUpdatedRight,
+        Action<CustomSyncAction> setUpdatedRight,
+        Func<CustomSyncAction> getDeletedLeft,
+        Action<CustomSyncAction> setDeletedLeft,
+        Func<CustomSyncAction> getDeletedRight,
+        Action<CustomSyncAction> setDeletedRight,
         Func<DeletionHandling> getDeletionHandling,
         Action<DeletionHandling> setDeletionHandling,
         ComboBox versioningModeBox,
@@ -967,6 +1005,18 @@ public sealed class MainViewModel : ObservableObject
                 setRightNewer,
                 getDifferent,
                 setDifferent,
+                getCreatedLeft,
+                setCreatedLeft,
+                getCreatedRight,
+                setCreatedRight,
+                getUpdatedLeft,
+                setUpdatedLeft,
+                getUpdatedRight,
+                setUpdatedRight,
+                getDeletedLeft,
+                setDeletedLeft,
+                getDeletedRight,
+                setDeletedRight,
                 MarkCustom);
         }
 
@@ -994,7 +1044,13 @@ public sealed class MainViewModel : ObservableObject
                 setRightOnly,
                 setLeftNewer,
                 setRightNewer,
-                setDifferent);
+                setDifferent,
+                setCreatedLeft,
+                setCreatedRight,
+                setUpdatedLeft,
+                setUpdatedRight,
+                setDeletedLeft,
+                setDeletedRight);
             RefreshRules();
         }
 
@@ -1127,7 +1183,13 @@ public sealed class MainViewModel : ObservableObject
         Action<CustomSyncAction> setRightOnly,
         Action<CustomSyncAction> setLeftNewer,
         Action<CustomSyncAction> setRightNewer,
-        Action<CustomSyncAction> setDifferent)
+        Action<CustomSyncAction> setDifferent,
+        Action<CustomSyncAction> setCreatedLeft,
+        Action<CustomSyncAction> setCreatedRight,
+        Action<CustomSyncAction> setUpdatedLeft,
+        Action<CustomSyncAction> setUpdatedRight,
+        Action<CustomSyncAction> setDeletedLeft,
+        Action<CustomSyncAction> setDeletedRight)
     {
         switch (mode)
         {
@@ -1137,6 +1199,12 @@ public sealed class MainViewModel : ObservableObject
                 setLeftNewer(CustomSyncAction.CopyLeftToRight);
                 setRightNewer(CustomSyncAction.CopyRightToLeft);
                 setDifferent(CustomSyncAction.DoNothing);
+                setCreatedLeft(CustomSyncAction.CopyLeftToRight);
+                setCreatedRight(CustomSyncAction.CopyRightToLeft);
+                setUpdatedLeft(CustomSyncAction.CopyLeftToRight);
+                setUpdatedRight(CustomSyncAction.CopyRightToLeft);
+                setDeletedLeft(CustomSyncAction.DeleteRight);
+                setDeletedRight(CustomSyncAction.DeleteLeft);
                 break;
             case SyncMode.MirrorLeftToRight:
                 setLeftOnly(CustomSyncAction.CopyLeftToRight);
@@ -1144,6 +1212,12 @@ public sealed class MainViewModel : ObservableObject
                 setLeftNewer(CustomSyncAction.CopyLeftToRight);
                 setRightNewer(CustomSyncAction.CopyLeftToRight);
                 setDifferent(CustomSyncAction.CopyLeftToRight);
+                setCreatedLeft(CustomSyncAction.CopyLeftToRight);
+                setCreatedRight(CustomSyncAction.DeleteRight);
+                setUpdatedLeft(CustomSyncAction.CopyLeftToRight);
+                setUpdatedRight(CustomSyncAction.CopyLeftToRight);
+                setDeletedLeft(CustomSyncAction.DeleteRight);
+                setDeletedRight(CustomSyncAction.CopyLeftToRight);
                 break;
             case SyncMode.MirrorRightToLeft:
                 setLeftOnly(CustomSyncAction.DeleteLeft);
@@ -1151,6 +1225,12 @@ public sealed class MainViewModel : ObservableObject
                 setLeftNewer(CustomSyncAction.CopyRightToLeft);
                 setRightNewer(CustomSyncAction.CopyRightToLeft);
                 setDifferent(CustomSyncAction.CopyRightToLeft);
+                setCreatedLeft(CustomSyncAction.DeleteLeft);
+                setCreatedRight(CustomSyncAction.CopyRightToLeft);
+                setUpdatedLeft(CustomSyncAction.CopyRightToLeft);
+                setUpdatedRight(CustomSyncAction.CopyRightToLeft);
+                setDeletedLeft(CustomSyncAction.CopyRightToLeft);
+                setDeletedRight(CustomSyncAction.DeleteLeft);
                 break;
             case SyncMode.UpdateLeftToRight:
                 setLeftOnly(CustomSyncAction.CopyLeftToRight);
@@ -1158,6 +1238,12 @@ public sealed class MainViewModel : ObservableObject
                 setLeftNewer(CustomSyncAction.CopyLeftToRight);
                 setRightNewer(CustomSyncAction.DoNothing);
                 setDifferent(CustomSyncAction.DoNothing);
+                setCreatedLeft(CustomSyncAction.CopyLeftToRight);
+                setCreatedRight(CustomSyncAction.DoNothing);
+                setUpdatedLeft(CustomSyncAction.CopyLeftToRight);
+                setUpdatedRight(CustomSyncAction.DoNothing);
+                setDeletedLeft(CustomSyncAction.DoNothing);
+                setDeletedRight(CustomSyncAction.DoNothing);
                 break;
             case SyncMode.UpdateRightToLeft:
                 setLeftOnly(CustomSyncAction.DoNothing);
@@ -1165,6 +1251,12 @@ public sealed class MainViewModel : ObservableObject
                 setLeftNewer(CustomSyncAction.DoNothing);
                 setRightNewer(CustomSyncAction.CopyRightToLeft);
                 setDifferent(CustomSyncAction.DoNothing);
+                setCreatedLeft(CustomSyncAction.DoNothing);
+                setCreatedRight(CustomSyncAction.CopyRightToLeft);
+                setUpdatedLeft(CustomSyncAction.DoNothing);
+                setUpdatedRight(CustomSyncAction.CopyRightToLeft);
+                setDeletedLeft(CustomSyncAction.DoNothing);
+                setDeletedRight(CustomSyncAction.DoNothing);
                 break;
         }
     }
@@ -1320,22 +1412,38 @@ public sealed class MainViewModel : ObservableObject
         Action<CustomSyncAction> setRightNewer,
         Func<CustomSyncAction> getDifferent,
         Action<CustomSyncAction> setDifferent,
+        Func<CustomSyncAction> getCreatedLeft,
+        Action<CustomSyncAction> setCreatedLeft,
+        Func<CustomSyncAction> getCreatedRight,
+        Action<CustomSyncAction> setCreatedRight,
+        Func<CustomSyncAction> getUpdatedLeft,
+        Action<CustomSyncAction> setUpdatedLeft,
+        Func<CustomSyncAction> getUpdatedRight,
+        Action<CustomSyncAction> setUpdatedRight,
+        Func<CustomSyncAction> getDeletedLeft,
+        Action<CustomSyncAction> setDeletedLeft,
+        Func<CustomSyncAction> getDeletedRight,
+        Action<CustomSyncAction> setDeletedRight,
         Action onManualEdit)
     {
         return useDatabase
-            ? CreateDatabaseRuleMatrix(getLeftOnly, setLeftOnly, getRightOnly, setRightOnly, getLeftNewer, setLeftNewer, getRightNewer, setRightNewer, onManualEdit)
+            ? CreateDatabaseRuleMatrix(getCreatedLeft, setCreatedLeft, getCreatedRight, setCreatedRight, getUpdatedLeft, setUpdatedLeft, getUpdatedRight, setUpdatedRight, getDeletedLeft, setDeletedLeft, getDeletedRight, setDeletedRight, onManualEdit)
             : CreateNoDatabaseRuleMatrix(getLeftOnly, setLeftOnly, getLeftNewer, setLeftNewer, getRightNewer, setRightNewer, getRightOnly, setRightOnly, onManualEdit);
     }
 
     private static Grid CreateDatabaseRuleMatrix(
-        Func<CustomSyncAction> getLeftOnly,
-        Action<CustomSyncAction> setLeftOnly,
-        Func<CustomSyncAction> getRightOnly,
-        Action<CustomSyncAction> setRightOnly,
-        Func<CustomSyncAction> getLeftNewer,
-        Action<CustomSyncAction> setLeftNewer,
-        Func<CustomSyncAction> getRightNewer,
-        Action<CustomSyncAction> setRightNewer,
+        Func<CustomSyncAction> getCreatedLeft,
+        Action<CustomSyncAction> setCreatedLeft,
+        Func<CustomSyncAction> getCreatedRight,
+        Action<CustomSyncAction> setCreatedRight,
+        Func<CustomSyncAction> getUpdatedLeft,
+        Action<CustomSyncAction> setUpdatedLeft,
+        Func<CustomSyncAction> getUpdatedRight,
+        Action<CustomSyncAction> setUpdatedRight,
+        Func<CustomSyncAction> getDeletedLeft,
+        Action<CustomSyncAction> setDeletedLeft,
+        Func<CustomSyncAction> getDeletedRight,
+        Action<CustomSyncAction> setDeletedRight,
         Action onManualEdit)
     {
         var grid = CreateRuleMatrixShell();
@@ -1344,10 +1452,12 @@ public sealed class MainViewModel : ObservableObject
         AddRuleRowLabel(grid, 1, "Create");
         AddRuleRowLabel(grid, 2, "Update");
         AddRuleRowLabel(grid, 3, "Delete");
-        AddRuleButtonGroup(grid, [(1, 1, CustomSyncAction.CopyLeftToRight), (3, 1, CustomSyncAction.DeleteLeft)], getLeftOnly, setLeftOnly, onManualEdit);
-        AddRuleButtonGroup(grid, [(1, 2, CustomSyncAction.CopyRightToLeft), (3, 2, CustomSyncAction.DeleteRight)], getRightOnly, setRightOnly, onManualEdit);
-        AddRuleButtonGroup(grid, [(2, 1, CustomSyncAction.CopyLeftToRight)], getLeftNewer, setLeftNewer, onManualEdit);
-        AddRuleButtonGroup(grid, [(2, 2, CustomSyncAction.CopyRightToLeft)], getRightNewer, setRightNewer, onManualEdit);
+        AddRuleCycleButton(grid, 1, 1, getCreatedLeft, setCreatedLeft, [CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.DeleteLeft], onManualEdit);
+        AddRuleCycleButton(grid, 1, 2, getCreatedRight, setCreatedRight, [CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.DeleteRight], onManualEdit);
+        AddRuleCycleButton(grid, 2, 1, getUpdatedLeft, setUpdatedLeft, [CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft], onManualEdit);
+        AddRuleCycleButton(grid, 2, 2, getUpdatedRight, setUpdatedRight, [CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.CopyLeftToRight], onManualEdit);
+        AddRuleCycleButton(grid, 3, 1, getDeletedLeft, setDeletedLeft, [CustomSyncAction.DeleteRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft], onManualEdit);
+        AddRuleCycleButton(grid, 3, 2, getDeletedRight, setDeletedRight, [CustomSyncAction.DeleteLeft, CustomSyncAction.DoNothing, CustomSyncAction.CopyLeftToRight], onManualEdit);
         return grid;
     }
 
@@ -2087,7 +2197,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 15,
+            Version: 16,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,

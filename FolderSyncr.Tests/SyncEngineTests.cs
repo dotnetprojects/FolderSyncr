@@ -247,6 +247,66 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task CustomRulesUseDatabaseUpdateButtonsWhenDatabaseIsEnabled()
+    {
+        using var workspace = TestWorkspace.Create();
+        var baselineTime = DateTime.UtcNow.AddMinutes(-30);
+        workspace.WriteLeft("shared.txt", "base", baselineTime);
+
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(workspace.CreateOptions(SyncMode.TwoWay), null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, workspace.CreateOptions(SyncMode.TwoWay), null, CancellationToken.None);
+
+        workspace.WriteLeft("shared.txt", "left update", baselineTime.AddMinutes(10));
+
+        var options = workspace.CreateOptions(
+            SyncMode.Custom,
+            customRules: new CustomSyncRules(
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing)
+            {
+                UpdatedLeft = CustomSyncAction.CopyLeftToRight
+            });
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "shared.txt", OperationKind.CopyLeftToRight);
+    }
+
+    [TestMethod]
+    public async Task CustomRulesUseDatabaseDeleteButtonsWhenDatabaseIsEnabled()
+    {
+        using var workspace = TestWorkspace.Create();
+        var baselineTime = DateTime.UtcNow.AddMinutes(-30);
+        workspace.WriteLeft("restore.txt", "base", baselineTime);
+
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(workspace.CreateOptions(SyncMode.TwoWay), null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, workspace.CreateOptions(SyncMode.TwoWay), null, CancellationToken.None);
+
+        File.Delete(workspace.LeftPath("restore.txt"));
+
+        var options = workspace.CreateOptions(
+            SyncMode.Custom,
+            customRules: new CustomSyncRules(
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing,
+                CustomSyncAction.DoNothing)
+            {
+                DeletedLeft = CustomSyncAction.CopyRightToLeft
+            });
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "restore.txt", OperationKind.CopyRightToLeft);
+    }
+
+    [TestMethod]
     public async Task SizeOnlyComparisonTreatsSameLengthFilesAsEqual()
     {
         using var workspace = TestWorkspace.Create();
