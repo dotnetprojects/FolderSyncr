@@ -36,6 +36,10 @@ Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui` or `.ffs_
 
 Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or log file. JSON results from FreeFileSync batch runs show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.
 
+## FolderSyncr Configurations
+
+Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, compare method, filters, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.

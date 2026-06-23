@@ -9,7 +9,7 @@ This list tracks the work needed to support the main features documented in the 
 
 - [x] Import `.ffs_gui` and `.ffs_batch` XML files.
 - [ ] Preserve multiple folder pairs from imported configurations instead of only the first pair.
-- [ ] Export FolderSyncr configurations to a native format.
+- [x] Export FolderSyncr configurations to a native format.
 - [ ] Optionally export compatible FreeFileSync configuration files where the format is understood.
 - [ ] Support command-line startup with a configuration file.
 - [ ] Support `-dirpair <left> <right>` style path overrides.
@@ -143,7 +143,7 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Add selectable per-row sync actions.
 - [ ] Add drag-and-drop folder selection.
 - [x] Create HTML user documentation and open it from the `Help` -> `Documentation` menu.
-- [ ] Add real save/open/reload configuration commands.
+- [x] Add real save/open/reload configuration commands.
 - [ ] Add a first-run sample configuration and test data generator.
 
 ## Near-term implementation order

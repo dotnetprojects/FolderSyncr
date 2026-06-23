@@ -17,8 +17,10 @@ public sealed class MainViewModel : ObservableObject
 {
     private readonly SyncEngine _syncEngine = new();
     private readonly FreeFileSyncConfigurationImporter _configurationImporter = new();
+    private readonly FolderSyncrConfigurationStore _configurationStore = new();
     private readonly FreeFileSyncLogImporter _logImporter = new();
     private CancellationTokenSource? _cancellation;
+    private string? _currentConfigurationPath;
     private string _leftPath = string.Empty;
     private string _rightPath = string.Empty;
     private SyncMode _selectedMode = SyncMode.TwoWay;
@@ -47,11 +49,11 @@ public sealed class MainViewModel : ObservableObject
         OpenFilterCommand = new RelayCommand(OpenFilterAsync);
         SwapSidesCommand = new RelayCommand(SwapSidesAsync);
         CloudPathCommand = new RelayCommand(() => SetStatusAsync("Cloud path integration is not implemented yet. Use Browse or paste a local/cloud-synced folder path."));
-        NewConfigurationCommand = new RelayCommand(() => SetStatusAsync("New configuration is not implemented yet."));
+        NewConfigurationCommand = new RelayCommand(NewConfigurationAsync);
         OpenConfigurationCommand = new RelayCommand(OpenConfigurationAsync);
-        SaveConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save configuration is not implemented yet."));
-        SaveAsConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save as is not implemented yet."));
-        ReloadConfigurationCommand = new RelayCommand(() => SetStatusAsync("Configuration list refreshed."));
+        SaveConfigurationCommand = new RelayCommand(SaveConfigurationAsync);
+        SaveAsConfigurationCommand = new RelayCommand(SaveAsConfigurationAsync);
+        ReloadConfigurationCommand = new RelayCommand(ReloadConfigurationAsync);
         OpenFreeFileSyncLogCommand = new RelayCommand(OpenFreeFileSyncLogAsync);
         OpenDocumentationCommand = new RelayCommand(OpenDocumentationAsync);
         AboutCommand = new RelayCommand(AboutAsync);
@@ -384,8 +386,8 @@ public sealed class MainViewModel : ObservableObject
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Open FreeFileSync configuration",
-            Filter = "FreeFileSync configurations (*.ffs_gui;*.ffs_batch)|*.ffs_gui;*.ffs_batch|XML files (*.xml)|*.xml|All files (*.*)|*.*",
+            Title = "Open configuration",
+            Filter = "FolderSyncr configurations (*.foldersyncr.json)|*.foldersyncr.json|FreeFileSync configurations (*.ffs_gui;*.ffs_batch)|*.ffs_gui;*.ffs_batch|XML files (*.xml)|*.xml|All files (*.*)|*.*",
             CheckFileExists = true,
             Multiselect = false
         };
@@ -393,6 +395,11 @@ public sealed class MainViewModel : ObservableObject
         if (dialog.ShowDialog() != true)
         {
             return Task.CompletedTask;
+        }
+
+        if (IsNativeConfigurationPath(dialog.FileName))
+        {
+            return LoadNativeConfigurationAsync(dialog.FileName);
         }
 
         var configuration = _configurationImporter.Import(dialog.FileName);
@@ -419,6 +426,7 @@ public sealed class MainViewModel : ObservableObject
         ExcludePatterns = configuration.ExcludePatterns;
         Operations.Clear();
         OnOperationSummaryChanged();
+        _currentConfigurationPath = null;
 
         Configurations.Insert(0, new ConfigurationItem
         {
@@ -432,6 +440,126 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.");
+    }
+
+    private Task NewConfigurationAsync()
+    {
+        _currentConfigurationPath = null;
+        LeftPath = string.Empty;
+        RightPath = string.Empty;
+        SelectedMode = SyncMode.TwoWay;
+        SelectedCompareMethod = CompareMethod.TimeAndSize;
+        IncludePatterns = "*";
+        ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
+        Operations.Clear();
+        OnOperationSummaryChanged();
+        return SetStatusAsync("New configuration created.");
+    }
+
+    private Task SaveConfigurationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentConfigurationPath))
+        {
+            return SaveAsConfigurationAsync();
+        }
+
+        return SaveNativeConfigurationAsync(_currentConfigurationPath);
+    }
+
+    private Task SaveAsConfigurationAsync()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Save FolderSyncr configuration",
+            Filter = "FolderSyncr configurations (*.foldersyncr.json)|*.foldersyncr.json|JSON files (*.json)|*.json|All files (*.*)|*.*",
+            DefaultExt = ".foldersyncr.json",
+            AddExtension = true,
+            FileName = string.IsNullOrWhiteSpace(_currentConfigurationPath)
+                ? "Backup.foldersyncr.json"
+                : Path.GetFileName(_currentConfigurationPath)
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return Task.CompletedTask;
+        }
+
+        return SaveNativeConfigurationAsync(dialog.FileName);
+    }
+
+    private Task ReloadConfigurationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_currentConfigurationPath))
+        {
+            return SetStatusAsync("No FolderSyncr configuration is open. Use File -> Open configuration first.");
+        }
+
+        return LoadNativeConfigurationAsync(_currentConfigurationPath);
+    }
+
+    private Task LoadNativeConfigurationAsync(string path)
+    {
+        var configuration = _configurationStore.Load(path);
+        ApplyNativeConfiguration(path, configuration);
+        return SetStatusAsync($"Opened {Path.GetFileName(path)}.");
+    }
+
+    private Task SaveNativeConfigurationAsync(string path)
+    {
+        _configurationStore.Save(path, CreateNativeConfiguration(path));
+        _currentConfigurationPath = path;
+        Configurations.Insert(0, new ConfigurationItem
+        {
+            Name = Path.GetFileNameWithoutExtension(path),
+            LastSync = "Saved"
+        });
+
+        return SetStatusAsync($"Saved {Path.GetFileName(path)}.");
+    }
+
+    private FolderSyncrConfiguration CreateNativeConfiguration(string path)
+    {
+        return new FolderSyncrConfiguration(
+            Version: 1,
+            Name: Path.GetFileNameWithoutExtension(path),
+            LeftPath,
+            RightPath,
+            SelectedMode,
+            SelectedCompareMethod,
+            IncludePatterns,
+            ExcludePatterns,
+            IsDarkMode);
+    }
+
+    private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
+    {
+        _currentConfigurationPath = path;
+        LeftPath = configuration.LeftPath;
+        RightPath = configuration.RightPath;
+        SelectedMode = configuration.SyncMode;
+        SelectedCompareMethod = configuration.CompareMethod;
+        IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
+        ExcludePatterns = configuration.ExcludePatterns;
+        Operations.Clear();
+        OnOperationSummaryChanged();
+
+        if (IsDarkMode != configuration.IsDarkMode)
+        {
+            IsDarkMode = configuration.IsDarkMode;
+            ThemeManager.Apply(IsDarkMode);
+        }
+
+        Configurations.Insert(0, new ConfigurationItem
+        {
+            Name = string.IsNullOrWhiteSpace(configuration.Name) ? Path.GetFileNameWithoutExtension(path) : configuration.Name,
+            LastSync = "Opened"
+        });
+    }
+
+    private static bool IsNativeConfigurationPath(string path)
+    {
+        return path.EndsWith(".foldersyncr.json", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase);
     }
 
     private Task OpenFreeFileSyncLogAsync()
