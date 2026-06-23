@@ -33,7 +33,7 @@ This list tracks the work needed to support the main features documented in the 
   - [x] Skip links
   - [x] Follow links
   - [x] Copy links as links
-- [ ] Detect moved files using a synchronization database.
+- [x] Detect moved files using a synchronization database.
 - [x] Track conflicts based on a sync database, not only timestamps.
 
 ## 3. Filters

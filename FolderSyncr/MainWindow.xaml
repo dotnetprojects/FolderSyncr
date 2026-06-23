@@ -816,6 +816,9 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Border Style="{StaticResource ActionCell}">
+                                            <Border.ToolTip>
+                                                <ToolTip Content="{Binding ActionDescription}" />
+                                            </Border.ToolTip>
                                             <TextBlock Text="{Binding ActionGlyph}"
                                                        HorizontalAlignment="Center"
                                                        VerticalAlignment="Center"

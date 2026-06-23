@@ -37,6 +37,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Import FreeFileSync JSON results and log files.
 - Store local sync run history as FreeFileSync-like JSON.
 - Maintain a hidden `sync.ffs_db`-style two-way sync database in each synchronized root.
+- Detect moved files from the sync database and show linked move hints in the preview.
 - Run saved configurations unattended with `FolderSyncr.Cli`, FreeFileSync-like exit codes, and JSON output.
 - Save, open, and reload native `.foldersyncr.json` configurations.
 - Expand environment variables in folder paths.

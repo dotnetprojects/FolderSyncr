@@ -56,6 +56,8 @@ After a successful two-way synchronization, FolderSyncr writes a hidden `sync.ff
 
 When the database is available, two-way compare uses it to distinguish one-sided changes from conflicts. If both sides changed since the last completed two-way sync, the item is shown as a conflict even when one side has a newer timestamp. If one side deleted an unchanged file, FolderSyncr propagates that deletion to the other side.
 
+FolderSyncr also uses the database to detect moved files. A detected move is shown as a linked copy/delete pair with a move glyph and tooltip in the action column. Synchronization currently applies the move through the existing copy and delete operations.
+
 ## FolderSyncr Configurations
 
 Use `File` -> `Save` or `Save as` to store the current folder pair, any preserved imported folder pairs, sync mode, custom rules, compare method, filters, external commands, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.

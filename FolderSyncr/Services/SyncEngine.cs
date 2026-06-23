@@ -248,7 +248,88 @@ public sealed class SyncEngine
             });
         }
 
+        if (mode == SyncMode.TwoWay && databaseEntries is not null)
+        {
+            MarkDetectedMoves(operations, databaseEntries, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
+        }
+
         return operations;
+    }
+
+    private static void MarkDetectedMoves(
+        IReadOnlyList<SyncOperation> operations,
+        IReadOnlyDictionary<string, SyncDatabaseEntry> databaseEntries,
+        CompareMethod compareMethod,
+        TimeSpan fileTimeTolerance,
+        bool ignoreDaylightSavingTimeShift)
+    {
+        MarkDetectedMovesInDirection(
+            operations,
+            databaseEntries,
+            copyKind: OperationKind.CopyLeftToRight,
+            deleteKind: OperationKind.DeleteRight,
+            getCopySnapshot: operation => operation.Left,
+            getPreviousFingerprint: entry => entry.Left ?? entry.Right,
+            compareMethod,
+            fileTimeTolerance,
+            ignoreDaylightSavingTimeShift);
+
+        MarkDetectedMovesInDirection(
+            operations,
+            databaseEntries,
+            copyKind: OperationKind.CopyRightToLeft,
+            deleteKind: OperationKind.DeleteLeft,
+            getCopySnapshot: operation => operation.Right,
+            getPreviousFingerprint: entry => entry.Right ?? entry.Left,
+            compareMethod,
+            fileTimeTolerance,
+            ignoreDaylightSavingTimeShift);
+    }
+
+    private static void MarkDetectedMovesInDirection(
+        IReadOnlyList<SyncOperation> operations,
+        IReadOnlyDictionary<string, SyncDatabaseEntry> databaseEntries,
+        OperationKind copyKind,
+        OperationKind deleteKind,
+        Func<SyncOperation, FileSnapshot?> getCopySnapshot,
+        Func<SyncDatabaseEntry, FileFingerprint?> getPreviousFingerprint,
+        CompareMethod compareMethod,
+        TimeSpan fileTimeTolerance,
+        bool ignoreDaylightSavingTimeShift)
+    {
+        var deleteCandidates = operations
+            .Where(operation => operation.Kind == deleteKind && databaseEntries.ContainsKey(operation.RelativePath))
+            .ToList();
+        var usedDeletes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var copyOperation in operations.Where(operation => operation.Kind == copyKind))
+        {
+            if (databaseEntries.ContainsKey(copyOperation.RelativePath))
+            {
+                continue;
+            }
+
+            var copySnapshot = getCopySnapshot(copyOperation);
+            if (copySnapshot is null)
+            {
+                continue;
+            }
+
+            var deleteOperation = deleteCandidates.FirstOrDefault(candidate =>
+                !usedDeletes.Contains(candidate.RelativePath)
+                && databaseEntries.TryGetValue(candidate.RelativePath, out var databaseEntry)
+                && getPreviousFingerprint(databaseEntry) is { } fingerprint
+                && MatchesFingerprint(copySnapshot, fingerprint, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift));
+
+            if (deleteOperation is null)
+            {
+                continue;
+            }
+
+            copyOperation.MovePartnerRelativePath = deleteOperation.RelativePath;
+            deleteOperation.MovePartnerRelativePath = copyOperation.RelativePath;
+            usedDeletes.Add(deleteOperation.RelativePath);
+        }
     }
 
     private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CustomSyncRules customRules, SyncDatabaseEntry? databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
@@ -423,6 +504,11 @@ public sealed class SyncEngine
         return timestampDifference > fileTimeTolerance.TotalSeconds
             && (!ignoreDaylightSavingTimeShift
                 || Math.Abs(timestampDifference - TimeSpan.FromHours(1).TotalSeconds) > fileTimeTolerance.TotalSeconds);
+    }
+
+    private static bool MatchesFingerprint(FileSnapshot current, FileFingerprint previous, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    {
+        return !HasChangedSinceDatabase(current, previous, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
     }
 
     private static OperationKind DetermineCustomOperation(FileSnapshot? left, FileSnapshot? right, CustomSyncRules customRules, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)

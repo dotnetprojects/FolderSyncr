@@ -170,6 +170,7 @@
       <h2>Sync Database</h2>
       <p>After a successful two-way synchronization, FolderSyncr writes a hidden <code>sync.ffs_db</code>-style JSON inventory to both synchronized roots. The database records the last known left and right fingerprints for each synchronized relative path. FolderSyncr ignores this metadata file during compare and sync previews.</p>
       <p>When the database is available, two-way compare uses it to distinguish one-sided changes from conflicts. If both sides changed since the last completed two-way sync, the item is shown as a conflict even when one side has a newer timestamp. If one side deleted an unchanged file, FolderSyncr propagates that deletion to the other side.</p>
+      <p>FolderSyncr also uses the database to detect moved files. A detected move is shown as a linked copy/delete pair with a move glyph and tooltip in the action column. Synchronization currently applies the move through the existing copy and delete operations.</p>
     </section>
 
     <section>

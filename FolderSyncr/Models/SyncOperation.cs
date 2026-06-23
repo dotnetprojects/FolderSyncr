@@ -7,6 +7,7 @@ public sealed class SyncOperation : INotifyPropertyChanged
 {
     private bool? _isSelectedForSync;
     private string _status = "Pending";
+    private string? _movePartnerRelativePath;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -14,6 +15,20 @@ public sealed class SyncOperation : INotifyPropertyChanged
     public FileSnapshot? Left { get; init; }
     public FileSnapshot? Right { get; init; }
     public OperationKind Kind { get; init; }
+    public string? MovePartnerRelativePath
+    {
+        get => _movePartnerRelativePath;
+        set
+        {
+            if (SetProperty(ref _movePartnerRelativePath, value))
+            {
+                OnPropertyChanged(nameof(IsDetectedMove));
+                OnPropertyChanged(nameof(ActionGlyph));
+                OnPropertyChanged(nameof(ActionDescription));
+            }
+        }
+    }
+
     public string Status
     {
         get => _status;
@@ -50,8 +65,16 @@ public sealed class SyncOperation : INotifyPropertyChanged
         _ => string.Empty
     };
 
+    public string ActionDescription => IsDetectedMove
+        ? $"Move detected with {MovePartnerRelativePath}"
+        : Direction;
+
     public string ActionGlyph => Kind switch
     {
+        OperationKind.CopyLeftToRight when IsDetectedMove => "M=>",
+        OperationKind.CopyRightToLeft when IsDetectedMove => "<=M",
+        OperationKind.DeleteLeft when IsDetectedMove => "M<X",
+        OperationKind.DeleteRight when IsDetectedMove => "X>M",
         OperationKind.Equal => "==",
         OperationKind.CopyLeftToRight => "=>",
         OperationKind.CopyRightToLeft => "<=",
@@ -87,15 +110,18 @@ public sealed class SyncOperation : INotifyPropertyChanged
 
     public bool CanSelectForSync => WillChangeFileSystem;
 
-    private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    public bool IsDetectedMove => !string.IsNullOrWhiteSpace(MovePartnerRelativePath);
+
+    private bool SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
         {
-            return;
+            return false;
         }
 
         field = value;
         OnPropertyChanged(propertyName);
+        return true;
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

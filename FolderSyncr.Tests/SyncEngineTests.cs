@@ -135,6 +135,29 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task TwoWayUsesSyncDatabaseToDetectMovedFiles()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("old-name.txt", "base", DateTime.UtcNow.AddMinutes(-30));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, options, null, CancellationToken.None);
+
+        File.Move(workspace.LeftPath("old-name.txt"), workspace.LeftPath("new-name.txt"));
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+        var copyOperation = AssertOperation(operations, "new-name.txt", OperationKind.CopyLeftToRight);
+        var deleteOperation = AssertOperation(operations, "old-name.txt", OperationKind.DeleteRight);
+
+        Assert.IsTrue(copyOperation.IsDetectedMove);
+        Assert.IsTrue(deleteOperation.IsDetectedMove);
+        Assert.AreEqual("old-name.txt", copyOperation.MovePartnerRelativePath);
+        Assert.AreEqual("new-name.txt", deleteOperation.MovePartnerRelativePath);
+    }
+
+    [TestMethod]
     public async Task TwoWayMarksChangedFilesAsConflictWhenTimestampDoesNotPickWinner()
     {
         using var workspace = TestWorkspace.Create();
@@ -540,13 +563,13 @@ public sealed class SyncEngineTests
         StringAssert.Contains(exception.Message, "Volume{01234567-89ab-cdef-0123-456789abcdef}");
     }
 
-    private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
+    private static SyncOperation AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
-        Assert.IsTrue(
-            operations.Any(operation =>
-                string.Equals(operation.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase)
-                && operation.Kind == kind),
-            $"Expected {relativePath} to have operation {kind}.");
+        var operation = operations.SingleOrDefault(operation =>
+            string.Equals(operation.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase)
+            && operation.Kind == kind);
+        Assert.IsNotNull(operation, $"Expected {relativePath} to have operation {kind}.");
+        return operation;
     }
 
     private sealed class TestProgress(List<string> messages) : IProgress<string>
