@@ -1112,9 +1112,8 @@ public sealed class MainViewModel : ObservableObject
 
     public Task ExcludeOperationAsync(SyncOperation operation)
     {
-        var pattern = operation.RelativePath.Replace('\\', '/');
-        var existingPatterns = ExcludePatterns
-            .Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var pattern = GetFilterPattern(operation);
+        var existingPatterns = SplitFilterPatterns(ExcludePatterns);
 
         if (!existingPatterns.Contains(pattern, StringComparer.OrdinalIgnoreCase))
         {
@@ -1124,6 +1123,40 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return SetStatusAsync($"Excluded {operation.RelativePath}. Run Compare to refresh the preview.");
+    }
+
+    public Task IncludeOperationAsync(SyncOperation operation)
+    {
+        var pattern = GetFilterPattern(operation);
+        var includePatterns = SplitFilterPatterns(IncludePatterns);
+        if (!includePatterns.Contains("*", StringComparer.OrdinalIgnoreCase)
+            && !includePatterns.Contains(pattern, StringComparer.OrdinalIgnoreCase))
+        {
+            IncludePatterns = string.IsNullOrWhiteSpace(IncludePatterns)
+                ? pattern
+                : $"{IncludePatterns}{Environment.NewLine}{pattern}";
+        }
+
+        var excludePatterns = SplitFilterPatterns(ExcludePatterns);
+        var remainingExcludes = excludePatterns
+            .Where(existing => !string.Equals(existing, pattern, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (remainingExcludes.Length != excludePatterns.Length)
+        {
+            ExcludePatterns = string.Join(Environment.NewLine, remainingExcludes);
+        }
+
+        return SetStatusAsync($"Included {operation.RelativePath}. Run Compare to refresh the preview.");
+    }
+
+    private static string GetFilterPattern(SyncOperation operation)
+    {
+        return operation.RelativePath.Replace('\\', '/');
+    }
+
+    private static string[] SplitFilterPatterns(string patterns)
+    {
+        return patterns.Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
     }
 
     private Task OpenDocumentationAsync()

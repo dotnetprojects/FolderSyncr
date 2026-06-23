@@ -86,6 +86,7 @@ public partial class MainWindow : Window
         menu.Items.Add(CreateOperationMenuItem("Open right item", async op => await GetViewModel().OpenOperationSideAsync(op, openLeftSide: false)));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateOperationMenuItem("Copy relative path", async op => await GetViewModel().CopyOperationRelativePathAsync(op)));
+        menu.Items.Add(CreateOperationMenuItem("Add to include filter", async op => await GetViewModel().IncludeOperationAsync(op)));
         menu.Items.Add(CreateOperationMenuItem("Exclude from comparison", async op => await GetViewModel().ExcludeOperationAsync(op)));
         row.ContextMenu = menu;
     }

@@ -45,7 +45,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Support file-only filters with `:`.
 - [x] Support folder-only filters with trailing `/` or `\`.
 - [ ] Support local per-folder-pair filters.
-- [ ] Add right-click exclude/include actions from the comparison grid.
+- [x] Add right-click exclude/include actions from the comparison grid.
 
 ## 4. Synchronization modes
 

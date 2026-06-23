@@ -137,7 +137,7 @@ FolderSyncr creates temporary `.foldersyncr.lock` files in the left and right ro
 
 Use the checkbox in the action column to include or exclude an individual planned copy/delete operation before clicking `Synchronize`.
 
-Double-click a result row to open the existing left-side item, or the right-side item when no left item exists. Right-click a row to open either side, copy the relative path, or add that path to the exclude filter.
+Double-click a result row to open the existing left-side item, or the right-side item when no left item exists. Right-click a row to open either side, copy the relative path, add that path to the include filter, or add it to the exclude filter.
 
 ## Filters
 

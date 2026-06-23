@@ -25,7 +25,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Built-in sample data generator for first-run testing.
 - Drag-and-drop folder selection for left and right paths.
 - Per-row checkboxes to include or exclude planned sync actions.
-- Result-grid double-click and context menu actions.
+- Result-grid double-click plus context menu actions for opening items, copying relative paths, and include/exclude filters.
 - Volume-label paths like `[Backup-Disk]\folder` and volume GUID paths like `\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder` for removable drives.
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
