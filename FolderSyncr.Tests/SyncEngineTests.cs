@@ -314,6 +314,25 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task ExecuteCanIgnoreOperationErrorsAndContinue()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("locked.txt", "locked", DateTime.UtcNow);
+        workspace.WriteLeft("ok.txt", "ok", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.MirrorLeftToRight, errorHandling: SyncErrorHandling.IgnoreErrors);
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+        await using var lockStream = File.Open(workspace.LeftPath("locked.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        await new SyncEngine().ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.AreEqual("Error", operations.Single(operation => operation.RelativePath == "locked.txt").Status);
+        Assert.AreEqual("Done", operations.Single(operation => operation.RelativePath == "ok.txt").Status);
+        Assert.IsFalse(File.Exists(workspace.RightPath("locked.txt")));
+        Assert.AreEqual("ok", File.ReadAllText(workspace.RightPath("ok.txt")));
+    }
+
+    [TestMethod]
     public async Task CompareReportsUnavailableVolumeLabel()
     {
         using var workspace = TestWorkspace.Create();
@@ -400,7 +419,8 @@ public sealed class SyncEngineTests
             bool verifyCopiedFiles = false,
             DeletionHandling deletionHandling = DeletionHandling.Permanent,
             VersioningMode versioningMode = VersioningMode.TimeStampFolder,
-            string versioningFolderPath = "")
+            string versioningFolderPath = "",
+            SyncErrorHandling errorHandling = SyncErrorHandling.ShowErrors)
         {
             return new SyncOptions
             {
@@ -414,6 +434,7 @@ public sealed class SyncEngineTests
                 DeletionHandling = deletionHandling,
                 VersioningMode = versioningMode,
                 VersioningFolderPath = versioningFolderPath,
+                ErrorHandling = errorHandling,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false

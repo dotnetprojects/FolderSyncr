@@ -72,10 +72,10 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Create and run FolderSyncr batch jobs.
 - [x] Add minimized/background run mode.
 - [x] Add auto-close after successful unattended sync.
-- [ ] Add configurable error handling:
-  - [ ] Show errors
-  - [ ] Ignore errors
-  - [ ] Cancel on first error
+- [x] Add configurable error handling:
+  - [x] Show errors
+  - [x] Ignore errors
+  - [x] Cancel on first error
 - [x] Document Windows Task Scheduler usage.
 - [x] Add a CLI runner project or app mode for scheduled jobs.
 

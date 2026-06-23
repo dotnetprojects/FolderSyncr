@@ -113,7 +113,7 @@ Run a saved configuration unattended:
 dotnet run --project .\FolderSyncr.Cli\FolderSyncr.Cli.csproj -- .\Backup.foldersyncr.json --json .\result.json
 ```
 
-`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--dry-run` to compare without applying changes.
+`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--dry-run` to compare without applying changes, and `--error-handling show|ignore|cancel` to control per-item sync errors.
 
 ## How To Use
 

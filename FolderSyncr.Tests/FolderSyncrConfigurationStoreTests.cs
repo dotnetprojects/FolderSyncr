@@ -25,6 +25,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 DeletionHandling.RecycleBin,
                 VersioningMode.FileTime,
                 VersioningFolderPath: @"E:\Versions",
+                ErrorHandling: SyncErrorHandling.IgnoreErrors,
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
                 IsDarkMode: true);

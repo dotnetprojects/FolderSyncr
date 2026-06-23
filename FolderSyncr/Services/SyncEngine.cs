@@ -53,23 +53,22 @@ public sealed class SyncEngine
                 cancellationToken.ThrowIfCancellationRequested();
 
                 operation.Status = "Running";
-                switch (operation.Kind)
+                try
                 {
-                    case OperationKind.CopyLeftToRight:
-                        await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
-                        break;
-                    case OperationKind.CopyRightToLeft:
-                        await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
-                        break;
-                    case OperationKind.DeleteLeft:
-                        DeleteFile(operation.Left!, options, progress);
-                        break;
-                    case OperationKind.DeleteRight:
-                        DeleteFile(operation.Right!, options, progress);
-                        break;
+                    await ExecuteOperationAsync(operation, options, progress, cancellationToken);
+                    operation.Status = "Done";
                 }
-
-                operation.Status = "Done";
+                catch (Exception exception) when (exception is not OperationCanceledException && options.ErrorHandling == SyncErrorHandling.IgnoreErrors)
+                {
+                    operation.Status = "Error";
+                    progress?.Report($"Ignored error for {operation.RelativePath}: {exception.Message}");
+                }
+                catch (Exception exception) when (exception is not OperationCanceledException)
+                {
+                    operation.Status = "Error";
+                    progress?.Report($"Error for {operation.RelativePath}: {exception.Message}");
+                    throw;
+                }
             }
 
             progress?.Report($"Sync completed. {executable.Count} change(s) applied.");
@@ -80,6 +79,29 @@ public sealed class SyncEngine
             {
                 syncLock.Dispose();
             }
+        }
+    }
+
+    private static async Task ExecuteOperationAsync(
+        SyncOperation operation,
+        SyncOptions options,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        switch (operation.Kind)
+        {
+            case OperationKind.CopyLeftToRight:
+                await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                break;
+            case OperationKind.CopyRightToLeft:
+                await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                break;
+            case OperationKind.DeleteLeft:
+                DeleteFile(operation.Left!, options, progress);
+                break;
+            case OperationKind.DeleteRight:
+                DeleteFile(operation.Right!, options, progress);
+                break;
         }
     }
 
@@ -303,6 +325,7 @@ public sealed class SyncEngine
             DeletionHandling = options.DeletionHandling,
             VersioningMode = options.VersioningMode,
             VersioningFolderPath = PathMacroExpander.Expand(options.VersioningFolderPath),
+            ErrorHandling = options.ErrorHandling,
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun

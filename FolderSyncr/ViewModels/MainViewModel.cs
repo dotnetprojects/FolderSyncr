@@ -34,6 +34,7 @@ public sealed class MainViewModel : ObservableObject
     private DeletionHandling _selectedDeletionHandling = DeletionHandling.Permanent;
     private VersioningMode _selectedVersioningMode = VersioningMode.TimeStampFolder;
     private string _versioningFolderPath = string.Empty;
+    private SyncErrorHandling _selectedErrorHandling = SyncErrorHandling.ShowErrors;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -114,6 +115,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<CompareMethod> CompareMethods { get; } = Enum.GetValues<CompareMethod>();
     public IReadOnlyList<DeletionHandling> DeletionHandlingModes { get; } = Enum.GetValues<DeletionHandling>();
     public IReadOnlyList<VersioningMode> VersioningModes { get; } = Enum.GetValues<VersioningMode>();
+    public IReadOnlyList<SyncErrorHandling> ErrorHandlingModes { get; } = Enum.GetValues<SyncErrorHandling>();
 
     public RelayCommand BrowseLeftCommand { get; }
     public RelayCommand BrowseRightCommand { get; }
@@ -219,6 +221,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _selectedVersioningMode;
         set => SetProperty(ref _selectedVersioningMode, value);
+    }
+
+    public SyncErrorHandling SelectedErrorHandling
+    {
+        get => _selectedErrorHandling;
+        set => SetProperty(ref _selectedErrorHandling, value);
     }
 
     public string IncludePatterns
@@ -413,6 +421,14 @@ public sealed class MainViewModel : ObservableObject
             finally
             {
                 started.Stop();
+                var operationErrors = executable.Count(operation => string.Equals(operation.Status, "Error", StringComparison.OrdinalIgnoreCase));
+                if (operationErrors > 0 && syncResult == "success")
+                {
+                    syncResult = "error";
+                    errors = operationErrors;
+                    message = $"{operationErrors} item(s) failed.";
+                }
+
                 var processedItems = executable.Count(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase));
                 var processedBytes = executable
                     .Where(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase))
@@ -519,6 +535,14 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var errorHandlingBox = new ComboBox
+        {
+            ItemsSource = ErrorHandlingModes,
+            SelectedItem = SelectedErrorHandling,
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -534,6 +558,8 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(versioningModeBox);
         content.Children.Add(new TextBlock { Text = "Versioning folder", FontWeight = FontWeights.SemiBold });
         content.Children.Add(versioningBox);
+        content.Children.Add(new TextBlock { Text = "Error handling", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(errorHandlingBox);
 
         if (ShowDialog("Comparison settings", content))
         {
@@ -549,8 +575,9 @@ public sealed class MainViewModel : ObservableObject
             VerifyCopiedFiles = verifyBox.IsChecked == true;
             SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
             SelectedVersioningMode = (VersioningMode)versioningModeBox.SelectedItem;
+            SelectedErrorHandling = (SyncErrorHandling)errorHandlingBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
-            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}.").GetAwaiter().GetResult();
+            SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}, {SelectedErrorHandling}.").GetAwaiter().GetResult();
         }
 
         return Task.CompletedTask;
@@ -687,6 +714,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedDeletionHandling = DeletionHandling.Permanent;
         SelectedVersioningMode = VersioningMode.TimeStampFolder;
         VersioningFolderPath = string.Empty;
+        SelectedErrorHandling = SyncErrorHandling.ShowErrors;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         ClearOperations();
@@ -780,7 +808,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 6,
+            Version: 7,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -792,6 +820,7 @@ public sealed class MainViewModel : ObservableObject
             SelectedDeletionHandling,
             SelectedVersioningMode,
             VersioningFolderPath,
+            SelectedErrorHandling,
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode);
@@ -810,6 +839,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedDeletionHandling = configuration.Version >= 4 ? configuration.DeletionHandling : DeletionHandling.Permanent;
         SelectedVersioningMode = configuration.Version >= 6 ? configuration.VersioningMode : VersioningMode.TimeStampFolder;
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
+        SelectedErrorHandling = configuration.Version >= 7 ? configuration.ErrorHandling : SyncErrorHandling.ShowErrors;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
         ClearOperations();
@@ -1330,6 +1360,7 @@ public sealed class MainViewModel : ObservableObject
             DeletionHandling = SelectedDeletionHandling,
             VersioningMode = SelectedVersioningMode,
             VersioningFolderPath = VersioningFolderPath,
+            ErrorHandling = SelectedErrorHandling,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

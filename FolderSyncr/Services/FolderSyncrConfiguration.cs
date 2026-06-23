@@ -15,6 +15,7 @@ public sealed record FolderSyncrConfiguration(
     DeletionHandling DeletionHandling,
     VersioningMode VersioningMode,
     string VersioningFolderPath,
+    SyncErrorHandling ErrorHandling,
     string IncludePatterns,
     string ExcludePatterns,
     bool IsDarkMode);

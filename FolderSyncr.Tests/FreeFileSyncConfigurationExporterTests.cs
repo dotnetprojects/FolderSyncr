@@ -79,8 +79,9 @@ public sealed class FreeFileSyncConfigurationExporterTests
             DeletionHandling.Permanent,
             VersioningMode.TimeStampFolder,
             VersioningFolderPath: string.Empty,
-            includePatterns,
-            excludePatterns,
+            ErrorHandling: SyncErrorHandling.ShowErrors,
+            IncludePatterns: includePatterns,
+            ExcludePatterns: excludePatterns,
             IsDarkMode: false);
     }
 }

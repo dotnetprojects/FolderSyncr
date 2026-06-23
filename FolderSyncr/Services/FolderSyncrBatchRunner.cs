@@ -33,21 +33,27 @@ public sealed class FolderSyncrBatchRunner(
                 await _syncEngine.ExecuteAsync(operations, syncOptions, progress, cancellationToken);
             }
 
+            var operationErrors = executable.Count(operation => string.Equals(operation.Status, "Error", StringComparison.OrdinalIgnoreCase));
+            var processedOperations = options.DryRun
+                ? executable
+                : executable.Where(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase)).ToList();
             stopwatch.Stop();
             var result = CreateResult(
-                options.DryRun ? "dry-run" : warnings > 0 ? "warning" : "success",
+                options.DryRun ? "dry-run" : operationErrors > 0 ? "error" : warnings > 0 ? "warning" : "success",
                 startTime,
                 stopwatch.Elapsed,
-                errors: 0,
+                errors: operationErrors,
                 warnings,
                 operations,
-                executable,
+                processedOperations,
                 message: options.DryRun
                     ? $"Dry run completed. {executable.Count} change(s) would be applied."
-                    : $"Batch synchronization completed. {executable.Count} change(s) applied.");
+                    : operationErrors > 0
+                        ? $"Batch synchronization completed with {operationErrors} item error(s)."
+                        : $"Batch synchronization completed. {executable.Count} change(s) applied.");
             result = SaveResult(result, options.JsonOutputPath);
 
-            return new BatchRunReport(warnings > 0 ? 1 : 0, result);
+            return new BatchRunReport(operationErrors > 0 ? 2 : warnings > 0 ? 1 : 0, result);
         }
         catch (OperationCanceledException)
         {
@@ -103,6 +109,7 @@ public sealed class FolderSyncrBatchRunner(
             DeletionHandling = configuration.DeletionHandling,
             VersioningMode = configuration.VersioningMode,
             VersioningFolderPath = configuration.VersioningFolderPath,
+            ErrorHandling = configuration.ErrorHandling,
             IncludePatterns = configuration.IncludePatterns,
             ExcludePatterns = configuration.ExcludePatterns
         };
@@ -124,7 +131,8 @@ public sealed class FolderSyncrBatchRunner(
             VersioningFolderPath = syncOptions.VersioningFolderPath,
             IncludePatterns = syncOptions.IncludePatterns,
             ExcludePatterns = syncOptions.ExcludePatterns,
-            DryRun = options.DryRun
+            DryRun = options.DryRun,
+            ErrorHandling = options.ErrorHandling ?? syncOptions.ErrorHandling
         };
     }
 

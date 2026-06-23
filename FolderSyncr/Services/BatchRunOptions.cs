@@ -1,3 +1,5 @@
+using FolderSyncr.Models;
+
 namespace FolderSyncr.Services;
 
 public sealed record BatchRunOptions(
@@ -5,4 +7,5 @@ public sealed record BatchRunOptions(
     string? OverrideLeftPath,
     string? OverrideRightPath,
     bool DryRun,
-    string? JsonOutputPath);
+    string? JsonOutputPath,
+    SyncErrorHandling? ErrorHandling = null);

@@ -14,6 +14,7 @@ public sealed class SyncOptions
     public DeletionHandling DeletionHandling { get; init; } = DeletionHandling.Permanent;
     public VersioningMode VersioningMode { get; init; } = VersioningMode.TimeStampFolder;
     public string VersioningFolderPath { get; init; } = string.Empty;
+    public SyncErrorHandling ErrorHandling { get; init; } = SyncErrorHandling.ShowErrors;
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

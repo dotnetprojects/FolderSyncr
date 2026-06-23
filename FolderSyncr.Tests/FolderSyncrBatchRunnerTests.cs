@@ -64,6 +64,36 @@ public sealed class FolderSyncrBatchRunnerTests
         Assert.AreEqual(1, report.Result.Errors);
     }
 
+    [TestMethod]
+    public async Task RunAsyncReportsIgnoredOperationErrors()
+    {
+        using var workspace = BatchWorkspace.Create();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "locked.txt"), "locked");
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "ok.txt"), "ok");
+        var configPath = workspace.SaveNativeConfiguration("ignore-errors.foldersyncr.json", SyncMode.MirrorLeftToRight);
+
+        await using var lockStream = File.Open(Path.Combine(workspace.LeftPath, "locked.txt"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        var report = await workspace.CreateRunner().RunAsync(
+            new BatchRunOptions(configPath, null, null, DryRun: false, JsonOutputPath: null, SyncErrorHandling.IgnoreErrors),
+            null,
+            CancellationToken.None);
+
+        Assert.AreEqual(2, report.ExitCode);
+        Assert.AreEqual("error", report.Result.SyncResult);
+        Assert.AreEqual(1, report.Result.Errors);
+        Assert.AreEqual(1, report.Result.ProcessedItems);
+        Assert.AreEqual("ok", File.ReadAllText(Path.Combine(workspace.RightPath, "ok.txt")));
+        Assert.IsFalse(File.Exists(Path.Combine(workspace.RightPath, "locked.txt")));
+    }
+
+    [TestMethod]
+    public void BatchRunOptionsCanOverrideErrorHandling()
+    {
+        var options = new BatchRunOptions("backup.foldersyncr.json", null, null, DryRun: false, JsonOutputPath: null, SyncErrorHandling.CancelOnFirstError);
+
+        Assert.AreEqual(SyncErrorHandling.CancelOnFirstError, options.ErrorHandling);
+    }
+
     private sealed class BatchWorkspace : IDisposable
     {
         private BatchWorkspace(string rootPath)
@@ -105,6 +135,7 @@ public sealed class FolderSyncrBatchRunnerTests
                 DeletionHandling.Permanent,
                 VersioningMode.TimeStampFolder,
                 VersioningFolderPath: string.Empty,
+                ErrorHandling: SyncErrorHandling.ShowErrors,
                 IncludePatterns: "*",
                 ExcludePatterns: string.Empty,
                 IsDarkMode: false));

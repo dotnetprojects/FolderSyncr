@@ -1,4 +1,5 @@
 using FolderSyncr.Services;
+using FolderSyncr.Models;
 
 var parseResult = BatchCommandLineParser.Parse(args);
 if (parseResult.ShowHelp)
@@ -39,6 +40,7 @@ internal static class BatchCommandLineParser
         string? left = null;
         string? right = null;
         string? jsonOutputPath = null;
+        SyncErrorHandling? errorHandling = null;
         var dryRun = false;
 
         for (var index = 0; index < args.Count; index++)
@@ -56,6 +58,19 @@ internal static class BatchCommandLineParser
                     }
 
                     jsonOutputPath = args[++index];
+                    break;
+                case "--error-handling":
+                    if (index + 1 >= args.Count)
+                    {
+                        return new BatchParseResult(null, "--error-handling requires show, ignore, or cancel.", ShowHelp: false);
+                    }
+
+                    if (!TryParseErrorHandling(args[++index], out var parsedErrorHandling))
+                    {
+                        return new BatchParseResult(null, "--error-handling requires show, ignore, or cancel.", ShowHelp: false);
+                    }
+
+                    errorHandling = parsedErrorHandling;
                     break;
                 case "-dirpair":
                     if (index + 2 >= args.Count)
@@ -84,14 +99,32 @@ internal static class BatchCommandLineParser
 
         return string.IsNullOrWhiteSpace(configurationPath)
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPath, left, right, dryRun, jsonOutputPath), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPath, left, right, dryRun, jsonOutputPath, errorHandling), null, ShowHelp: false);
+    }
+
+    private static bool TryParseErrorHandling(string value, out SyncErrorHandling errorHandling)
+    {
+        errorHandling = value.ToLowerInvariant() switch
+        {
+            "show" or "showerrors" => SyncErrorHandling.ShowErrors,
+            "ignore" or "ignoreerrors" => SyncErrorHandling.IgnoreErrors,
+            "cancel" or "cancelonfirsterror" => SyncErrorHandling.CancelOnFirstError,
+            _ => SyncErrorHandling.ShowErrors
+        };
+
+        return value.Equals("show", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("showerrors", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("ignore", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("ignoreerrors", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("cancel", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("cancelonfirsterror", StringComparison.OrdinalIgnoreCase);
     }
 
     public static string GetUsage()
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [--dry-run] [--json <path>] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [-dirpair <left> <right>]
 
                Exit codes:
                  0 success
