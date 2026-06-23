@@ -48,6 +48,22 @@ Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argume
 FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
 
+## Windows Task Scheduler
+
+FolderSyncr can be opened by Task Scheduler with a saved configuration. Create a basic task, choose `Start a program`, set the program to the full path of `FolderSyncr.exe`, and put the configuration path in `Add arguments`.
+
+```text
+"C:\Path\To\Backup.foldersyncr.json"
+```
+
+To override the configured folders for a scheduled run, add `-dirpair` after the configuration path.
+
+```text
+"C:\Path\To\Backup.foldersyncr.json" -dirpair "C:\Source" "D:\Target"
+```
+
+FolderSyncr currently opens the UI for scheduled runs. A dedicated unattended runner with FreeFileSync-like exit codes is tracked in `TODO.md`.
+
 ## Path Macros
 
 Folder paths can use Windows environment variables such as `%USERPROFILE%\Documents` or `%OneDrive%\Backup`. FolderSyncr expands them before comparing or synchronizing.

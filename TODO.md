@@ -76,7 +76,7 @@ This list tracks the work needed to support the main features documented in the 
   - [ ] Show errors
   - [ ] Ignore errors
   - [ ] Cancel on first error
-- [ ] Document Windows Task Scheduler usage.
+- [x] Document Windows Task Scheduler usage.
 - [ ] Add a CLI runner project or app mode for scheduled jobs.
 
 ## 6. Logs and scripting
