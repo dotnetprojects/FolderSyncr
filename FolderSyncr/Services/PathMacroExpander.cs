@@ -8,14 +8,25 @@ public static partial class PathMacroExpander
 {
     public static string Expand(string path)
     {
-        return Expand(path, DateTime.Now);
+        return Expand(path, DateTime.Now, GetVolumeLabelRoots());
     }
 
     public static string Expand(string path, DateTime now)
     {
+        return Expand(path, now, GetVolumeLabelRoots());
+    }
+
+    public static string Expand(string path, DateTime now, IReadOnlyDictionary<string, string> volumeLabelRoots)
+    {
         return string.IsNullOrWhiteSpace(path)
             ? path
-            : Environment.ExpandEnvironmentVariables(ExpandInternalMacros(path, now));
+            : ExpandVolumeLabelPath(Environment.ExpandEnvironmentVariables(ExpandInternalMacros(path, now)), volumeLabelRoots);
+    }
+
+    public static string? GetVolumeLabelReference(string path)
+    {
+        var match = VolumeLabelRegex().Match(path);
+        return match.Success ? match.Groups["label"].Value : null;
     }
 
     private static string ExpandInternalMacros(string path, DateTime now)
@@ -85,6 +96,50 @@ public static partial class PathMacroExpander
         return now.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)now.DayOfWeek;
     }
 
+    private static string ExpandVolumeLabelPath(string path, IReadOnlyDictionary<string, string> volumeLabelRoots)
+    {
+        var match = VolumeLabelRegex().Match(path);
+        if (!match.Success)
+        {
+            return path;
+        }
+
+        var label = match.Groups["label"].Value;
+        if (!volumeLabelRoots.TryGetValue(label, out var root))
+        {
+            return path;
+        }
+
+        var rest = match.Groups["rest"].Value.TrimStart('\\', '/');
+        return string.IsNullOrWhiteSpace(rest) ? root : Path.Combine(root, rest);
+    }
+
+    private static IReadOnlyDictionary<string, string> GetVolumeLabelRoots()
+    {
+        var roots = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var drive in DriveInfo.GetDrives())
+        {
+            try
+            {
+                if (drive.IsReady && !string.IsNullOrWhiteSpace(drive.VolumeLabel))
+                {
+                    roots.TryAdd(drive.VolumeLabel, drive.RootDirectory.FullName);
+                }
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
+        }
+
+        return roots;
+    }
+
     [GeneratedRegex("%(?<name>Date|Time|TimeStamp|Year|Month|MonthName|Day|Hour|Min|Sec|WeekDay|WeekDayName|Week|csidl_[A-Za-z]+)%", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex MacroRegex();
+
+    [GeneratedRegex("^\\[(?<label>[^\\]]+)\\](?<rest>[\\\\/].*)?$", RegexOptions.CultureInvariant)]
+    private static partial Regex VolumeLabelRegex();
 }

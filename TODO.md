@@ -127,9 +127,9 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 11. Variable drive letters and shadow copy
 
-- [ ] Resolve paths by volume label.
+- [x] Resolve paths by volume label.
 - [ ] Resolve paths by volume GUID.
-- [ ] Handle removable drives gracefully.
+- [x] Handle removable drives gracefully.
 - [ ] Add Volume Shadow Copy support for locked files.
 
 ## 12. UI parity and usability

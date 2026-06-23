@@ -82,6 +82,8 @@ FolderSyncr also expands date/time macros: `%Date%`, `%Time%`, `%TimeStamp%`, `%
 
 Windows special-folder macros are supported for common locations, including `%csidl_Desktop%`, `%csidl_Documents%`, `%csidl_Pictures%`, `%csidl_Music%`, `%csidl_Videos%`, `%csidl_Downloads%`, `%csidl_Favorites%`, `%csidl_StartMenu%`, `%csidl_Programs%`, `%csidl_Startup%`, `%csidl_Templates%`, and public document/media variants.
 
+For removable drives, use a volume label path such as `[Backup-Disk]\folder`. FolderSyncr resolves the label to the currently mounted drive and reports a clear error if the drive is not available.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.

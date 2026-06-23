@@ -487,11 +487,21 @@ public sealed class SyncEngine
     {
         if (string.IsNullOrWhiteSpace(options.LeftPath) || !Directory.Exists(options.LeftPath))
         {
+            if (PathMacroExpander.GetVolumeLabelReference(options.LeftPath) is { } volumeLabel)
+            {
+                throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
+            }
+
             throw new DirectoryNotFoundException("Choose an existing left folder.");
         }
 
         if (string.IsNullOrWhiteSpace(options.RightPath) || !Directory.Exists(options.RightPath))
         {
+            if (PathMacroExpander.GetVolumeLabelReference(options.RightPath) is { } volumeLabel)
+            {
+                throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
+            }
+
             throw new DirectoryNotFoundException("Choose an existing right folder.");
         }
     }

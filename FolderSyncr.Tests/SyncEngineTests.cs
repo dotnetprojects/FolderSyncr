@@ -240,6 +240,24 @@ public sealed class SyncEngineTests
         Assert.AreEqual("Pending", operation.Status);
     }
 
+    [TestMethod]
+    public async Task CompareReportsUnavailableVolumeLabel()
+    {
+        using var workspace = TestWorkspace.Create();
+        var options = new SyncOptions
+        {
+            LeftPath = @"[Definitely-Missing-FolderSyncr-Test-Disk]\left",
+            RightPath = workspace.RightPath(string.Empty),
+            Mode = SyncMode.TwoWay,
+            CompareMethod = CompareMethod.TimeAndSize
+        };
+
+        var exception = await Assert.ThrowsExactlyAsync<DirectoryNotFoundException>(() =>
+            new SyncEngine().CompareAsync(options, null, CancellationToken.None));
+
+        StringAssert.Contains(exception.Message, "Definitely-Missing-FolderSyncr-Test-Disk");
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(

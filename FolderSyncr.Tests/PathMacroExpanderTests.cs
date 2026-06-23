@@ -82,4 +82,26 @@ public sealed class PathMacroExpanderTests
 
         Assert.AreEqual("%csidl_NotARealFolder%", expanded);
     }
+
+    [TestMethod]
+    public void ExpandResolvesVolumeLabelPaths()
+    {
+        var roots = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Backup-Disk"] = @"E:\"
+        };
+
+        var expanded = PathMacroExpander.Expand(@"[Backup-Disk]\folder\file.txt", DateTime.Now, roots);
+
+        Assert.AreEqual(@"E:\folder\file.txt", expanded);
+    }
+
+    [TestMethod]
+    public void ExpandLeavesUnknownVolumeLabelPathsUnchanged()
+    {
+        var expanded = PathMacroExpander.Expand(@"[Missing-Disk]\folder", DateTime.Now, new Dictionary<string, string>());
+
+        Assert.AreEqual(@"[Missing-Disk]\folder", expanded);
+        Assert.AreEqual("Missing-Disk", PathMacroExpander.GetVolumeLabelReference(expanded));
+    }
 }
