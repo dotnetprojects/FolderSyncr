@@ -157,7 +157,7 @@
 
     <section>
       <h2>FreeFileSync Import</h2>
-      <p>Use <code>File -> Open configuration</code> to import a FreeFileSync <code>.ffs_gui</code>, <code>.ffs_batch</code>, or <code>.ffs_real</code> file. FolderSyncr preserves all imported folder pairs and local per-pair filters in saved native configurations and compatible FreeFileSync exports. The current WPF UI shows the first pair until full multi-pair editing is implemented. <code>FolderSyncr.Cli.exe</code> runs every preserved pair with its local filters unless you pass a single <code>-dirpair</code> override. For <code>.ffs_real</code> files, FolderSyncr imports the configured folders but does not start a real-time monitor yet.</p>
+      <p>Use <code>File -> Open configuration</code> to import a FreeFileSync <code>.ffs_gui</code>, <code>.ffs_batch</code>, or <code>.ffs_real</code> file. FolderSyncr preserves all imported folder pairs and local per-pair filters in saved native configurations and compatible FreeFileSync exports. Use the plus button beside the folder path row to edit the preserved folder pairs. The main view shows the first pair, while <code>FolderSyncr.Cli.exe</code> runs every preserved pair with its local filters unless you pass a single <code>-dirpair</code> override. For <code>.ffs_real</code> files, FolderSyncr imports the configured folders but does not start a real-time monitor yet.</p>
       <p>Use <code>Tools -> Open FreeFileSync log</code> to import a FreeFileSync JSON result or log file. JSON results show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.</p>
     </section>
 
@@ -283,7 +283,7 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\H
       <p>Filters follow the FreeFileSync wildcard syntax. Separate official FreeFileSync filter items with <code>|</code> or new lines. FolderSyncr also accepts semicolons and commas when loading older FolderSyncr configurations.</p>
       <p><code>*</code> matches zero or more characters, <code>?</code> matches one character, and <code>?*</code> requires at least one character. Matching is case-insensitive.</p>
       <p>By default, a filter item can match either files or folders. When a rule matches a folder, all descendants of that folder are matched too. A trailing <code>:</code> marks a file-only filter, while a trailing slash marks a folder-only filter. Start a path with <code>\</code> or <code>/</code> to anchor it to the folder-pair root.</p>
-      <p>Imported FreeFileSync configurations can carry local filters on each folder pair. FolderSyncr preserves those filters for native saves, exports, and CLI batch runs. The current filter dialog edits the visible first pair.</p>
+      <p>Imported FreeFileSync configurations can carry local filters on each folder pair. FolderSyncr preserves those filters for native saves, exports, and CLI batch runs. The folder-pair editor can edit each pair's include and exclude filters; the filter dialog edits the visible first pair.</p>
       <pre><code>*.txt | *.md</code></pre>
       <pre><code>bin\ | obj\ | .git\</code></pre>
       <pre><code>*\</code></pre>

@@ -761,7 +761,7 @@
 
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
                         <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
-                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource PathIconButton}" Command="{Binding NewConfigurationCommand}" ToolTip="Add folder pair">
+                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource PathIconButton}" Command="{Binding OpenFolderPairsCommand}" ToolTip="Edit folder pairs">
                             <TextBlock Text="+" FontSize="20" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                         </Button>
                         <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Tag="Left" PreviewDragOver="PathBox_PreviewDragOver" Drop="PathBox_Drop" />

@@ -137,7 +137,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] FreeFileSync-like main layout with configuration, overview, folder pair row, grids, actions, and statistics.
 - [x] Light and dark themes.
 - [x] Close/reopen configuration and overview panes.
-- [ ] Add multiple folder pairs in the UI.
+- [x] Add multiple folder pairs in the UI.
 - [x] Add tree overview navigation.
 - [x] Add category filter buttons for all FreeFileSync item categories.
 - [x] Add selectable per-row sync actions.

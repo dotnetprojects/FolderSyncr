@@ -62,6 +62,7 @@ public sealed class MainViewModel : ObservableObject
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
         OpenSettingsCommand = new RelayCommand(OpenSettingsAsync);
         OpenFilterCommand = new RelayCommand(OpenFilterAsync);
+        OpenFolderPairsCommand = new RelayCommand(OpenFolderPairsAsync);
         OpenExternalCommandsCommand = new RelayCommand(OpenExternalCommandsAsync);
         SwapSidesCommand = new RelayCommand(SwapSidesAsync);
         CloudPathCommand = new RelayCommand(() => SetStatusAsync("Cloud path integration is not implemented yet. Use Browse or paste a local/cloud-synced folder path."));
@@ -132,6 +133,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ToggleThemeCommand { get; }
     public RelayCommand OpenSettingsCommand { get; }
     public RelayCommand OpenFilterCommand { get; }
+    public RelayCommand OpenFolderPairsCommand { get; }
     public RelayCommand OpenExternalCommandsCommand { get; }
     public RelayCommand SwapSidesCommand { get; }
     public RelayCommand CloudPathCommand { get; }
@@ -690,6 +692,90 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    private Task OpenFolderPairsAsync()
+    {
+        var rows = new ObservableCollection<FolderPairEditorRow>(
+            GetSavedFolderPairs().Select(pair => new FolderPairEditorRow
+            {
+                LeftPath = pair.LeftPath,
+                RightPath = pair.RightPath,
+                IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? "*" : pair.IncludePatterns,
+                ExcludePatterns = pair.ExcludePatterns ?? string.Empty
+            }));
+        if (rows.Count == 0)
+        {
+            rows.Add(new FolderPairEditorRow());
+        }
+
+        var grid = new DataGrid
+        {
+            ItemsSource = rows,
+            AutoGenerateColumns = false,
+            CanUserAddRows = true,
+            CanUserDeleteRows = true,
+            MinWidth = 760,
+            MinHeight = 280,
+            Margin = new Thickness(18)
+        };
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Left folder",
+            Binding = new Binding(nameof(FolderPairEditorRow.LeftPath)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Right folder",
+            Binding = new Binding(nameof(FolderPairEditorRow.RightPath)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
+            Width = new DataGridLength(1, DataGridLengthUnitType.Star)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Include",
+            Binding = new Binding(nameof(FolderPairEditorRow.IncludePatterns)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
+            Width = new DataGridLength(140)
+        });
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = "Exclude",
+            Binding = new Binding(nameof(FolderPairEditorRow.ExcludePatterns)) { UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged },
+            Width = new DataGridLength(180)
+        });
+
+        if (!ShowDialog("Folder pairs", grid))
+        {
+            return Task.CompletedTask;
+        }
+
+        grid.CommitEdit(DataGridEditingUnit.Cell, exitEditingMode: true);
+        grid.CommitEdit(DataGridEditingUnit.Row, exitEditingMode: true);
+
+        var pairs = rows
+            .Where(row => !string.IsNullOrWhiteSpace(row.LeftPath) || !string.IsNullOrWhiteSpace(row.RightPath))
+            .Select(row => new FolderPairConfiguration(
+                row.LeftPath.Trim(),
+                row.RightPath.Trim(),
+                string.IsNullOrWhiteSpace(row.IncludePatterns) ? "*" : row.IncludePatterns.Trim(),
+                row.ExcludePatterns.Trim()))
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.LeftPath) && !string.IsNullOrWhiteSpace(pair.RightPath))
+            .ToList();
+
+        if (pairs.Count == 0)
+        {
+            return SetStatusAsync("No complete folder pair was entered.");
+        }
+
+        _folderPairs = pairs;
+        var firstPair = pairs[0];
+        LeftPath = firstPair.LeftPath;
+        RightPath = firstPair.RightPath;
+        IncludePatterns = string.IsNullOrWhiteSpace(firstPair.IncludePatterns) ? "*" : firstPair.IncludePatterns;
+        ExcludePatterns = firstPair.ExcludePatterns ?? string.Empty;
+        ClearOperations();
+        OnOperationSummaryChanged();
+        return SetStatusAsync($"Updated {pairs.Count} folder pair(s). The main view shows the first pair.");
+    }
+
     private Task OpenExternalCommandsAsync()
     {
         var commandsBox = new TextBox
@@ -815,7 +901,7 @@ public sealed class MainViewModel : ObservableObject
         SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.").GetAwaiter().GetResult();
         if (_folderPairs.Count > 1)
         {
-            AddLog($"Imported {_folderPairs.Count} folder pairs. The UI shows the first pair; saved configurations and CLI runs preserve all imported pairs.");
+            AddLog($"Imported {_folderPairs.Count} folder pairs. Use the folder-pair editor to review or change them.");
         }
     }
 
@@ -1007,7 +1093,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (_folderPairs.Count > 1)
         {
-            AddLog($"Loaded {_folderPairs.Count} preserved folder pairs. The UI shows the first pair; CLI runs use all pairs.");
+            AddLog($"Loaded {_folderPairs.Count} preserved folder pairs. Use the folder-pair editor to review or change them.");
         }
     }
 
@@ -1811,5 +1897,16 @@ public sealed class MainViewModel : ObservableObject
         DeleteLeft,
         DeleteRight,
         Conflicts
+    }
+
+    private sealed class FolderPairEditorRow
+    {
+        public string LeftPath { get; set; } = string.Empty;
+
+        public string RightPath { get; set; } = string.Empty;
+
+        public string IncludePatterns { get; set; } = "*";
+
+        public string ExcludePatterns { get; set; } = string.Empty;
     }
 }

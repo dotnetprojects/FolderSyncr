@@ -319,6 +319,9 @@ try {
     Close-Window (Open-DialogByHelp $process 'Comparison settings' 'Comparison settings' 'Comparison settings button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+    Close-Window (Open-DialogByHelp $process 'Edit folder pairs' 'Folder pairs' 'Folder pairs button')
+
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Close-Window (Open-DialogByHelp $process 'Filter files' 'File filters' 'Filter files button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
