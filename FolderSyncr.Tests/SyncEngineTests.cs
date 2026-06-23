@@ -199,6 +199,27 @@ public sealed class SyncEngineTests
         Assert.AreEqual("keep a version", File.ReadAllText(versionedFile));
     }
 
+    [TestMethod]
+    public async Task ExecuteFailsWhenFolderPairIsAlreadyLocked()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("locked.txt", "left", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        await using var existingLock = File.Open(
+            Path.Combine(workspace.RootPath, "left", ".foldersyncr.lock"),
+            FileMode.OpenOrCreate,
+            FileAccess.ReadWrite,
+            FileShare.None);
+
+        await Assert.ThrowsExactlyAsync<IOException>(() =>
+            engine.ExecuteAsync(operations, options, null, CancellationToken.None));
+        Assert.IsFalse(File.Exists(workspace.RightPath("locked.txt")));
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(

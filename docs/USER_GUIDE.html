@@ -217,6 +217,11 @@
     </section>
 
     <section>
+      <h2>Sync Locks</h2>
+      <p>FolderSyncr creates temporary <code>.foldersyncr.lock</code> files in the left and right roots while synchronization is running. If another FolderSyncr process already holds a lock for either side, synchronization stops before changing files.</p>
+    </section>
+
+    <section>
       <h2>Filters</h2>
       <p>Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines. <code>*</code> matches zero or more characters, <code>?</code> matches one character, and <code>?*</code> requires at least one character.</p>
       <p>A trailing <code>:</code> marks a file-only filter, while a trailing slash marks a folder filter whose contents are also matched. Start a path with <code>\</code> or <code>/</code> to anchor it to the folder-pair root.</p>

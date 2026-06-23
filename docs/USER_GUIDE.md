@@ -104,6 +104,10 @@ Mirror modes can remove files from the target side. Choose the deletion handling
 
 Set a versioning folder before using `VersioningFolder`; otherwise synchronization stops with an error before deleting the file.
 
+## Sync Locks
+
+FolderSyncr creates temporary `.foldersyncr.lock` files in the left and right roots while synchronization is running. If another FolderSyncr process already holds a lock for either side, synchronization stops before changing files.
+
 ## Preview Actions
 
 - `=>`: copy from left to right.

@@ -9,6 +9,8 @@ namespace FolderSyncr.Services;
 
 public sealed class SyncEngine
 {
+    private const string LockFileName = ".foldersyncr.lock";
+
     public async Task<IReadOnlyList<SyncOperation>> CompareAsync(
         SyncOptions options,
         IProgress<string>? progress,
@@ -36,38 +38,49 @@ public sealed class SyncEngine
         options = ExpandOptions(options);
         ValidateOptions(options);
 
-        var executable = operations.Where(operation => operation.WillChangeFileSystem).ToList();
-        if (executable.Count == 0)
+        var locks = AcquireSyncLocks(options);
+        try
         {
-            progress?.Report("No file changes required.");
-            return;
-        }
-
-        foreach (var operation in executable)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            operation.Status = "Running";
-            switch (operation.Kind)
+            var executable = operations.Where(operation => operation.WillChangeFileSystem).ToList();
+            if (executable.Count == 0)
             {
-                case OperationKind.CopyLeftToRight:
-                    await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
-                    break;
-                case OperationKind.CopyRightToLeft:
-                    await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
-                    break;
-                case OperationKind.DeleteLeft:
-                    DeleteFile(operation.Left!, options, progress);
-                    break;
-                case OperationKind.DeleteRight:
-                    DeleteFile(operation.Right!, options, progress);
-                    break;
+                progress?.Report("No file changes required.");
+                return;
             }
 
-            operation.Status = "Done";
-        }
+            foreach (var operation in executable)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
 
-        progress?.Report($"Sync completed. {executable.Count} change(s) applied.");
+                operation.Status = "Running";
+                switch (operation.Kind)
+                {
+                    case OperationKind.CopyLeftToRight:
+                        await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                        break;
+                    case OperationKind.CopyRightToLeft:
+                        await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                        break;
+                    case OperationKind.DeleteLeft:
+                        DeleteFile(operation.Left!, options, progress);
+                        break;
+                    case OperationKind.DeleteRight:
+                        DeleteFile(operation.Right!, options, progress);
+                        break;
+                }
+
+                operation.Status = "Done";
+            }
+
+            progress?.Report($"Sync completed. {executable.Count} change(s) applied.");
+        }
+        finally
+        {
+            foreach (var syncLock in locks)
+            {
+                syncLock.Dispose();
+            }
+        }
     }
 
     private static async Task<Dictionary<string, FileSnapshot>> ScanAsync(
@@ -284,6 +297,44 @@ public sealed class SyncEngine
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun
         };
+    }
+
+    private static IReadOnlyList<FileStream> AcquireSyncLocks(SyncOptions options)
+    {
+        var lockPaths = new[]
+        {
+            Path.Combine(options.LeftPath, LockFileName),
+            Path.Combine(options.RightPath, LockFileName)
+        }
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+        .ToList();
+
+        var locks = new List<FileStream>();
+        try
+        {
+            foreach (var lockPath in lockPaths)
+            {
+                locks.Add(new FileStream(
+                    lockPath,
+                    FileMode.OpenOrCreate,
+                    FileAccess.ReadWrite,
+                    FileShare.None,
+                    bufferSize: 1,
+                    FileOptions.DeleteOnClose));
+            }
+        }
+        catch
+        {
+            foreach (var syncLock in locks)
+            {
+                syncLock.Dispose();
+            }
+
+            throw;
+        }
+
+        return locks;
     }
 
     private static async Task CopyAsync(

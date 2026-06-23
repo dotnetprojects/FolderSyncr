@@ -64,7 +64,7 @@ This list tracks the work needed to support the main features documented in the 
   - [x] Time stamp
   - [ ] File time
 - [x] Verify copied files by binary compare after copy.
-- [ ] Serialize sync jobs with lock files.
+- [x] Serialize sync jobs with lock files.
 - [ ] Store and maintain a `sync.ffs_db`-style database for two-way sync history.
 
 ## 5. Batch jobs and automation
