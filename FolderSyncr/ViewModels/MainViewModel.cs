@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows.Forms;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
 
@@ -140,22 +139,27 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task BrowseAsync(bool isLeft)
     {
-        using var dialog = new FolderBrowserDialog
+        var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Description = isLeft ? "Choose the left folder" : "Choose the right folder",
-            UseDescriptionForTitle = true,
-            ShowNewFolderButton = true
+            Title = isLeft ? "Choose the left folder" : "Choose the right folder",
+            Multiselect = false
         };
 
-        if (dialog.ShowDialog() == DialogResult.OK)
+        var currentPath = isLeft ? LeftPath : RightPath;
+        if (Directory.Exists(currentPath))
+        {
+            dialog.InitialDirectory = currentPath;
+        }
+
+        if (dialog.ShowDialog() == true)
         {
             if (isLeft)
             {
-                LeftPath = dialog.SelectedPath;
+                LeftPath = dialog.FolderName;
             }
             else
             {
-                RightPath = dialog.SelectedPath;
+                RightPath = dialog.FolderName;
             }
         }
 

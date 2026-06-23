@@ -50,9 +50,7 @@ public static class ThemeManager
 
     private static void Set(System.Windows.ResourceDictionary resources, string key, string color)
     {
-        if (resources[key] is SolidColorBrush brush)
-        {
-            brush.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color);
-        }
+        resources[key] = new SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color));
     }
 }

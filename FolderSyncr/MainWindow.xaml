@@ -34,13 +34,13 @@
         <SolidColorBrush x:Key="ConflictBrush" Color="#FDE68A" />
 
         <Style x:Key="PaneBorder" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
         <Style x:Key="PaneHeader" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource HeaderBlueBrush}" />
+            <Setter Property="Background" Value="{DynamicResource HeaderBlueBrush}" />
             <Setter Property="Padding" Value="5,3" />
         </Style>
 
@@ -55,11 +55,12 @@
             <Setter Property="MinWidth" Value="54" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Margin" Value="3,0" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="{StaticResource ButtonBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -73,7 +74,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource ButtonHoverBrush}" />
+                                <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="#D1D5DB" />
@@ -102,11 +103,11 @@
         <Style x:Key="InputBox" TargetType="TextBox">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="8,4" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="CaretBrush" Value="{StaticResource TextBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Background" Value="{StaticResource InputBrush}" />
+            <Setter Property="Background" Value="{DynamicResource InputBrush}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
@@ -119,31 +120,31 @@
         <Style TargetType="ComboBox">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="5,2" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="Background" Value="{StaticResource InputBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
         </Style>
 
         <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="GridLinesVisibility" Value="All" />
-            <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource GridLineBrush}" />
-            <Setter Property="VerticalGridLinesBrush" Value="{StaticResource GridLineBrush}" />
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource GridLineBrush}" />
+            <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource GridLineBrush}" />
             <Setter Property="RowHeaderWidth" Value="0" />
             <Setter Property="HeadersVisibility" Value="Column" />
             <Setter Property="CanUserAddRows" Value="False" />
             <Setter Property="CanUserDeleteRows" Value="False" />
             <Setter Property="IsReadOnly" Value="True" />
             <Setter Property="AutoGenerateColumns" Value="False" />
-            <Setter Property="AlternatingRowBackground" Value="{StaticResource RowAltBrush}" />
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource RowAltBrush}" />
         </Style>
 
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="{StaticResource ColumnHeaderBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
+            <Setter Property="Background" Value="{DynamicResource ColumnHeaderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="0,0,1,1" />
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="FontSize" Value="12" />
@@ -152,7 +153,7 @@
 
         <Style TargetType="DataGridCell">
             <Setter Property="Padding" Value="5,2" />
-            <Setter Property="BorderBrush" Value="{StaticResource GridLineBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource GridLineBrush}" />
             <Setter Property="BorderThickness" Value="0,0,1,1" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -172,7 +173,7 @@
             <Setter Property="MinHeight" Value="23" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource RowHoverBrush}" />
+                    <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
                 </Trigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Conflict">
                     <Setter Property="Background" Value="#FFF7D6" />
@@ -213,7 +214,7 @@
     </Window.Resources>
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrushSoft}" BorderThickness="0,0,0,1">
+        <Menu DockPanel.Dock="Top" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" BorderBrush="{DynamicResource BorderBrushSoft}" BorderThickness="0,0,0,1">
             <MenuItem Header="_File" />
             <MenuItem Header="_Actions" />
             <MenuItem Header="_Tools" />
@@ -222,10 +223,10 @@
 
         <StatusBar DockPanel.Dock="Bottom"
                    Height="26"
-                   Background="{StaticResource PanelBrush}"
-                   BorderBrush="{StaticResource BorderBrushSoft}"
+                   Background="{DynamicResource PanelBrush}"
+                   BorderBrush="{DynamicResource BorderBrushSoft}"
                    BorderThickness="0,1,0,0">
-            <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedTextBrush}" />
+            <TextBlock Text="{Binding Status}" Foreground="{DynamicResource MutedTextBrush}" />
         </StatusBar>
 
         <Grid>
@@ -235,7 +236,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0" Background="{StaticResource ChromeBrush}">
+            <Grid Grid.Column="0" Background="{DynamicResource ChromeBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="5" />
@@ -378,7 +379,7 @@
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0"
-                        Background="{StaticResource ChromeBrush}"
+                        Background="{DynamicResource ChromeBrush}"
                         BorderBrush="#BFC7D1"
                         BorderThickness="0,0,0,1">
                     <Grid>
@@ -391,7 +392,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <Button Grid.Column="0" Style="{StaticResource ToolbarButton}" Margin="8,7,4,7" ToolTip="Comparison settings">
+                        <Button Grid.Column="0" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="8,10,4,10" ToolTip="Comparison settings">
                             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="27" Foreground="#2563EB" />
                         </Button>
 
@@ -400,19 +401,19 @@
                                 <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#2563EB" Margin="0,0,12,0" />
                                 <StackPanel>
                                     <TextBlock Text="Compare" FontSize="16" FontWeight="Bold" />
-                                    <TextBlock Text="File time and size" Foreground="{StaticResource MutedTextBrush}" FontSize="12" />
+                                    <TextBlock Text="File time and size" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>
 
-                        <Button Grid.Column="2" Style="{StaticResource SmallButton}" HorizontalAlignment="Right" Margin="4,0,12,0" Command="{Binding ToggleThemeCommand}" ToolTip="Switch between light and dark mode">
+                        <Button Grid.Column="2" Style="{StaticResource MainCommandButton}" MinWidth="150" HorizontalAlignment="Right" Margin="4,10,12,10" Command="{Binding ToggleThemeCommand}" ToolTip="Switch between light and dark mode">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding ThemeButtonText}" VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
 
-                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" Margin="4,12" ToolTip="Filter files">
+                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" MinHeight="58" MinWidth="64" Margin="4,10" ToolTip="Filter files">
                             <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#B91C1C" />
                         </Button>
 
@@ -421,7 +422,7 @@
                                 <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="30" Foreground="{StaticResource GreenBrush}" Margin="0,0,12,0" />
                                 <StackPanel>
                                     <TextBlock Text="Synchronize" FontSize="16" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding SelectedMode}" Foreground="{StaticResource MutedTextBrush}" FontSize="12" />
+                                    <TextBlock Text="{Binding SelectedMode}" Foreground="{DynamicResource MutedTextBrush}" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>
@@ -429,8 +430,8 @@
                 </Border>
 
                 <Border Grid.Row="1"
-                        Background="{StaticResource ChromeBrush}"
-                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        Background="{DynamicResource ChromeBrush}"
+                        BorderBrush="{DynamicResource BorderBrushSoft}"
                         BorderThickness="0,0,0,1"
                         Padding="10,8">
                     <Grid>
@@ -449,8 +450,8 @@
                             <ColumnDefinition Width="44" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" />
-                        <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
+                        <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource MutedTextBrush}" />
                         <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource SmallButton}" MinWidth="34" Padding="0" ToolTip="Add folder pair">
                             <TextBlock Text="+" FontSize="20" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                         </Button>
@@ -524,8 +525,8 @@
                 </Grid>
 
                 <Border Grid.Row="3"
-                        Background="{StaticResource ChromeBrush}"
-                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        Background="{DynamicResource ChromeBrush}"
+                        BorderBrush="{DynamicResource BorderBrushSoft}"
                         BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -539,7 +540,7 @@
                                 <TextBlock Text="&#xE9D5;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#2563EB" />
                             </Button>
                             <TextBlock VerticalAlignment="Center" Text="{Binding LeftFileCount, StringFormat={}{0} left files}" />
-                            <TextBlock VerticalAlignment="Center" Text="  |  " Foreground="{StaticResource MutedTextBrush}" />
+                            <TextBlock VerticalAlignment="Center" Text="  |  " Foreground="{DynamicResource MutedTextBrush}" />
                             <TextBlock VerticalAlignment="Center" Text="{Binding RightFileCount, StringFormat={}{0} right files}" />
                         </StackPanel>
 

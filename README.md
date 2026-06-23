@@ -4,6 +4,8 @@ FolderSyncr is a .NET 10 WPF folder comparison and synchronization tool for Wind
 
 FolderSyncr is an independent project and is not affiliated with FreeFileSync.
 
+See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage details.
+
 ## Features
 
 - Compare two folders before changing anything.
@@ -62,27 +64,9 @@ dotnet run --project .\FolderSyncr\FolderSyncr.csproj
 
 ## How To Use
 
-1. Start FolderSyncr.
-2. Choose the left folder and right folder in the folder-pair row.
-3. Choose a synchronization mode:
-   - `TwoWay`: copies the newer side to the older or missing side.
-   - `MirrorLeftToRight`: makes the right side match the left side, including deletes on the right.
-   - `MirrorRightToLeft`: makes the left side match the right side, including deletes on the left.
-   - `UpdateLeftToRight`: copies new or newer files from left to right without deleting target-only files.
-   - `UpdateRightToLeft`: copies new or newer files from right to left without deleting target-only files.
-4. Choose the comparison method:
-   - `TimeAndSize`: fast and suitable for most sync jobs.
-   - `ContentHash`: slower, but detects content changes even when timestamps are misleading.
-5. Adjust include and exclude filters if needed.
-6. Click `Compare`.
-7. Review the preview grid:
-   - `=>` copies from left to right.
-   - `<=` copies from right to left.
-   - `X<` deletes on the left.
-   - `>X` deletes on the right.
-   - `==` means both sides are equal.
-   - `!` means a conflict needs attention.
-8. Click `Synchronize` to apply the planned file operations.
+The short version is: choose two folders, click `Compare`, review the preview, then click `Synchronize`.
+
+For the full walkthrough, see [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
 ## Filters
 
