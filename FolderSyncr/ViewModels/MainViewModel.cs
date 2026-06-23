@@ -20,6 +20,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly FolderSyncrConfigurationStore _configurationStore = new();
     private readonly FreeFileSyncLogImporter _logImporter = new();
     private readonly SyncRunHistoryStore _runHistoryStore = new();
+    private readonly SampleDataGenerator _sampleDataGenerator = new();
     private CancellationTokenSource? _cancellation;
     private string? _currentConfigurationPath;
     private string _leftPath = string.Empty;
@@ -60,6 +61,7 @@ public sealed class MainViewModel : ObservableObject
         SaveAsConfigurationCommand = new RelayCommand(SaveAsConfigurationAsync);
         ReloadConfigurationCommand = new RelayCommand(ReloadConfigurationAsync);
         OpenFreeFileSyncLogCommand = new RelayCommand(OpenFreeFileSyncLogAsync);
+        CreateSampleDataCommand = new RelayCommand(CreateSampleDataAsync);
         OpenDocumentationCommand = new RelayCommand(OpenDocumentationAsync);
         AboutCommand = new RelayCommand(AboutAsync);
         ExitCommand = new RelayCommand(ExitAsync);
@@ -105,6 +107,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand SaveAsConfigurationCommand { get; }
     public RelayCommand ReloadConfigurationCommand { get; }
     public RelayCommand OpenFreeFileSyncLogCommand { get; }
+    public RelayCommand CreateSampleDataCommand { get; }
     public RelayCommand OpenDocumentationCommand { get; }
     public RelayCommand AboutCommand { get; }
     public RelayCommand ExitCommand { get; }
@@ -774,6 +777,28 @@ public sealed class MainViewModel : ObservableObject
 
         ShowDialog("FreeFileSync log summary", summaryText);
         return SetStatusAsync($"Imported FreeFileSync log: {Path.GetFileName(summary.SourcePath)}.");
+    }
+
+    private Task CreateSampleDataAsync()
+    {
+        var sample = _sampleDataGenerator.Create();
+        _currentConfigurationPath = null;
+        LeftPath = sample.LeftPath;
+        RightPath = sample.RightPath;
+        SelectedMode = SyncMode.TwoWay;
+        SelectedCompareMethod = CompareMethod.TimeAndSize;
+        IncludePatterns = "*";
+        ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
+        Operations.Clear();
+        OnOperationSummaryChanged();
+
+        Configurations.Insert(0, new ConfigurationItem
+        {
+            Name = "Sample data",
+            LastSync = "Created"
+        });
+
+        return SetStatusAsync($"Sample data created in {sample.RootPath}. Run Compare to see the planned actions.");
     }
 
     private bool ShowDialog(string title, UIElement body)

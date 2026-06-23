@@ -30,6 +30,10 @@ Dark-mode dialogs are also checked.
 6. Review the planned actions in the center preview grid.
 7. Click `Synchronize` when the preview looks correct.
 
+## Sample Data
+
+Use `Tools` -> `Create sample data` to create a disposable folder pair under `%LOCALAPPDATA%\FolderSyncr\Samples`. The sample includes equal files, left-only files, right-only files, newer files on each side, nested folders, and a conflict case.
+
 ## FreeFileSync Import
 
 Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui` or `.ffs_batch` file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters. If the file contains multiple folder pairs or unsupported FreeFileSync options, FolderSyncr writes an import warning to the app log.

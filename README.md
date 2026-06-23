@@ -21,6 +21,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Optional binary verification after copying files.
 - Deletion handling options: permanent delete, recycle bin, or timestamped versioning folder.
 - Lock files prevent concurrent sync jobs from writing the same folder pair.
+- Built-in sample data generator for first-run testing.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
 - Import FreeFileSync JSON results and log files.
