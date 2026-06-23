@@ -70,7 +70,7 @@ This list tracks the work needed to support the main features documented in the 
 ## 5. Batch jobs and automation
 
 - [x] Create and run FolderSyncr batch jobs.
-- [ ] Add minimized/background run mode.
+- [x] Add minimized/background run mode.
 - [x] Add auto-close after successful unattended sync.
 - [ ] Add configurable error handling:
   - [ ] Show errors

@@ -17,6 +17,11 @@ public partial class MainWindow : Window
 
         if (startupOptions is not null)
         {
+            if (startupOptions.StartMinimized)
+            {
+                WindowState = WindowState.Minimized;
+            }
+
             Loaded += async (_, _) => await viewModel.ApplyStartupOptionsAsync(startupOptions);
         }
     }

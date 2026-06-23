@@ -7,6 +7,7 @@ public sealed class CommandLineStartupParser
         string? configurationPath = null;
         string? overrideLeftPath = null;
         string? overrideRightPath = null;
+        var startMinimized = false;
         var arguments = args.ToArray();
 
         for (var index = 0; index < arguments.Length; index++)
@@ -30,6 +31,14 @@ public sealed class CommandLineStartupParser
                 continue;
             }
 
+            if (string.Equals(argument, "--minimized", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(argument, "-minimized", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(argument, "/minimized", StringComparison.OrdinalIgnoreCase))
+            {
+                startMinimized = true;
+                continue;
+            }
+
             if (argument.StartsWith("-", StringComparison.Ordinal) || argument.StartsWith("/", StringComparison.Ordinal))
             {
                 continue;
@@ -38,6 +47,6 @@ public sealed class CommandLineStartupParser
             configurationPath ??= argument;
         }
 
-        return new CommandLineStartupOptions(configurationPath, overrideLeftPath, overrideRightPath);
+        return new CommandLineStartupOptions(configurationPath, overrideLeftPath, overrideRightPath, startMinimized);
     }
 }

@@ -101,6 +101,12 @@ Override the left and right folders at startup:
 dotnet run --project .\FolderSyncr\FolderSyncr.csproj -- .\Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
 
+Start the WPF app minimized:
+
+```powershell
+dotnet run --project .\FolderSyncr\FolderSyncr.csproj -- .\Backup.foldersyncr.json --minimized
+```
+
 Run a saved configuration unattended:
 
 ```powershell

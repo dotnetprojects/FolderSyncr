@@ -32,4 +32,13 @@ public sealed class CommandLineStartupParserTests
         Assert.ThrowsExactly<ArgumentException>(() =>
             new CommandLineStartupParser().Parse(["-dirpair", @"C:\OnlyLeft"]));
     }
+
+    [TestMethod]
+    public void ParseReadsMinimizedStartupOption()
+    {
+        var options = new CommandLineStartupParser().Parse(["backup.foldersyncr.json", "--minimized"]);
+
+        Assert.AreEqual("backup.foldersyncr.json", options.ConfigurationPath);
+        Assert.IsTrue(options.StartMinimized);
+    }
 }
