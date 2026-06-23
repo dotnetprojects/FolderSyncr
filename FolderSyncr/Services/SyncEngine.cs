@@ -32,11 +32,15 @@ public sealed class SyncEngine
         var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
+        var syncDatabase = options.Mode == SyncMode.TwoWay
+            ? _syncDatabaseStore.LoadPair(options.LeftPath, options.RightPath)
+            : null;
         return BuildOperations(
             leftFiles,
             rightFiles,
             options.Mode,
             options.CustomRules,
+            syncDatabase,
             options.CompareMethod,
             GetFileTimeTolerance(options),
             options.IgnoreDaylightSavingTimeShift);
@@ -57,7 +61,11 @@ public sealed class SyncEngine
             var executable = operations.Where(operation => operation.ShouldExecute).ToList();
             if (executable.Count == 0)
             {
-                await SaveSyncDatabaseAsync(options, progress, cancellationToken);
+                if (CanUpdateSyncDatabase(operations))
+                {
+                    await SaveSyncDatabaseAsync(options, progress, cancellationToken);
+                }
+
                 progress?.Report("No file changes required.");
                 return;
             }
@@ -85,7 +93,7 @@ public sealed class SyncEngine
                 }
             }
 
-            if (executable.All(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase)))
+            if (CanUpdateSyncDatabase(operations))
             {
                 await SaveSyncDatabaseAsync(options, progress, cancellationToken);
             }
@@ -213,10 +221,12 @@ public sealed class SyncEngine
         IReadOnlyDictionary<string, FileSnapshot> rightFiles,
         SyncMode mode,
         CustomSyncRules customRules,
+        SyncDatabase? syncDatabase,
         CompareMethod compareMethod,
         TimeSpan fileTimeTolerance,
         bool ignoreDaylightSavingTimeShift)
     {
+        var databaseEntries = syncDatabase?.Entries.ToDictionary(entry => entry.RelativePath, StringComparer.OrdinalIgnoreCase);
         var allPaths = leftFiles.Keys
             .Union(rightFiles.Keys, StringComparer.OrdinalIgnoreCase)
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase);
@@ -226,20 +236,22 @@ public sealed class SyncEngine
         {
             leftFiles.TryGetValue(relativePath, out var left);
             rightFiles.TryGetValue(relativePath, out var right);
+            SyncDatabaseEntry? databaseEntry = null;
+            databaseEntries?.TryGetValue(relativePath, out databaseEntry);
 
             operations.Add(new SyncOperation
             {
                 RelativePath = relativePath,
                 Left = left,
                 Right = right,
-                Kind = DetermineOperation(left, right, mode, customRules, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift)
+                Kind = DetermineOperation(left, right, mode, customRules, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift)
             });
         }
 
         return operations;
     }
 
-    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CustomSyncRules customRules, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CustomSyncRules customRules, SyncDatabaseEntry? databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
     {
         return mode switch
         {
@@ -248,7 +260,7 @@ public sealed class SyncEngine
             SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
             SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
             SyncMode.Custom => DetermineCustomOperation(left, right, customRules, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift),
-            _ => DetermineTwoWayOperation(left, right, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift)
+            _ => DetermineTwoWayOperation(left, right, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift)
         };
     }
 
@@ -303,8 +315,14 @@ public sealed class SyncEngine
         return OperationKind.Equal;
     }
 
-    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right, SyncDatabaseEntry? databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
     {
+        if (databaseEntry is not null
+            && DetermineTwoWayOperationFromDatabase(left, right, databaseEntry, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift) is { } databaseOperation)
+        {
+            return databaseOperation;
+        }
+
         if (left is null && right is null)
         {
             return OperationKind.Equal;
@@ -336,6 +354,75 @@ public sealed class SyncEngine
         }
 
         return OperationKind.Conflict;
+    }
+
+    private static OperationKind? DetermineTwoWayOperationFromDatabase(FileSnapshot? left, FileSnapshot? right, SyncDatabaseEntry databaseEntry, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    {
+        if (databaseEntry.Left is null && databaseEntry.Right is null)
+        {
+            return null;
+        }
+
+        if (left is not null
+            && right is not null
+            && AreEquivalent(left, right, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift))
+        {
+            return OperationKind.Equal;
+        }
+
+        var leftChanged = HasChangedSinceDatabase(left, databaseEntry.Left, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
+        var rightChanged = HasChangedSinceDatabase(right, databaseEntry.Right, compareMethod, fileTimeTolerance, ignoreDaylightSavingTimeShift);
+
+        if (!leftChanged && !rightChanged)
+        {
+            return OperationKind.Equal;
+        }
+
+        if (leftChanged && rightChanged)
+        {
+            return OperationKind.Conflict;
+        }
+
+        if (leftChanged)
+        {
+            return left is null ? OperationKind.DeleteRight : OperationKind.CopyLeftToRight;
+        }
+
+        return right is null ? OperationKind.DeleteLeft : OperationKind.CopyRightToLeft;
+    }
+
+    private static bool HasChangedSinceDatabase(FileSnapshot? current, FileFingerprint? previous, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
+    {
+        if (current is null || previous is null)
+        {
+            return current is not null || previous is not null;
+        }
+
+        if (current.IsSymbolicLink || previous.IsSymbolicLink)
+        {
+            return current.IsSymbolicLink != previous.IsSymbolicLink
+                || !string.Equals(current.LinkTarget, previous.LinkTarget, StringComparison.Ordinal);
+        }
+
+        if (current.Hash is not null && previous.Hash is not null)
+        {
+            return !string.Equals(current.Hash, previous.Hash, StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (compareMethod == CompareMethod.SizeOnly)
+        {
+            return current.Length != previous.Length;
+        }
+
+        if (current.Length != previous.Length)
+        {
+            return true;
+        }
+
+        var timestampDifference = Math.Abs((current.LastWriteTimeUtc - previous.LastWriteTimeUtc).TotalSeconds);
+        return timestampDifference > fileTimeTolerance.TotalSeconds
+            && (!ignoreDaylightSavingTimeShift
+                || Math.Abs(timestampDifference - TimeSpan.FromHours(1).TotalSeconds) > fileTimeTolerance.TotalSeconds);
     }
 
     private static OperationKind DetermineCustomOperation(FileSnapshot? left, FileSnapshot? right, CustomSyncRules customRules, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
@@ -651,6 +738,13 @@ public sealed class SyncEngine
         var fileName = Path.GetFileName(path);
         return string.Equals(fileName, LockFileName, StringComparison.OrdinalIgnoreCase)
             || SyncDatabaseStore.IsDatabaseFile(path);
+    }
+
+    private static bool CanUpdateSyncDatabase(IReadOnlyList<SyncOperation> operations)
+    {
+        return operations.All(operation =>
+            operation.Kind == OperationKind.Equal
+            || operation.ShouldExecute && string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase));
     }
 
     private static async Task<string> HashFileAsync(string path, CancellationToken cancellationToken)

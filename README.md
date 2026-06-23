@@ -42,7 +42,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Expand environment variables in folder paths.
 - Expand date/time macros in folder paths.
 - Expand common Windows special-folder macros in folder paths.
-- Conflict detection when files differ but neither side is clearly newer.
+- Conflict detection when files differ, neither side is clearly newer, or both sides changed since the last two-way sync.
 - Cancellable compare and synchronization operations.
 - FreeFileSync-inspired layout with configuration list, overview pane, split file grids, action column, and statistics bar.
 - Light and dark mode toggle.

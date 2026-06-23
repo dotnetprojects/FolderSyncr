@@ -24,6 +24,11 @@ public sealed class SyncDatabaseStore
         return JsonSerializer.Deserialize<SyncDatabase>(File.ReadAllText(path), SerializerOptions);
     }
 
+    public SyncDatabase? LoadPair(string leftRoot, string rightRoot)
+    {
+        return TryLoad(leftRoot) ?? TryLoad(rightRoot);
+    }
+
     public void SavePair(
         string leftRoot,
         string rightRoot,
@@ -38,6 +43,26 @@ public sealed class SyncDatabaseStore
     public static bool IsDatabaseFile(string path)
     {
         return string.Equals(Path.GetFileName(path), FileName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private SyncDatabase? TryLoad(string root)
+    {
+        try
+        {
+            return Load(root);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
     }
 
     private static SyncDatabase Create(

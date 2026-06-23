@@ -97,6 +97,44 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task TwoWayUsesSyncDatabaseToDetectBothSidesChangedConflict()
+    {
+        using var workspace = TestWorkspace.Create();
+        var baselineTime = DateTime.UtcNow.AddMinutes(-30);
+        workspace.WriteLeft("shared.txt", "base", baselineTime);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, options, null, CancellationToken.None);
+
+        workspace.WriteLeft("shared.txt", "left edit", baselineTime.AddMinutes(10));
+        workspace.WriteRight("shared.txt", "right edit", baselineTime.AddMinutes(20));
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "shared.txt", OperationKind.Conflict);
+    }
+
+    [TestMethod]
+    public async Task TwoWayUsesSyncDatabaseToPropagateOneSidedDeletion()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("delete-me.txt", "base", DateTime.UtcNow.AddMinutes(-30));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var baseline = await engine.CompareAsync(options, null, CancellationToken.None);
+        await engine.ExecuteAsync(baseline, options, null, CancellationToken.None);
+
+        File.Delete(workspace.LeftPath("delete-me.txt"));
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "delete-me.txt", OperationKind.DeleteRight);
+    }
+
+    [TestMethod]
     public async Task TwoWayMarksChangedFilesAsConflictWhenTimestampDoesNotPickWinner()
     {
         using var workspace = TestWorkspace.Create();

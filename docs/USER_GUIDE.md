@@ -54,6 +54,8 @@ Each synchronization writes a JSON run result to `%LOCALAPPDATA%\FolderSyncr\His
 
 After a successful two-way synchronization, FolderSyncr writes a hidden `sync.ffs_db`-style JSON inventory to both synchronized roots. The database records the last known left and right fingerprints for each synchronized relative path. FolderSyncr ignores this metadata file during compare and sync previews.
 
+When the database is available, two-way compare uses it to distinguish one-sided changes from conflicts. If both sides changed since the last completed two-way sync, the item is shown as a conflict even when one side has a newer timestamp. If one side deleted an unchanged file, FolderSyncr propagates that deletion to the other side.
+
 ## FolderSyncr Configurations
 
 Use `File` -> `Save` or `Save as` to store the current folder pair, any preserved imported folder pairs, sync mode, custom rules, compare method, filters, external commands, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.
