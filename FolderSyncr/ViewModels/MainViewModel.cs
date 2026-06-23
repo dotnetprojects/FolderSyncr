@@ -708,19 +708,29 @@ public sealed class MainViewModel : ObservableObject
 
     private Task OpenDocumentationAsync()
     {
-        var docsPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "docs", "USER_GUIDE.md"));
-        if (!File.Exists(docsPath))
-        {
-            docsPath = Path.Combine(Directory.GetCurrentDirectory(), "docs", "USER_GUIDE.md");
-        }
-
-        if (File.Exists(docsPath))
+        var docsPath = FindDocumentationPath();
+        if (docsPath is not null)
         {
             Process.Start(new ProcessStartInfo(docsPath) { UseShellExecute = true });
             return SetStatusAsync("Opened documentation.");
         }
 
         return SetStatusAsync("Documentation file was not found.");
+    }
+
+    private static string? FindDocumentationPath()
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "docs", "USER_GUIDE.html"),
+            Path.Combine(AppContext.BaseDirectory, "docs", "USER_GUIDE.md"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "docs", "USER_GUIDE.html")),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "docs", "USER_GUIDE.md")),
+            Path.Combine(Directory.GetCurrentDirectory(), "docs", "USER_GUIDE.html"),
+            Path.Combine(Directory.GetCurrentDirectory(), "docs", "USER_GUIDE.md")
+        };
+
+        return candidates.FirstOrDefault(File.Exists);
     }
 
     private Task AboutAsync()

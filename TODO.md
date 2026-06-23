@@ -142,7 +142,7 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Add category filter buttons for all FreeFileSync item categories.
 - [ ] Add selectable per-row sync actions.
 - [ ] Add drag-and-drop folder selection.
-- [ ] Create HTML user documentation and open it from the `Help` -> `Documentation` menu.
+- [x] Create HTML user documentation and open it from the `Help` -> `Documentation` menu.
 - [ ] Add real save/open/reload configuration commands.
 - [ ] Add a first-run sample configuration and test data generator.
 

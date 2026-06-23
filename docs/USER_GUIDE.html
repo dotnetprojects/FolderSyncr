@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FolderSyncr User Guide</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #111827;
+      --muted: #5b6472;
+      --border: #d8dee6;
+      --accent: #0875c9;
+      --code: #eef2f7;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --panel: #182235;
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --border: #334155;
+        --accent: #38bdf8;
+        --code: #0b1220;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 22px 52px;
+    }
+
+    header,
+    section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    h1,
+    h2 {
+      margin: 0 0 12px;
+      line-height: 1.2;
+    }
+
+    h1 {
+      font-size: 34px;
+    }
+
+    h2 {
+      font-size: 22px;
+      color: var(--accent);
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ul,
+    ol {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    li + li {
+      margin-top: 5px;
+    }
+
+    code,
+    pre {
+      font-family: Consolas, "Cascadia Mono", monospace;
+      background: var(--code);
+      border-radius: 4px;
+    }
+
+    code {
+      padding: 1px 5px;
+    }
+
+    pre {
+      padding: 12px;
+      overflow-x: auto;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: block;
+      margin: 12px 0 18px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>FolderSyncr User Guide</h1>
+      <p>FolderSyncr compares two folders, previews every planned operation, and synchronizes only after you review the result.</p>
+      <p class="muted">This HTML guide is opened by the app from <code>Help -> Documentation</code>.</p>
+    </header>
+
+    <section>
+      <h2>Main Window</h2>
+      <p>These screenshots are captured from the real WPF application by the UI smoke test.</p>
+      <img src="screenshots/foldersyncr-light.png" alt="FolderSyncr main window in light mode">
+      <img src="screenshots/foldersyncr-dark.png" alt="FolderSyncr main window in dark mode">
+      <img src="screenshots/foldersyncr-light-menu.png" alt="FolderSyncr menu in light mode">
+      <img src="screenshots/foldersyncr-dark-settings.png" alt="FolderSyncr settings dialog in dark mode">
+    </section>
+
+    <section>
+      <h2>Basic Workflow</h2>
+      <ol>
+        <li>Choose a left folder.</li>
+        <li>Choose a right folder.</li>
+        <li>Select the synchronization mode.</li>
+        <li>Select the comparison method.</li>
+        <li>Click <code>Compare</code>.</li>
+        <li>Review the planned actions in the center preview grid.</li>
+        <li>Click <code>Synchronize</code> when the preview looks correct.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>FreeFileSync Import</h2>
+      <p>Use <code>File -> Open configuration</code> to import a FreeFileSync <code>.ffs_gui</code> or <code>.ffs_batch</code> file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters.</p>
+      <p>Use <code>Tools -> Open FreeFileSync log</code> to import a FreeFileSync JSON result or log file. JSON results show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.</p>
+    </section>
+
+    <section>
+      <h2>Synchronization Modes</h2>
+      <ul>
+        <li><code>TwoWay</code>: copies the newer file to the older or missing side.</li>
+        <li><code>MirrorLeftToRight</code>: makes the right folder match the left folder, including deletes on the right.</li>
+        <li><code>MirrorRightToLeft</code>: makes the left folder match the right folder, including deletes on the left.</li>
+        <li><code>UpdateLeftToRight</code>: copies missing or newer files from left to right without deleting right-only files.</li>
+        <li><code>UpdateRightToLeft</code>: copies missing or newer files from right to left without deleting left-only files.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Compare Methods</h2>
+      <ul>
+        <li><code>TimeAndSize</code>: fast comparison using file length and last-write timestamp.</li>
+        <li><code>ContentHash</code>: slower comparison using SHA-256 hashes.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Filters</h2>
+      <p>Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines.</p>
+      <pre><code>*.txt;*.md</code></pre>
+      <pre><code>**/bin/**;**/obj/**;**/.git/**</code></pre>
+      <p>Use the funnel button in the top command bar to edit include and exclude filters.</p>
+    </section>
+
+    <section>
+      <h2>Preview Actions</h2>
+      <ul>
+        <li><code>=&gt;</code>: copy from left to right.</li>
+        <li><code>&lt;=</code>: copy from right to left.</li>
+        <li><code>X&lt;</code>: delete from the left side.</li>
+        <li><code>&gt;X</code>: delete from the right side.</li>
+        <li><code>==</code>: both sides are equal.</li>
+        <li><code>!</code>: conflict.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Safety Notes</h2>
+      <p>Always run <code>Compare</code> before <code>Synchronize</code>. Mirror modes can delete files from the target side, so test with disposable folders before using FolderSyncr on important data.</p>
+    </section>
+  </main>
+</body>
+</html>

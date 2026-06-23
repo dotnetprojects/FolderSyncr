@@ -16,4 +16,11 @@
     <Resource Include="Assets\FolderSyncr.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\docs\**\*">
+      <LinkBase>docs</LinkBase>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
