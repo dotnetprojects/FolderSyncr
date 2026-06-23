@@ -73,6 +73,11 @@ public sealed class MainViewModel : ObservableObject
         CloseOverviewCommand = new RelayCommand(() => SetOverviewVisibleAsync(false));
         ShowAllOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.All));
         ShowChangeOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.Changes));
+        ShowEqualOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.Equal));
+        ShowCopyLeftToRightOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.CopyLeftToRight));
+        ShowCopyRightToLeftOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.CopyRightToLeft));
+        ShowDeleteLeftOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.DeleteLeft));
+        ShowDeleteRightOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.DeleteRight));
         ShowConflictOperationsCommand = new RelayCommand(() => SetOperationViewFilterAsync(OperationViewFilter.Conflicts));
     }
 
@@ -120,6 +125,11 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand CloseOverviewCommand { get; }
     public RelayCommand ShowAllOperationsCommand { get; }
     public RelayCommand ShowChangeOperationsCommand { get; }
+    public RelayCommand ShowEqualOperationsCommand { get; }
+    public RelayCommand ShowCopyLeftToRightOperationsCommand { get; }
+    public RelayCommand ShowCopyRightToLeftOperationsCommand { get; }
+    public RelayCommand ShowDeleteLeftOperationsCommand { get; }
+    public RelayCommand ShowDeleteRightOperationsCommand { get; }
     public RelayCommand ShowConflictOperationsCommand { get; }
 
     public string LeftPath
@@ -265,6 +275,11 @@ public sealed class MainViewModel : ObservableObject
     public bool IsLeftPaneSplitterVisible => IsConfigurationVisible && IsOverviewVisible;
 
     public int ChangeCount => Operations.Count(operation => operation.ShouldExecute);
+    public int EqualCount => CountOperations(OperationKind.Equal);
+    public int CopyLeftToRightCount => CountOperations(OperationKind.CopyLeftToRight);
+    public int CopyRightToLeftCount => CountOperations(OperationKind.CopyRightToLeft);
+    public int DeleteLeftCount => CountOperations(OperationKind.DeleteLeft);
+    public int DeleteRightCount => CountOperations(OperationKind.DeleteRight);
     public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
     public int TotalCount => Operations.Count;
     public int LeftFileCount => Operations.Count(operation => operation.Left is not null);
@@ -1072,6 +1087,11 @@ public sealed class MainViewModel : ObservableObject
         var label = filter switch
         {
             OperationViewFilter.Changes => "changes",
+            OperationViewFilter.Equal => "equal items",
+            OperationViewFilter.CopyLeftToRight => "left-to-right copies",
+            OperationViewFilter.CopyRightToLeft => "right-to-left copies",
+            OperationViewFilter.DeleteLeft => "left deletes",
+            OperationViewFilter.DeleteRight => "right deletes",
             OperationViewFilter.Conflicts => "conflicts",
             _ => "all items"
         };
@@ -1288,6 +1308,11 @@ public sealed class MainViewModel : ObservableObject
     private void OnOperationSummaryChanged()
     {
         OnPropertyChanged(nameof(ChangeCount));
+        OnPropertyChanged(nameof(EqualCount));
+        OnPropertyChanged(nameof(CopyLeftToRightCount));
+        OnPropertyChanged(nameof(CopyRightToLeftCount));
+        OnPropertyChanged(nameof(DeleteLeftCount));
+        OnPropertyChanged(nameof(DeleteRightCount));
         OnPropertyChanged(nameof(ConflictCount));
         OnPropertyChanged(nameof(TotalCount));
         OnPropertyChanged(nameof(LeftFileCount));
@@ -1334,9 +1359,19 @@ public sealed class MainViewModel : ObservableObject
         return _operationViewFilter switch
         {
             OperationViewFilter.Changes => operation.ShouldExecute,
+            OperationViewFilter.Equal => operation.Kind == OperationKind.Equal,
+            OperationViewFilter.CopyLeftToRight => operation.Kind == OperationKind.CopyLeftToRight,
+            OperationViewFilter.CopyRightToLeft => operation.Kind == OperationKind.CopyRightToLeft,
+            OperationViewFilter.DeleteLeft => operation.Kind == OperationKind.DeleteLeft,
+            OperationViewFilter.DeleteRight => operation.Kind == OperationKind.DeleteRight,
             OperationViewFilter.Conflicts => operation.Kind == OperationKind.Conflict,
             _ => true
         };
+    }
+
+    private int CountOperations(OperationKind kind)
+    {
+        return Operations.Count(operation => operation.Kind == kind);
     }
 
     private void RefreshOverview()
@@ -1414,6 +1449,11 @@ public sealed class MainViewModel : ObservableObject
     {
         All,
         Changes,
+        Equal,
+        CopyLeftToRight,
+        CopyRightToLeft,
+        DeleteLeft,
+        DeleteRight,
         Conflicts
     }
 }

@@ -46,12 +46,51 @@ public sealed class MainViewModelFilterTests
         Assert.AreEqual(string.Empty, viewModel.ExcludePatterns);
     }
 
-    private static SyncOperation CreateOperation(string relativePath)
+    [TestMethod]
+    public async Task OperationCategoryCommandsFilterVisibleRows()
+    {
+        var viewModel = new MainViewModel();
+        viewModel.Operations.Add(CreateOperation("same.txt", OperationKind.Equal));
+        viewModel.Operations.Add(CreateOperation("copy-right.txt", OperationKind.CopyLeftToRight));
+        viewModel.Operations.Add(CreateOperation("copy-left.txt", OperationKind.CopyRightToLeft));
+        viewModel.Operations.Add(CreateOperation("delete-left.txt", OperationKind.DeleteLeft));
+        viewModel.Operations.Add(CreateOperation("delete-right.txt", OperationKind.DeleteRight));
+        viewModel.Operations.Add(CreateOperation("conflict.txt", OperationKind.Conflict));
+
+        Assert.AreEqual(1, viewModel.EqualCount);
+        Assert.AreEqual(1, viewModel.CopyLeftToRightCount);
+        Assert.AreEqual(1, viewModel.CopyRightToLeftCount);
+        Assert.AreEqual(1, viewModel.DeleteLeftCount);
+        Assert.AreEqual(1, viewModel.DeleteRightCount);
+        Assert.AreEqual(1, viewModel.ConflictCount);
+
+        viewModel.ShowCopyLeftToRightOperationsCommand.Execute(null);
+        await Task.Yield();
+        CollectionAssert.AreEqual(new[] { "copy-right.txt" }, GetVisiblePaths(viewModel));
+
+        viewModel.ShowDeleteRightOperationsCommand.Execute(null);
+        await Task.Yield();
+        CollectionAssert.AreEqual(new[] { "delete-right.txt" }, GetVisiblePaths(viewModel));
+
+        viewModel.ShowAllOperationsCommand.Execute(null);
+        await Task.Yield();
+        Assert.HasCount(6, GetVisiblePaths(viewModel));
+    }
+
+    private static SyncOperation CreateOperation(string relativePath, OperationKind kind = OperationKind.CopyLeftToRight)
     {
         return new SyncOperation
         {
             RelativePath = relativePath,
-            Kind = OperationKind.CopyLeftToRight
+            Kind = kind
         };
+    }
+
+    private static string[] GetVisiblePaths(MainViewModel viewModel)
+    {
+        return viewModel.OperationsView
+            .Cast<SyncOperation>()
+            .Select(operation => operation.RelativePath)
+            .ToArray();
     }
 }

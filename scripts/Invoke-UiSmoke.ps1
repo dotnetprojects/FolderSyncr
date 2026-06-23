@@ -32,6 +32,9 @@ public static class FolderSyncrSmokeNative
     [DllImport("user32.dll")]
     public static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hWnd);
+
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT
     {
@@ -116,6 +119,47 @@ function Invoke-Element {
     }
 
     throw "$Label does not expose InvokePattern. Patterns: $($patterns -join ', ')"
+}
+
+function Focus-MainWindow {
+    param(
+        [System.Diagnostics.Process]$Process
+    )
+
+    [FolderSyncrSmokeNative]::SetForegroundWindow([IntPtr]$Process.MainWindowHandle) | Out-Null
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($Process.MainWindowHandle)
+    try {
+        $root.SetFocus()
+    }
+    catch [System.Runtime.InteropServices.COMException] {
+    }
+
+    return $root
+}
+
+function Open-DialogByHelp {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string]$HelpText,
+        [string]$Title,
+        [string]$Label
+    )
+
+    $lastError = $null
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        $root = Focus-MainWindow $Process
+        Invoke-Element (Find-ByHelp $root $HelpText) $Label
+
+        try {
+            return Wait-WindowTitle -ProcessId $Process.Id -Title $Title -TimeoutSeconds 5
+        }
+        catch {
+            $lastError = $_
+            Start-Sleep -Milliseconds 350
+        }
+    }
+
+    throw "$Title dialog was not found after invoking $Label. Last error: $lastError"
 }
 
 function Wait-WindowTitle {
@@ -272,12 +316,10 @@ $process = Start-Process -FilePath $exe -PassThru
 try {
     $root = Wait-MainWindow -Process $process
 
-    Invoke-Element (Find-ByHelp $root 'Comparison settings') 'Comparison settings button'
-    Close-Window (Wait-WindowTitle -ProcessId $process.Id -Title 'Comparison settings')
+    Close-Window (Open-DialogByHelp $process 'Comparison settings' 'Comparison settings' 'Comparison settings button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
-    Invoke-Element (Find-ByHelp $root 'Filter files') 'Filter files button'
-    Close-Window (Wait-WindowTitle -ProcessId $process.Id -Title 'File filters')
+    Close-Window (Open-DialogByHelp $process 'Filter files' 'File filters' 'Filter files button')
 
     $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
     Invoke-Element (Find-ByHelp $root 'Cloud path') 'Cloud path button'
@@ -314,9 +356,7 @@ try {
     $fileMenu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse()
     Start-Sleep -Milliseconds 200
 
-    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
-    Invoke-Element (Find-ByHelp $root 'Comparison settings') 'Dark comparison settings button'
-    $settingsWindow = Wait-WindowTitle -ProcessId $process.Id -Title 'Comparison settings'
+    $settingsWindow = Open-DialogByHelp $process 'Comparison settings' 'Comparison settings' 'Dark comparison settings button'
     $comboCondition = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
         [System.Windows.Automation.ControlType]::ComboBox)

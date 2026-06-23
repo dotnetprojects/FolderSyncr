@@ -189,17 +189,17 @@
         </Style>
 
         <Style x:Key="BottomBarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="Width" Value="78" />
+            <Setter Property="Width" Value="54" />
             <Setter Property="Height" Value="38" />
-            <Setter Property="MinWidth" Value="78" />
+            <Setter Property="MinWidth" Value="54" />
             <Setter Property="MinHeight" Value="38" />
-            <Setter Property="Padding" Value="8,3" />
-            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="Margin" Value="0,0,4,0" />
         </Style>
 
         <Style x:Key="BottomIconButton" TargetType="Button" BasedOn="{StaticResource BottomBarButton}">
-            <Setter Property="Width" Value="48" />
-            <Setter Property="MinWidth" Value="48" />
+            <Setter Property="Width" Value="44" />
+            <Setter Property="MinWidth" Value="44" />
         </Style>
 
         <Style TargetType="ComboBox">
@@ -837,9 +837,9 @@
                         BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="250" />
-                            <ColumnDefinition Width="340" />
-                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="210" />
+                            <ColumnDefinition Width="*" MinWidth="455" />
+                            <ColumnDefinition Width="220" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0">
@@ -853,19 +853,43 @@
 
                         <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="Select view:" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowAllOperationsCommand}">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowAllOperationsCommand}" ToolTip="Show all items">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="==" FontWeight="Bold" FontSize="18" Margin="0,0,6,0" />
+                                    <TextBlock Text="*" FontWeight="Bold" FontSize="18" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding TotalCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowChangeOperationsCommand}">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowEqualOperationsCommand}" ToolTip="Show equal items">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="=>" FontWeight="Bold" FontSize="18" Foreground="{StaticResource DarkGreenBrush}" Margin="0,0,6,0" />
-                                    <TextBlock Text="{Binding ChangeCount}" VerticalAlignment="Center" />
+                                    <TextBlock Text="==" FontWeight="Bold" FontSize="18" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding EqualCount}" VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowConflictOperationsCommand}" Margin="0">
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowCopyLeftToRightOperationsCommand}" ToolTip="Show left-to-right copies">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="=>" FontWeight="Bold" FontSize="18" Foreground="{StaticResource DarkGreenBrush}" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding CopyLeftToRightCount}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowCopyRightToLeftOperationsCommand}" ToolTip="Show right-to-left copies">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&lt;=" FontWeight="Bold" FontSize="18" Foreground="{StaticResource DarkGreenBrush}" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding CopyRightToLeftCount}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowDeleteLeftOperationsCommand}" ToolTip="Show left deletes">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="X&lt;" FontWeight="Bold" FontSize="18" Foreground="#DC2626" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding DeleteLeftCount}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowDeleteRightOperationsCommand}" ToolTip="Show right deletes">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="&gt;X" FontWeight="Bold" FontSize="18" Foreground="#DC2626" Margin="0,0,6,0" />
+                                    <TextBlock Text="{Binding DeleteRightCount}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource BottomBarButton}" Command="{Binding ShowConflictOperationsCommand}" ToolTip="Show conflicts" Margin="0">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="!" FontWeight="Bold" FontSize="18" Foreground="#B45309" Margin="0,0,6,0" />
                                     <TextBlock Text="{Binding ConflictCount}" VerticalAlignment="Center" />
@@ -874,9 +898,9 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
-                            <TextBlock Text="Statistics:" FontWeight="SemiBold" Margin="0,0,8,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding TotalCount, StringFormat=Items {0}}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding ChangeCount, StringFormat=Changes {0}}" Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{StaticResource DarkGreenBrush}" FontWeight="SemiBold" />
+                            <TextBlock Text="Stats:" FontWeight="SemiBold" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding TotalCount, StringFormat=Items {0}}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding ChangeCount, StringFormat=Changes {0}}" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="{StaticResource DarkGreenBrush}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding ConflictCount, StringFormat=Conflicts {0}}" VerticalAlignment="Center" Foreground="#B45309" FontWeight="SemiBold" />
                         </StackPanel>
                     </Grid>
