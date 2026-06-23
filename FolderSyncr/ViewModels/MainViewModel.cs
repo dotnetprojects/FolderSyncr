@@ -1150,6 +1150,22 @@ public sealed class MainViewModel : ObservableObject
         Grid.SetColumnSpan(separator, 3);
         root.Children.Add(separator);
 
+        var advancedHost = new ContentControl();
+        void RefreshAdvanced()
+        {
+            advancedHost.Content = getDeletionHandling() == DeletionHandling.VersioningFolder
+                ? CreateCompactSettingsSection(
+                    "Advanced",
+                    CreateTwoColumnForm(
+                        ("Versioning mode", versioningModeBox),
+                        ("Versioning folder", versioningBox),
+                        ("Error handling", errorHandlingBox)))
+                : CreateCompactSettingsSection(
+                    "Advanced",
+                    CreateTwoColumnForm(
+                        ("Error handling", errorHandlingBox)));
+        }
+
         var deletionPanel = CreateCompactSettingsSection(
             "Delete and overwrite",
             CreateCompactChoiceList(
@@ -1159,20 +1175,19 @@ public sealed class MainViewModel : ObservableObject
                     (DeletionHandling.VersioningFolder, "\uE8A5", "Versioning", string.Empty)
                 ],
                 getDeletionHandling,
-                setDeletionHandling));
-        var advancedPanel = CreateCompactSettingsSection(
-            "Advanced",
-            CreateTwoColumnForm(
-                ("Versioning mode", versioningModeBox),
-                ("Versioning folder", versioningBox),
-                ("Error handling", errorHandlingBox)));
+                value =>
+                {
+                    setDeletionHandling(value);
+                    RefreshAdvanced();
+                }));
+        RefreshAdvanced();
 
         Grid.SetRow(deletionPanel, 2);
         Grid.SetColumn(deletionPanel, 0);
         root.Children.Add(deletionPanel);
-        Grid.SetRow(advancedPanel, 2);
-        Grid.SetColumn(advancedPanel, 2);
-        root.Children.Add(advancedPanel);
+        Grid.SetRow(advancedHost, 2);
+        Grid.SetColumn(advancedHost, 2);
+        root.Children.Add(advancedHost);
 
         return root;
     }
