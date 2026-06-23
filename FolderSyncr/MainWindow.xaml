@@ -758,7 +758,7 @@
                         <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource PathIconButton}" Command="{Binding NewConfigurationCommand}" ToolTip="Add folder pair">
                             <TextBlock Text="+" FontSize="20" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                         </Button>
-                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Tag="Left" PreviewDragOver="PathBox_PreviewDragOver" Drop="PathBox_Drop" />
                         <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource SmallButton}" Command="{Binding BrowseLeftCommand}" Content="Browse" />
                         <Button Grid.Row="1" Grid.Column="3" Style="{StaticResource PathIconButton}" Command="{Binding DataContext.CloudPathCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />
@@ -766,7 +766,7 @@
                         <Button Grid.Row="1" Grid.Column="4" Style="{StaticResource PathSwapButton}" Command="{Binding DataContext.SwapSidesCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Swap sides">
                             <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#374151" />
                         </Button>
-                        <TextBox Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Tag="Right" PreviewDragOver="PathBox_PreviewDragOver" Drop="PathBox_Drop" />
                         <Button Grid.Row="1" Grid.Column="6" Style="{StaticResource SmallButton}" Command="{Binding BrowseRightCommand}" Content="Browse" />
                         <Button Grid.Row="1" Grid.Column="7" Style="{StaticResource PathIconButton}" Command="{Binding DataContext.CloudPathCommand, RelativeSource={RelativeSource AncestorType=Window}}" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />

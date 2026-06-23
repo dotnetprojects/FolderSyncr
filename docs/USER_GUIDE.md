@@ -30,6 +30,8 @@ Dark-mode dialogs are also checked.
 6. Review the planned actions in the center preview grid.
 7. Click `Synchronize` when the preview looks correct.
 
+You can also drag a folder from Explorer onto either path box to set the left or right folder.
+
 ## Sample Data
 
 Use `Tools` -> `Create sample data` to create a disposable folder pair under `%LOCALAPPDATA%\FolderSyncr\Samples`. The sample includes equal files, left-only files, right-only files, newer files on each side, nested folders, and a conflict case.
