@@ -119,6 +119,17 @@
             <Setter Property="Padding" Value="10,4" />
         </Style>
 
+        <Style x:Key="ConfigToolbarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="Width" Value="54" />
+            <Setter Property="Height" Value="58" />
+            <Setter Property="MinWidth" Value="54" />
+            <Setter Property="MinHeight" Value="58" />
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="Margin" Value="3,0" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
         <Style TargetType="ComboBox">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="5,2" />
@@ -277,31 +288,31 @@
                         </Border>
 
                         <UniformGrid Grid.Row="1" Columns="5" Margin="5">
-                            <Button Style="{StaticResource ToolbarButton}" ToolTip="New configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="New configuration">
                                 <StackPanel>
                                     <TextBlock Text="+" FontSize="24" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="New" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" ToolTip="Open configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Open configuration">
                                 <StackPanel>
                                     <TextBlock Text="&#xE8B7;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#2563EB" HorizontalAlignment="Center" />
                                     <TextBlock Text="Open" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" ToolTip="Save configuration">
+                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Save configuration">
                                 <StackPanel>
                                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#374151" HorizontalAlignment="Center" />
                                     <TextBlock Text="Save" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" ToolTip="Refresh session">
+                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Refresh session">
                                 <StackPanel>
                                     <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="Reload" FontSize="11" />
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource ToolbarButton}" ToolTip="Save as">
+                            <Button Style="{StaticResource ConfigToolbarButton}" ToolTip="Save as">
                                 <StackPanel>
                                     <TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="22" Foreground="#111827" HorizontalAlignment="Center" />
                                     <TextBlock Text="Save as" FontSize="11" />
