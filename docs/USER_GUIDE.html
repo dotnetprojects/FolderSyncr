@@ -170,7 +170,7 @@
     <section>
       <h2>Command Line</h2>
       <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair.</p>
-      <p>Use <code>FolderSyncr.Cli.exe</code> for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation.</p>
+      <p>Use <code>FolderSyncr.Cli.exe</code> for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation.</p>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target</code></pre>
       <pre><code>FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
 FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run

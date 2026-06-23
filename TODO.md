@@ -59,7 +59,7 @@ This list tracks the work needed to support the main features documented in the 
   - [x] Permanent delete
   - [x] Recycle bin
   - [x] Versioning folder
-- [ ] Add versioning modes:
+- [x] Add versioning modes:
   - [x] Replace
   - [x] Time stamp
   - [x] File time
@@ -71,7 +71,7 @@ This list tracks the work needed to support the main features documented in the 
 
 - [x] Create and run FolderSyncr batch jobs.
 - [ ] Add minimized/background run mode.
-- [ ] Add auto-close after successful unattended sync.
+- [x] Add auto-close after successful unattended sync.
 - [ ] Add configurable error handling:
   - [ ] Show errors
   - [ ] Ignore errors

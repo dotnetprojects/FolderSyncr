@@ -58,7 +58,7 @@ Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argume
 FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
 
-Use `FolderSyncr.Cli.exe` for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation.
+Use `FolderSyncr.Cli.exe` for unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation.
 
 ```powershell
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
