@@ -22,6 +22,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
 - Import FreeFileSync JSON results and log files.
 - Save, open, and reload native `.foldersyncr.json` configurations.
+- Expand environment variables in folder paths.
 - Conflict detection when files differ but neither side is clearly newer.
 - Cancellable compare and synchronization operations.
 - FreeFileSync-inspired layout with configuration list, overview pane, split file grids, action column, and statistics bar.

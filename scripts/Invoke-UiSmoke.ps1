@@ -122,7 +122,7 @@ function Wait-WindowTitle {
     param(
         [int]$ProcessId,
         [string]$Title,
-        [int]$TimeoutSeconds = 5
+        [int]$TimeoutSeconds = 10
     )
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
@@ -133,6 +133,10 @@ function Wait-WindowTitle {
                 [System.Windows.Automation.Condition]::TrueCondition)
         }
         catch [System.Windows.Automation.ElementNotAvailableException] {
+            Start-Sleep -Milliseconds 150
+            continue
+        }
+        catch [System.Runtime.InteropServices.COMException] {
             Start-Sleep -Milliseconds 150
             continue
         }

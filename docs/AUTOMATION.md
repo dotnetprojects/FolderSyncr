@@ -31,4 +31,4 @@ For this WPF app, the reliable smoke path is:
 
 The previous false negative came from searching for the dialog too narrowly and then switching to synthetic mouse input. Do not replace UIA invocation with `SendInput` unless UIA is proven unavailable for a specific control.
 
-Desktop window enumeration can briefly throw `ElementNotAvailableException` while WPF is opening or closing a dialog. Treat that as a transient lookup failure: retry the desktop search, keep matching by process id and title, and only fail after the timeout expires.
+Desktop window enumeration can briefly throw `ElementNotAvailableException` or COM `E_FAIL` while WPF is opening or closing a dialog. Treat that as a transient lookup failure: retry the desktop search, keep matching by process id and title, and only fail after the timeout expires.

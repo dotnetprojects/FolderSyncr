@@ -11,6 +11,7 @@ public sealed class SyncEngine
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
+        options = ExpandOptions(options);
         ValidateOptions(options);
 
         progress?.Report("Scanning left folder...");
@@ -29,6 +30,7 @@ public sealed class SyncEngine
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
+        options = ExpandOptions(options);
         ValidateOptions(options);
 
         var executable = operations.Where(operation => operation.WillChangeFileSystem).ToList();
@@ -261,6 +263,21 @@ public sealed class SyncEngine
     private static TimeSpan GetFileTimeTolerance(SyncOptions options)
     {
         return TimeSpan.FromSeconds(Math.Max(0, options.FileTimeToleranceSeconds));
+    }
+
+    private static SyncOptions ExpandOptions(SyncOptions options)
+    {
+        return new SyncOptions
+        {
+            LeftPath = PathMacroExpander.Expand(options.LeftPath),
+            RightPath = PathMacroExpander.Expand(options.RightPath),
+            Mode = options.Mode,
+            CompareMethod = options.CompareMethod,
+            FileTimeToleranceSeconds = options.FileTimeToleranceSeconds,
+            IncludePatterns = options.IncludePatterns,
+            ExcludePatterns = options.ExcludePatterns,
+            DryRun = options.DryRun
+        };
     }
 
     private static async Task CopyAsync(

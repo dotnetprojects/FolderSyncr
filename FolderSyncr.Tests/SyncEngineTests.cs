@@ -129,6 +129,37 @@ public sealed class SyncEngineTests
         AssertOperation(operations, "outside.txt", OperationKind.CopyLeftToRight);
     }
 
+    [TestMethod]
+    public async Task CompareExpandsEnvironmentVariablesInFolderPaths()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("env.txt", "left", DateTime.UtcNow);
+
+        var variableName = "FOLDERSYNCR_TEST_ROOT_" + Guid.NewGuid().ToString("N");
+        var original = Environment.GetEnvironmentVariable(variableName);
+        try
+        {
+            Environment.SetEnvironmentVariable(variableName, workspace.RootPath);
+            var options = new SyncOptions
+            {
+                LeftPath = $"%{variableName}%\\left",
+                RightPath = $"%{variableName}%\\right",
+                Mode = SyncMode.TwoWay,
+                CompareMethod = CompareMethod.TimeAndSize,
+                IncludePatterns = "*",
+                ExcludePatterns = string.Empty
+            };
+
+            var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+            AssertOperation(operations, "env.txt", OperationKind.CopyLeftToRight);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(variableName, original);
+        }
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -161,6 +192,8 @@ public sealed class SyncEngineTests
         public string LeftPath(string relativePath) => Path.Combine(_left, relativePath);
 
         public string RightPath(string relativePath) => Path.Combine(_right, relativePath);
+
+        public string RootPath => _root;
 
         public SyncOptions CreateOptions(
             SyncMode mode,

@@ -48,6 +48,10 @@ Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argume
 FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 ```
 
+## Path Macros
+
+Folder paths can use Windows environment variables such as `%USERPROFILE%\Documents` or `%OneDrive%\Backup`. FolderSyncr expands them before comparing or synchronizing.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.
