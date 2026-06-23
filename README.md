@@ -123,16 +123,16 @@ For the full walkthrough, see [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
 ## Filters
 
-Filters use simple wildcard patterns separated by semicolons, commas, vertical bars, or new lines.
+Filters follow the FreeFileSync wildcard syntax. Use `|` or new lines between items; FolderSyncr also accepts semicolons and commas for older native configurations. Folder rules match all descendant files.
 
 Examples:
 
 ```text
-*.txt;*.md
+*.txt | *.md
 ```
 
 ```text
-**/bin/**;**/obj/**;**/.git/**
+bin\ | obj\ | .git\
 ```
 
 ## Project Structure

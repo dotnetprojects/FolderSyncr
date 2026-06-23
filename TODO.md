@@ -39,7 +39,7 @@ This list tracks the work needed to support the main features documented in the 
 ## 3. Filters
 
 - [x] Basic include/exclude filtering.
-- [ ] Match FreeFileSync filter syntax exactly.
+- [x] Match FreeFileSync filter syntax exactly.
 - [x] Accept filter items separated by `|` or newlines.
 - [x] Support `*`, `?`, and `?*` wildcard semantics.
 - [x] Support file-only filters with `:`.

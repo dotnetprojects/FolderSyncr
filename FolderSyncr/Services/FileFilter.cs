@@ -4,8 +4,8 @@ namespace FolderSyncr.Services;
 
 public sealed class FileFilter
 {
-    private readonly Regex[] _includes;
-    private readonly Regex[] _excludes;
+    private readonly FilterRule[] _includes;
+    private readonly FilterRule[] _excludes;
 
     public FileFilter(string includePatterns, string excludePatterns)
     {
@@ -16,19 +16,19 @@ public sealed class FileFilter
     public bool IsMatch(string relativePath)
     {
         var normalizedPath = Normalize(relativePath);
-        return _includes.Any(pattern => pattern.IsMatch(normalizedPath))
-            && !_excludes.Any(pattern => pattern.IsMatch(normalizedPath));
+        return _includes.Any(pattern => pattern.IsMatch(normalizedPath, isDirectory: false))
+            && !_excludes.Any(pattern => pattern.IsMatch(normalizedPath, isDirectory: false));
     }
 
-    private static Regex[] BuildRegexes(string patterns)
+    private static FilterRule[] BuildRegexes(string patterns)
     {
         return patterns
             .Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-            .Select(ToRegex)
+            .Select(ToRule)
             .ToArray();
     }
 
-    private static Regex ToRegex(string pattern)
+    private static FilterRule ToRule(string pattern)
     {
         var normalized = Normalize(pattern).Trim();
         var folderOnly = normalized.EndsWith("/", StringComparison.Ordinal);
@@ -44,18 +44,16 @@ public sealed class FileFilter
         if (folderOnly)
         {
             var folderExpression = WildcardsToRegex(normalized, allowSlashInStar: true);
-            return new Regex(
-                anchoredToRoot
-                    ? $"^{folderExpression}(/.*)?$"
-                    : $"(^|.*/){folderExpression}(/.*)?$",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            return new FilterRule(
+                CreateRegex(anchoredToRoot ? $"^{folderExpression}$" : $"(^|.*/){folderExpression}$"),
+                FilterRuleKind.FolderOnly);
         }
 
         var matchesPath = normalized.Contains('/');
         var escaped = WildcardsToRegex(normalized, allowSlashInStar: matchesPath);
 
-        var expression = anchoredToRoot || matchesPath ? $"^{escaped}$" : $"(^|.*/){escaped}$";
-        return new Regex(expression, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var expression = anchoredToRoot ? $"^{escaped}$" : $"(^|.*/){escaped}$";
+        return new FilterRule(CreateRegex(expression), fileOnly ? FilterRuleKind.FileOnly : FilterRuleKind.FileOrFolder);
     }
 
     private static string WildcardsToRegex(string pattern, bool allowSlashInStar)
@@ -68,5 +66,47 @@ public sealed class FileFilter
             .Replace("\\?", "[^/]", StringComparison.Ordinal);
     }
 
+    private static Regex CreateRegex(string expression)
+    {
+        return new Regex(expression, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
     private static string Normalize(string value) => value.Replace('\\', '/');
+
+    private enum FilterRuleKind
+    {
+        FileOrFolder,
+        FileOnly,
+        FolderOnly
+    }
+
+    private sealed class FilterRule(Regex regex, FilterRuleKind kind)
+    {
+        public bool IsMatch(string normalizedPath, bool isDirectory)
+        {
+            if (kind == FilterRuleKind.FileOnly)
+            {
+                return !isDirectory && regex.IsMatch(normalizedPath);
+            }
+
+            if (isDirectory)
+            {
+                return regex.IsMatch(normalizedPath);
+            }
+
+            return kind == FilterRuleKind.FileOrFolder && regex.IsMatch(normalizedPath)
+                || ParentFolders(normalizedPath).Any(regex.IsMatch);
+        }
+
+        private static IEnumerable<string> ParentFolders(string normalizedPath)
+        {
+            var slashIndex = normalizedPath.LastIndexOf('/');
+            while (slashIndex > 0)
+            {
+                var folder = normalizedPath[..slashIndex];
+                yield return folder;
+                slashIndex = folder.LastIndexOf('/');
+            }
+        }
+    }
 }

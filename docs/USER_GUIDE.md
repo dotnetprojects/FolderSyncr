@@ -158,18 +158,26 @@ Double-click a result row to open the existing left-side item, or the right-side
 
 ## Filters
 
-Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. A trailing `:` marks a file-only filter, while a trailing slash marks a folder filter whose contents are also matched. Start a path with `\` or `/` to anchor it to the folder-pair root.
+Filters follow the FreeFileSync wildcard syntax. Separate official FreeFileSync filter items with `|` or new lines. FolderSyncr also accepts semicolons and commas when loading older FolderSyncr configurations. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. Matching is case-insensitive.
+
+By default, a filter item can match either files or folders. When a rule matches a folder, all descendants of that folder are matched too. A trailing `:` marks a file-only filter, while a trailing slash marks a folder-only filter. Start a path with `\` or `/` to anchor it to the folder-pair root.
 
 Include only text and markdown files:
 
 ```text
-*.txt;*.md
+*.txt | *.md
 ```
 
 Exclude build and repository folders:
 
 ```text
-**/bin/**;**/obj/**;**/.git/**
+bin\ | obj\ | .git\
+```
+
+Match only items below subfolders, not files directly in the folder-pair root:
+
+```text
+*\
 ```
 
 Use the funnel button in the top command bar to edit include and exclude filters.
