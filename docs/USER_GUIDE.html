@@ -171,7 +171,7 @@
     <section>
       <h2>Command Line</h2>
       <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair, or <code>--minimized</code> to start the WPF app minimized.</p>
-      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error. Add <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
+      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--var NAME=VALUE</code> to define temporary environment variables for this run, <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error, and <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized</code></pre>
       <pre><code>FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
@@ -179,6 +179,7 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
 FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
 FolderSyncr.Cli.exe BackupA.foldersyncr.json BackupB.ffs_batch --json Merged-result.json
 FolderSyncr.Cli.exe Backup.ffs_batch "D:\Different GlobalSettings.xml"
+FolderSyncr.Cli.exe Backup.ffs_batch --var ActiveDir=C:\Work
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
 FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
     </section>
@@ -203,6 +204,7 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\H
     <section>
       <h2>Path Macros</h2>
       <p>Folder paths can use Windows environment variables such as <code>%USERPROFILE%\Documents</code> or <code>%OneDrive%\Backup</code>. FolderSyncr expands them before comparing or synchronizing.</p>
+      <p>For scheduled scripts, use <code>FolderSyncr.Cli.exe --var NAME=VALUE</code> to create temporary process-level variables for a single run. They are available while the configuration is loaded, while paths are expanded, and to child commands launched during that run, then restored afterward.</p>
       <p>FolderSyncr also expands date/time macros: <code>%Date%</code>, <code>%Time%</code>, <code>%TimeStamp%</code>, <code>%Year%</code>, <code>%Month%</code>, <code>%MonthName%</code>, <code>%Day%</code>, <code>%Hour%</code>, <code>%Min%</code>, <code>%Sec%</code>, <code>%WeekDay%</code>, <code>%WeekDayName%</code>, and <code>%Week%</code>.</p>
       <p>Windows special-folder macros are supported for common locations, including <code>%csidl_Desktop%</code>, <code>%csidl_Documents%</code>, <code>%csidl_Pictures%</code>, <code>%csidl_Music%</code>, <code>%csidl_Videos%</code>, <code>%csidl_Downloads%</code>, <code>%csidl_Favorites%</code>, <code>%csidl_StartMenu%</code>, <code>%csidl_Programs%</code>, <code>%csidl_Startup%</code>, <code>%csidl_Templates%</code>, and public document/media variants.</p>
       <p>For removable drives, use a volume label path such as <code>[Backup-Disk]\folder</code>. FolderSyncr resolves the label to the currently mounted drive and reports a clear error if the drive is not available.</p>

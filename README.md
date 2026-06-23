@@ -113,7 +113,7 @@ Run a saved configuration unattended:
 dotnet run --project .\FolderSyncr.Cli\FolderSyncr.Cli.csproj -- .\Backup.foldersyncr.json --json .\result.json
 ```
 
-`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run, and optionally include a FreeFileSync `GlobalSettings.xml` file for supported global options. Add `--dry-run` to compare without applying changes, `--error-handling show|ignore|cancel` to control per-item sync errors, and `--symbolic-links skip|follow|copy` to control symbolic links.
+`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run, and optionally include a FreeFileSync `GlobalSettings.xml` file for supported global options. Add `--dry-run` to compare without applying changes, `--var NAME=VALUE` for temporary run-scoped variables, `--error-handling show|ignore|cancel` to control per-item sync errors, and `--symbolic-links skip|follow|copy` to control symbolic links.
 
 When a native or imported FreeFileSync configuration contains multiple preserved folder pairs, `FolderSyncr.Cli` processes every pair in one run and applies local per-pair filters when present. Passing a single `-dirpair <left> <right>` override runs only that overridden pair.
 

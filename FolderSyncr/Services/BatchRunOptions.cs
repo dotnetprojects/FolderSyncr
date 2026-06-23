@@ -9,7 +9,8 @@ public sealed record BatchRunOptions(
     bool DryRun,
     string? JsonOutputPath,
     SyncErrorHandling? ErrorHandling = null,
-    SymbolicLinkHandling? SymbolicLinkHandling = null)
+    SymbolicLinkHandling? SymbolicLinkHandling = null,
+    IReadOnlyDictionary<string, string>? TemporaryVariables = null)
 {
     public BatchRunOptions(
         string ConfigurationPath,
@@ -18,7 +19,8 @@ public sealed record BatchRunOptions(
         bool DryRun,
         string? JsonOutputPath,
         SyncErrorHandling? ErrorHandling = null,
-        SymbolicLinkHandling? SymbolicLinkHandling = null)
+        SymbolicLinkHandling? SymbolicLinkHandling = null,
+        IReadOnlyDictionary<string, string>? TemporaryVariables = null)
         : this(
             [ConfigurationPath],
             OverrideLeftPath,
@@ -26,7 +28,8 @@ public sealed record BatchRunOptions(
             DryRun,
             JsonOutputPath,
             ErrorHandling,
-            SymbolicLinkHandling)
+            SymbolicLinkHandling,
+            TemporaryVariables)
     {
     }
 

@@ -97,6 +97,49 @@ public sealed class FolderSyncrBatchRunnerTests
     }
 
     [TestMethod]
+    public async Task RunAsyncAppliesTemporaryVariablesToFolderPaths()
+    {
+        using var workspace = BatchWorkspace.Create();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "temp-var.txt"), "temporary variable copy");
+        var original = Environment.GetEnvironmentVariable("FOLDERSYNCR_TEMP_LEFT");
+        var configPath = workspace.SaveNativeConfiguration(
+            "variables.foldersyncr.json",
+            SyncMode.MirrorLeftToRight,
+            leftPath: @"%FOLDERSYNCR_TEMP_LEFT%",
+            rightPath: @"%FOLDERSYNCR_TEMP_RIGHT%");
+
+        try
+        {
+            Environment.SetEnvironmentVariable("FOLDERSYNCR_TEMP_LEFT", "should be restored");
+
+            var report = await workspace.CreateRunner().RunAsync(
+                new BatchRunOptions(
+                    configPath,
+                    null,
+                    null,
+                    DryRun: false,
+                    JsonOutputPath: null,
+                    TemporaryVariables: new Dictionary<string, string>
+                    {
+                        ["FOLDERSYNCR_TEMP_LEFT"] = workspace.LeftPath,
+                        ["FOLDERSYNCR_TEMP_RIGHT"] = workspace.RightPath
+                    }),
+                null,
+                CancellationToken.None);
+
+            Assert.AreEqual(0, report.ExitCode);
+            Assert.AreEqual("temporary variable copy", File.ReadAllText(Path.Combine(workspace.RightPath, "temp-var.txt")));
+            Assert.AreEqual("should be restored", Environment.GetEnvironmentVariable("FOLDERSYNCR_TEMP_LEFT"));
+            Assert.IsNull(Environment.GetEnvironmentVariable("FOLDERSYNCR_TEMP_RIGHT"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("FOLDERSYNCR_TEMP_LEFT", original);
+            Environment.SetEnvironmentVariable("FOLDERSYNCR_TEMP_RIGHT", null);
+        }
+    }
+
+    [TestMethod]
     public async Task RunAsyncSynchronizesEveryImportedFreeFileSyncFolderPair()
     {
         using var workspace = BatchWorkspace.Create();

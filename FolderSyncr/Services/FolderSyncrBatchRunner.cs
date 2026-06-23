@@ -25,6 +25,7 @@ public sealed class FolderSyncrBatchRunner(
 
         try
         {
+            using var temporaryEnvironment = new TemporaryEnvironmentScope(options.TemporaryVariables);
             cancellationToken.ThrowIfCancellationRequested();
             var syncOptionsList = LoadOptions(options, out warnings);
 

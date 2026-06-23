@@ -42,6 +42,7 @@ internal static class BatchCommandLineParser
         string? jsonOutputPath = null;
         SyncErrorHandling? errorHandling = null;
         SymbolicLinkHandling? symbolicLinkHandling = null;
+        var temporaryVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var dryRun = false;
 
         for (var index = 0; index < args.Count; index++)
@@ -86,6 +87,19 @@ internal static class BatchCommandLineParser
 
                     symbolicLinkHandling = parsedSymbolicLinkHandling;
                     break;
+                case "--var":
+                    if (index + 1 >= args.Count)
+                    {
+                        return new BatchParseResult(null, "--var requires NAME=VALUE.", ShowHelp: false);
+                    }
+
+                    if (!TryParseTemporaryVariable(args[++index], out var name, out var value))
+                    {
+                        return new BatchParseResult(null, "--var requires NAME=VALUE with a non-empty name.", ShowHelp: false);
+                    }
+
+                    temporaryVariables[name] = value;
+                    break;
                 case "-dirpair":
                     if (index + 2 >= args.Count)
                     {
@@ -108,7 +122,22 @@ internal static class BatchCommandLineParser
 
         return configurationPaths.Count == 0
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables), null, ShowHelp: false);
+    }
+
+    private static bool TryParseTemporaryVariable(string argument, out string name, out string value)
+    {
+        var separatorIndex = argument.IndexOf('=', StringComparison.Ordinal);
+        if (separatorIndex <= 0)
+        {
+            name = string.Empty;
+            value = string.Empty;
+            return false;
+        }
+
+        name = argument[..separatorIndex].Trim();
+        value = argument[(separatorIndex + 1)..];
+        return !string.IsNullOrWhiteSpace(name);
     }
 
     private static bool TryParseErrorHandling(string value, out SyncErrorHandling errorHandling)
@@ -149,7 +178,7 @@ internal static class BatchCommandLineParser
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
 
                Additional positional paths may be FolderSyncr/FreeFileSync configurations or a FreeFileSync GlobalSettings.xml file.
 
