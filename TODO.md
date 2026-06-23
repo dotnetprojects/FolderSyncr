@@ -84,9 +84,9 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Import FreeFileSync JSON stdout results.
 - [x] Import FreeFileSync log files.
 - [x] Show imported log summaries in the app log/history area.
-- [ ] Store a local FolderSyncr run history.
-- [ ] Export FolderSyncr run results as JSON with FreeFileSync-like fields.
-- [ ] Include total items, total bytes, processed items, processed bytes, warnings, errors, start time, elapsed time, and log path.
+- [x] Store a local FolderSyncr run history.
+- [x] Export FolderSyncr run results as JSON with FreeFileSync-like fields.
+- [x] Include total items, total bytes, processed items, processed bytes, warnings, errors, start time, elapsed time, and log path.
 
 ## 7. Macros and path expansion
 

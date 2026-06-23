@@ -19,6 +19,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly FreeFileSyncConfigurationImporter _configurationImporter = new();
     private readonly FolderSyncrConfigurationStore _configurationStore = new();
     private readonly FreeFileSyncLogImporter _logImporter = new();
+    private readonly SyncRunHistoryStore _runHistoryStore = new();
     private CancellationTokenSource? _cancellation;
     private string? _currentConfigurationPath;
     private string _leftPath = string.Empty;
@@ -335,8 +336,54 @@ public sealed class MainViewModel : ObservableObject
     {
         await RunBusyAsync(async token =>
         {
+            var startTime = DateTimeOffset.Now;
+            var started = Stopwatch.StartNew();
+            var executable = Operations.Where(operation => operation.WillChangeFileSystem).ToList();
+            var totalBytes = Operations.Sum(GetOperationBytes);
+            var plannedBytes = executable.Sum(GetOperationBytes);
+            var syncResult = "success";
+            var errors = 0;
+            string? message = null;
+
             AddLog("Sync started.");
-            await _syncEngine.ExecuteAsync(Operations.ToList(), CreateOptions(dryRun: false), CreateProgress(), token);
+            try
+            {
+                await _syncEngine.ExecuteAsync(Operations.ToList(), CreateOptions(dryRun: false), CreateProgress(), token);
+            }
+            catch (OperationCanceledException)
+            {
+                syncResult = "cancelled";
+                message = "Operation cancelled.";
+                throw;
+            }
+            catch (Exception ex)
+            {
+                syncResult = "error";
+                errors = 1;
+                message = ex.Message;
+                throw;
+            }
+            finally
+            {
+                started.Stop();
+                var processedItems = executable.Count(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase));
+                var processedBytes = executable
+                    .Where(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase))
+                    .Sum(GetOperationBytes);
+                var historyPath = _runHistoryStore.Save(new SyncRunResult(
+                    syncResult,
+                    startTime,
+                    Math.Max(0, (int)Math.Round(started.Elapsed.TotalSeconds)),
+                    errors,
+                    0,
+                    Operations.Count,
+                    totalBytes,
+                    processedItems,
+                    syncResult == "success" ? plannedBytes : processedBytes,
+                    null,
+                    message));
+                AddLog($"Run history saved: {historyPath}");
+            }
 
             var refreshed = await _syncEngine.CompareAsync(CreateOptions(dryRun: true), CreateProgress(), token);
             Operations.Clear();
@@ -1166,6 +1213,18 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return $"{value:0.##} {units[unit]}";
+    }
+
+    private static long GetOperationBytes(SyncOperation operation)
+    {
+        return operation.Kind switch
+        {
+            OperationKind.CopyLeftToRight => operation.Left?.Length ?? 0,
+            OperationKind.CopyRightToLeft => operation.Right?.Length ?? 0,
+            OperationKind.DeleteLeft => operation.Left?.Length ?? 0,
+            OperationKind.DeleteRight => operation.Right?.Length ?? 0,
+            _ => operation.Left?.Length ?? operation.Right?.Length ?? 0
+        };
     }
 
     private void RaiseCommandStates()

@@ -23,6 +23,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
 - Import FreeFileSync JSON results and log files.
+- Store local sync run history as FreeFileSync-like JSON.
 - Save, open, and reload native `.foldersyncr.json` configurations.
 - Expand environment variables in folder paths.
 - Expand date/time macros in folder paths.
