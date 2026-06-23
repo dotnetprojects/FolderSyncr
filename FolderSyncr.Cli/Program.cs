@@ -36,7 +36,7 @@ internal static class BatchCommandLineParser
             return new BatchParseResult(null, null, ShowHelp: true);
         }
 
-        string? configurationPath = null;
+        var configurationPaths = new List<string>();
         string? left = null;
         string? right = null;
         string? jsonOutputPath = null;
@@ -101,19 +101,14 @@ internal static class BatchCommandLineParser
                         return new BatchParseResult(null, $"Unknown option: {argument}", ShowHelp: false);
                     }
 
-                    if (configurationPath is not null)
-                    {
-                        return new BatchParseResult(null, $"Unexpected extra argument: {argument}", ShowHelp: false);
-                    }
-
-                    configurationPath = argument;
+                    configurationPaths.Add(argument);
                     break;
             }
         }
 
-        return string.IsNullOrWhiteSpace(configurationPath)
+        return configurationPaths.Count == 0
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPath, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling), null, ShowHelp: false);
     }
 
     private static bool TryParseErrorHandling(string value, out SyncErrorHandling errorHandling)
@@ -154,7 +149,7 @@ internal static class BatchCommandLineParser
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
 
                Exit codes:
                  0 success

@@ -82,23 +82,29 @@ public sealed class FolderSyncrBatchRunner(
 
     private IReadOnlyList<SyncOptions> LoadOptions(BatchRunOptions options, out int warnings)
     {
-        if (string.IsNullOrWhiteSpace(options.ConfigurationPath))
+        var configurationPaths = options.ConfigurationPaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToArray();
+        if (configurationPaths.Length == 0)
         {
             throw new ArgumentException("Pass a FolderSyncr or FreeFileSync configuration path.", nameof(options));
         }
 
-        IReadOnlyList<SyncOptions> syncOptionsList;
+        var syncOptionsList = new List<SyncOptions>();
         warnings = 0;
-        if (IsNativeConfigurationPath(options.ConfigurationPath))
+        foreach (var configurationPath in configurationPaths)
         {
-            var configuration = _configurationStore.Load(options.ConfigurationPath);
-            syncOptionsList = FromNative(configuration);
-        }
-        else
-        {
-            var configuration = _freeFileSyncImporter.Import(options.ConfigurationPath);
-            warnings = configuration.Warnings.Count;
-            syncOptionsList = FromFreeFileSync(configuration);
+            if (IsNativeConfigurationPath(configurationPath))
+            {
+                var configuration = _configurationStore.Load(configurationPath);
+                syncOptionsList.AddRange(FromNative(configuration));
+            }
+            else
+            {
+                var configuration = _freeFileSyncImporter.Import(configurationPath);
+                warnings += configuration.Warnings.Count;
+                syncOptionsList.AddRange(FromFreeFileSync(configuration));
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(options.OverrideLeftPath) || !string.IsNullOrWhiteSpace(options.OverrideRightPath))

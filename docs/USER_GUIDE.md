@@ -61,12 +61,13 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized
 ```
 
-Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error. Add `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links.
+Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. Add `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error. Add `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links.
 
 ```powershell
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
 FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
 FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
+FolderSyncr.Cli.exe BackupA.foldersyncr.json BackupB.ffs_batch --json Merged-result.json
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
 FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy
 ```

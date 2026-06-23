@@ -13,7 +13,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Optionally export compatible FreeFileSync configuration files where the format is understood.
 - [x] Support command-line startup with a configuration file.
 - [x] Support `-dirpair <left> <right>` style path overrides.
-- [ ] Support merging multiple configuration files into one in-memory session.
+- [x] Support merging multiple configuration files into one in-memory session.
 - [ ] Support alternate global settings files similar to `GlobalSettings.xml`.
 - [x] Return process exit codes equivalent to FreeFileSync batch mode:
   - `0` success

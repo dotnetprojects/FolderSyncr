@@ -50,6 +50,30 @@ public sealed class FolderSyncrBatchRunnerTests
     }
 
     [TestMethod]
+    public async Task RunAsyncMergesMultipleConfigurationFiles()
+    {
+        using var workspace = BatchWorkspace.Create();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "first.txt"), "first merge");
+        File.WriteAllText(Path.Combine(workspace.SecondLeftPath, "second.txt"), "second merge");
+        var firstConfig = workspace.SaveNativeConfiguration("first.foldersyncr.json", SyncMode.MirrorLeftToRight);
+        var secondConfig = workspace.SaveNativeConfiguration(
+            "second.foldersyncr.json",
+            SyncMode.MirrorLeftToRight,
+            leftPath: workspace.SecondLeftPath,
+            rightPath: workspace.SecondRightPath);
+
+        var report = await workspace.CreateRunner().RunAsync(
+            new BatchRunOptions([firstConfig, secondConfig], null, null, DryRun: false, JsonOutputPath: null),
+            null,
+            CancellationToken.None);
+
+        Assert.AreEqual(0, report.ExitCode);
+        Assert.AreEqual(2, report.Result.ProcessedItems);
+        Assert.AreEqual("first merge", File.ReadAllText(Path.Combine(workspace.RightPath, "first.txt")));
+        Assert.AreEqual("second merge", File.ReadAllText(Path.Combine(workspace.SecondRightPath, "second.txt")));
+    }
+
+    [TestMethod]
     public async Task RunAsyncSynchronizesEveryImportedFreeFileSyncFolderPair()
     {
         using var workspace = BatchWorkspace.Create();
@@ -146,14 +170,21 @@ public sealed class FolderSyncrBatchRunnerTests
             return new FolderSyncrBatchRunner(runHistoryStore: new SyncRunHistoryStore(Path.Combine(RootPath, "history")));
         }
 
-        public string SaveNativeConfiguration(string fileName, SyncMode mode, bool includeSecondPair = false)
+        public string SaveNativeConfiguration(
+            string fileName,
+            SyncMode mode,
+            bool includeSecondPair = false,
+            string? leftPath = null,
+            string? rightPath = null)
         {
             var path = Path.Combine(RootPath, fileName);
+            leftPath ??= LeftPath;
+            rightPath ??= RightPath;
             new FolderSyncrConfigurationStore().Save(path, new FolderSyncrConfiguration(
                 Version: includeSecondPair ? 10 : 1,
                 Name: "Batch test",
-                LeftPath,
-                RightPath,
+                leftPath,
+                rightPath,
                 mode,
                 CompareMethod.TimeAndSize,
                 FileTimeToleranceSeconds: 2,
