@@ -23,7 +23,15 @@ Console.CancelKeyPress += (_, eventArgs) =>
 };
 
 var progress = new Progress<string>(message => Console.Error.WriteLine(message));
-var report = await new FolderSyncrBatchRunner().RunAsync(parseResult.Options!, progress, cancellation.Token);
+var runner = new FolderSyncrBatchRunner();
+if (parseResult.Options!.Watch)
+{
+    var watchReport = await new RealTimeSyncRunner(runner).RunAsync(parseResult.Options, progress, cancellation.Token);
+    Console.WriteLine(SyncRunJsonWriter.Serialize(watchReport.Result));
+    return watchReport.ExitCode;
+}
+
+var report = await runner.RunAsync(parseResult.Options, progress, cancellation.Token);
 Console.WriteLine(SyncRunJsonWriter.Serialize(report.Result));
 return report.ExitCode;
 
@@ -44,6 +52,8 @@ internal static class BatchCommandLineParser
         SymbolicLinkHandling? symbolicLinkHandling = null;
         var temporaryVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var dryRun = false;
+        var watch = false;
+        TimeSpan? watchIdleDelay = null;
 
         for (var index = 0; index < args.Count; index++)
         {
@@ -52,6 +62,23 @@ internal static class BatchCommandLineParser
             {
                 case "--dry-run":
                     dryRun = true;
+                    break;
+                case "--watch":
+                    watch = true;
+                    break;
+                case "--idle":
+                    if (index + 1 >= args.Count)
+                    {
+                        return new BatchParseResult(null, "--idle requires a delay in seconds.", ShowHelp: false);
+                    }
+
+                    if (!double.TryParse(args[++index], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var idleSeconds)
+                        || idleSeconds < 0)
+                    {
+                        return new BatchParseResult(null, "--idle requires a non-negative delay in seconds.", ShowHelp: false);
+                    }
+
+                    watchIdleDelay = TimeSpan.FromSeconds(idleSeconds);
                     break;
                 case "--json":
                     if (index + 1 >= args.Count)
@@ -122,7 +149,7 @@ internal static class BatchCommandLineParser
 
         return configurationPaths.Count == 0
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables, watch, watchIdleDelay), null, ShowHelp: false);
     }
 
     private static bool TryParseTemporaryVariable(string argument, out string name, out string value)
@@ -178,7 +205,7 @@ internal static class BatchCommandLineParser
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--watch] [--idle <seconds>] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
 
                Additional positional paths may be FolderSyncr/FreeFileSync configurations or a FreeFileSync GlobalSettings.xml file.
 

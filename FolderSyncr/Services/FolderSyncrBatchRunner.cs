@@ -27,7 +27,7 @@ public sealed class FolderSyncrBatchRunner(
         {
             using var temporaryEnvironment = new TemporaryEnvironmentScope(options.TemporaryVariables);
             cancellationToken.ThrowIfCancellationRequested();
-            var syncOptionsList = LoadOptions(options, out warnings);
+            var syncOptionsList = LoadSyncOptions(options, out warnings);
 
             var allOperations = new List<SyncOperation>();
             var executable = new List<SyncOperation>();
@@ -83,7 +83,7 @@ public sealed class FolderSyncrBatchRunner(
         }
     }
 
-    private IReadOnlyList<SyncOptions> LoadOptions(BatchRunOptions options, out int warnings)
+    public IReadOnlyList<SyncOptions> LoadSyncOptions(BatchRunOptions options, out int warnings)
     {
         var configurationPaths = options.ConfigurationPaths
             .Where(path => !string.IsNullOrWhiteSpace(path))

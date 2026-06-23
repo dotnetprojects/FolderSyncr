@@ -120,9 +120,9 @@ This list tracks the work needed to support the main features documented in the 
 ## 10. Real-time sync
 
 - [x] Import `.ffs_real` configurations.
-- [ ] Monitor configured folders for changes.
-- [ ] Run a configured sync after an idle delay.
-- [ ] Expose change variables such as changed path and action.
+- [x] Monitor configured folders for changes.
+- [x] Run a configured sync after an idle delay.
+- [x] Expose change variables such as changed path and action.
 - [x] Document startup and service-style usage.
 
 ## 11. Variable drive letters and shadow copy

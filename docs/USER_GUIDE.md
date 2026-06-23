@@ -61,7 +61,7 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized
 ```
 
-Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync `GlobalSettings.xml` file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add `--var NAME=VALUE` to define temporary environment variables for this run, `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error, and `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links.
+Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync `GlobalSettings.xml` file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add `--var NAME=VALUE` to define temporary environment variables for this run, `--watch` to monitor configured folders continuously, `--idle <seconds>` to set the realtime idle delay, `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error, and `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links.
 
 ```powershell
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
@@ -70,6 +70,7 @@ FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
 FolderSyncr.Cli.exe BackupA.foldersyncr.json BackupB.ffs_batch --json Merged-result.json
 FolderSyncr.Cli.exe Backup.ffs_batch "D:\Different GlobalSettings.xml"
 FolderSyncr.Cli.exe Backup.ffs_batch --var ActiveDir=C:\Work
+FolderSyncr.Cli.exe Backup.ffs_real --watch --idle 10
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
 FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy
 ```
@@ -100,6 +101,12 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\H
 ```
 
 If a task must use a different folder pair than the saved configuration, add `-dirpair <left> <right>` to either executable.
+
+## Realtime Monitoring
+
+Use `FolderSyncr.Cli.exe <configuration> --watch` to monitor all existing left and right folders from the loaded configuration. When a file or folder is created, changed, renamed, or deleted, FolderSyncr waits until the configured idle delay has passed without another change and then runs the saved synchronization.
+
+The triggered run receives temporary variables named `%change_path%`, `%change_action%`, and `%changed_file%`. `change_action` is one of `create`, `update`, or `delete`.
 
 ## Path Macros
 

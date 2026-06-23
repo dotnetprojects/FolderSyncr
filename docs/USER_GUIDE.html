@@ -171,7 +171,7 @@
     <section>
       <h2>Command Line</h2>
       <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair, or <code>--minimized</code> to start the WPF app minimized.</p>
-      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--var NAME=VALUE</code> to define temporary environment variables for this run, <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error, and <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
+      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--var NAME=VALUE</code> to define temporary environment variables for this run, <code>--watch</code> to monitor configured folders continuously, <code>--idle &lt;seconds&gt;</code> to set the realtime idle delay, <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error, and <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized</code></pre>
       <pre><code>FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
@@ -180,6 +180,7 @@ FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
 FolderSyncr.Cli.exe BackupA.foldersyncr.json BackupB.ffs_batch --json Merged-result.json
 FolderSyncr.Cli.exe Backup.ffs_batch "D:\Different GlobalSettings.xml"
 FolderSyncr.Cli.exe Backup.ffs_batch --var ActiveDir=C:\Work
+FolderSyncr.Cli.exe Backup.ffs_real --watch --idle 10
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
 FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
     </section>
@@ -199,6 +200,12 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json --minimized
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json "%LOCALAPPDATA%\FolderSyncr\History\latest.json"</code></pre>
       <p>If a task must use a different folder pair than the saved configuration, add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to either executable.</p>
+    </section>
+
+    <section>
+      <h2>Realtime Monitoring</h2>
+      <p>Use <code>FolderSyncr.Cli.exe &lt;configuration&gt; --watch</code> to monitor all existing left and right folders from the loaded configuration. When a file or folder is created, changed, renamed, or deleted, FolderSyncr waits until the configured idle delay has passed without another change and then runs the saved synchronization.</p>
+      <p>The triggered run receives temporary variables named <code>%change_path%</code>, <code>%change_action%</code>, and <code>%changed_file%</code>. <code>change_action</code> is one of <code>create</code>, <code>update</code>, or <code>delete</code>.</p>
     </section>
 
     <section>
