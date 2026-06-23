@@ -41,9 +41,9 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Basic include/exclude filtering.
 - [ ] Match FreeFileSync filter syntax exactly.
 - [x] Accept filter items separated by `|` or newlines.
-- [ ] Support `*`, `?`, and `?*` wildcard semantics.
-- [ ] Support file-only filters with `:`.
-- [ ] Support folder-only filters with trailing `/` or `\`.
+- [x] Support `*`, `?`, and `?*` wildcard semantics.
+- [x] Support file-only filters with `:`.
+- [x] Support folder-only filters with trailing `/` or `\`.
 - [ ] Support local per-folder-pair filters.
 - [ ] Add right-click exclude/include actions from the comparison grid.
 

@@ -65,7 +65,7 @@ Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, c
 
 ## Filters
 
-Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines.
+Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. A trailing `:` marks a file-only filter, while a trailing slash marks a folder filter whose contents are also matched. Start a path with `\` or `/` to anchor it to the folder-pair root.
 
 Include only text and markdown files:
 

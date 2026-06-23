@@ -30,15 +30,42 @@ public sealed class FileFilter
 
     private static Regex ToRegex(string pattern)
     {
-        var normalized = Normalize(pattern);
-        var matchesPath = normalized.Contains('/');
-        var escaped = Regex.Escape(normalized)
-            .Replace("\\*\\*", ".*", StringComparison.Ordinal)
-            .Replace("\\*", "[^/]*", StringComparison.Ordinal)
-            .Replace("\\?", ".", StringComparison.Ordinal);
+        var normalized = Normalize(pattern).Trim();
+        var folderOnly = normalized.EndsWith("/", StringComparison.Ordinal);
+        var fileOnly = normalized.EndsWith(":", StringComparison.Ordinal);
+        if (folderOnly || fileOnly)
+        {
+            normalized = normalized[..^1];
+        }
 
-        var expression = matchesPath ? $"^{escaped}$" : $"(^|.*/){escaped}$";
+        var anchoredToRoot = normalized.StartsWith("/", StringComparison.Ordinal);
+        normalized = normalized.TrimStart('/');
+
+        if (folderOnly)
+        {
+            var folderExpression = WildcardsToRegex(normalized, allowSlashInStar: true);
+            return new Regex(
+                anchoredToRoot
+                    ? $"^{folderExpression}(/.*)?$"
+                    : $"(^|.*/){folderExpression}(/.*)?$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        }
+
+        var matchesPath = normalized.Contains('/');
+        var escaped = WildcardsToRegex(normalized, allowSlashInStar: matchesPath);
+
+        var expression = anchoredToRoot || matchesPath ? $"^{escaped}$" : $"(^|.*/){escaped}$";
         return new Regex(expression, RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private static string WildcardsToRegex(string pattern, bool allowSlashInStar)
+    {
+        var starExpression = allowSlashInStar ? ".*" : "[^/]*";
+        return Regex.Escape(pattern)
+            .Replace("\\?\\*", allowSlashInStar ? ".+" : "[^/]+", StringComparison.Ordinal)
+            .Replace("\\*\\*", ".*", StringComparison.Ordinal)
+            .Replace("\\*", starExpression, StringComparison.Ordinal)
+            .Replace("\\?", "[^/]", StringComparison.Ordinal);
     }
 
     private static string Normalize(string value) => value.Replace('\\', '/');
