@@ -90,7 +90,7 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 7. Macros and path expansion
 
-- [ ] Expand date/time macros.
+- [x] Expand date/time macros.
 - [x] Expand environment variables.
 - [ ] Expand well-known Windows folder variables.
 - [ ] Support temporary sync variables for scripts.

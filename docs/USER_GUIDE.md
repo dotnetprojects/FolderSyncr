@@ -52,6 +52,8 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 
 Folder paths can use Windows environment variables such as `%USERPROFILE%\Documents` or `%OneDrive%\Backup`. FolderSyncr expands them before comparing or synchronizing.
 
+FolderSyncr also expands date/time macros: `%Date%`, `%Time%`, `%TimeStamp%`, `%Year%`, `%Month%`, `%MonthName%`, `%Day%`, `%Hour%`, `%Min%`, `%Sec%`, `%WeekDay%`, `%WeekDayName%`, and `%Week%`.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.
