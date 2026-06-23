@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
 using FolderSyncr.ViewModels;
@@ -86,13 +87,24 @@ public partial class MainWindow : Window
             return;
         }
 
-        var menu = new ContextMenu { DataContext = operation };
+        var menu = new ContextMenu { DataContext = new OperationContext(operation, GetSelectedOperations(row, operation)) };
         menu.Items.Add(CreateOperationMenuItem("Open left item", async op => await GetViewModel().OpenOperationSideAsync(op, openLeftSide: true)));
         menu.Items.Add(CreateOperationMenuItem("Open right item", async op => await GetViewModel().OpenOperationSideAsync(op, openLeftSide: false)));
         menu.Items.Add(new Separator());
         menu.Items.Add(CreateOperationMenuItem("Copy relative path", async op => await GetViewModel().CopyOperationRelativePathAsync(op)));
         menu.Items.Add(CreateOperationMenuItem("Add to include filter", async op => await GetViewModel().IncludeOperationAsync(op)));
         menu.Items.Add(CreateOperationMenuItem("Exclude from comparison", async op => await GetViewModel().ExcludeOperationAsync(op)));
+
+        var externalCommands = GetViewModel().ExternalCommands;
+        if (externalCommands.Count > 0)
+        {
+            menu.Items.Add(new Separator());
+            foreach (var command in externalCommands)
+            {
+                menu.Items.Add(CreateExternalCommandMenuItem(command));
+            }
+        }
+
         row.ContextMenu = menu;
     }
 
@@ -101,13 +113,59 @@ public partial class MainWindow : Window
         var item = new MenuItem { Header = header };
         item.Click += async (_, _) =>
         {
-            if (item.Parent is ContextMenu { DataContext: SyncOperation operation })
+            if (item.Parent is ContextMenu { DataContext: OperationContext context })
             {
-                await action(operation);
+                await action(context.Operation);
+            }
+        };
+        return item;
+    }
+
+    private MenuItem CreateExternalCommandMenuItem(ExternalCommandDefinition command)
+    {
+        var item = new MenuItem { Header = command.Name };
+        item.Click += async (_, _) =>
+        {
+            if (item.Parent is ContextMenu { DataContext: OperationContext context })
+            {
+                await GetViewModel().RunExternalCommandAsync(command, context.SelectedOperations);
             }
         };
         return item;
     }
 
     private MainViewModel GetViewModel() => (MainViewModel)DataContext;
+
+    private static IReadOnlyList<SyncOperation> GetSelectedOperations(DataGridRow row, SyncOperation clickedOperation)
+    {
+        var selectedOperations = FindParent<DataGrid>(row)?.SelectedItems
+            .OfType<SyncOperation>()
+            .ToList() ?? [];
+
+        if (!selectedOperations.Contains(clickedOperation))
+        {
+            selectedOperations.Insert(0, clickedOperation);
+        }
+
+        return selectedOperations;
+    }
+
+    private static T? FindParent<T>(DependencyObject child)
+        where T : DependencyObject
+    {
+        var current = VisualTreeHelper.GetParent(child);
+        while (current is not null)
+        {
+            if (current is T typed)
+            {
+                return typed;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private sealed record OperationContext(SyncOperation Operation, IReadOnlyList<SyncOperation> SelectedOperations);
 }

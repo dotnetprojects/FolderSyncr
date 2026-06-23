@@ -135,6 +135,10 @@ Examples:
 bin\ | obj\ | .git\
 ```
 
+## External Commands
+
+Use `Tools` -> `External commands` to add row context-menu commands such as Explorer, clipboard, or WinMerge actions. Commands support FreeFileSync-style item macros including `%item_path%`, `%local_path%`, `%item_name%`, `%parent_path%`, opposite-side suffix `2`, and selected-item-list suffix `s`.
+
 ## Project Structure
 
 ```text

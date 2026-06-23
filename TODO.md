@@ -94,7 +94,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Expand environment variables.
 - [x] Expand well-known Windows folder variables.
 - [ ] Support temporary sync variables for scripts.
-- [ ] Support item macros for external applications:
+- [x] Support item macros for external applications:
   - `%item_path%`
   - `%local_path%`
   - `%item_name%`
@@ -103,7 +103,7 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 8. External applications and context menu
 
-- [ ] Add configurable external commands.
+- [x] Add configurable external commands.
 - [x] Add row double-click behavior.
 - [x] Add grid context menu actions.
 - [ ] Add keyboard shortcuts for configured external commands.

@@ -60,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
         OpenSettingsCommand = new RelayCommand(OpenSettingsAsync);
         OpenFilterCommand = new RelayCommand(OpenFilterAsync);
+        OpenExternalCommandsCommand = new RelayCommand(OpenExternalCommandsAsync);
         SwapSidesCommand = new RelayCommand(SwapSidesAsync);
         CloudPathCommand = new RelayCommand(() => SetStatusAsync("Cloud path integration is not implemented yet. Use Browse or paste a local/cloud-synced folder path."));
         NewConfigurationCommand = new RelayCommand(NewConfigurationAsync);
@@ -99,6 +100,7 @@ public sealed class MainViewModel : ObservableObject
     ];
 
     public ObservableCollection<OverviewItem> OverviewRows { get; } = [];
+    public ObservableCollection<ExternalCommandDefinition> ExternalCommands { get; } = CreateDefaultExternalCommands();
 
     public OverviewItem? SelectedOverviewItem
     {
@@ -127,6 +129,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ToggleThemeCommand { get; }
     public RelayCommand OpenSettingsCommand { get; }
     public RelayCommand OpenFilterCommand { get; }
+    public RelayCommand OpenExternalCommandsCommand { get; }
     public RelayCommand SwapSidesCommand { get; }
     public RelayCommand CloudPathCommand { get; }
     public RelayCommand NewConfigurationCommand { get; }
@@ -638,6 +641,38 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    private Task OpenExternalCommandsAsync()
+    {
+        var commandsBox = new TextBox
+        {
+            Text = string.Join(Environment.NewLine, ExternalCommands.Select(command => $"{command.Name}={command.CommandLine}")),
+            AcceptsReturn = true,
+            MinHeight = 180,
+            MinWidth = 560,
+            Margin = new Thickness(0, 4, 0, 12),
+            TextWrapping = TextWrapping.NoWrap,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        var content = new StackPanel { Margin = new Thickness(18), MinWidth = 580 };
+        content.Children.Add(new TextBlock { Text = "Commands", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(commandsBox);
+
+        if (ShowDialog("External commands", content))
+        {
+            ExternalCommands.Clear();
+            foreach (var command in ParseExternalCommands(commandsBox.Text))
+            {
+                ExternalCommands.Add(command);
+            }
+
+            SetStatusAsync($"External commands updated: {ExternalCommands.Count}.").GetAwaiter().GetResult();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private Task SwapSidesAsync()
     {
         (LeftPath, RightPath) = (RightPath, LeftPath);
@@ -737,6 +772,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
+        ReplaceExternalCommands(CreateDefaultExternalCommands());
         ClearOperations();
         OnOperationSummaryChanged();
         return SetStatusAsync("New configuration created.");
@@ -828,7 +864,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 8,
+            Version: 9,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -844,7 +880,8 @@ public sealed class MainViewModel : ObservableObject
             SelectedSymbolicLinkHandling,
             IncludePatterns,
             ExcludePatterns,
-            IsDarkMode);
+            IsDarkMode,
+            ExternalCommands.ToArray());
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
@@ -864,6 +901,9 @@ public sealed class MainViewModel : ObservableObject
         SelectedSymbolicLinkHandling = configuration.Version >= 8 ? configuration.SymbolicLinkHandling : SymbolicLinkHandling.Skip;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
+        ReplaceExternalCommands(configuration.Version >= 9 && configuration.ExternalCommands is not null
+            ? configuration.ExternalCommands
+            : CreateDefaultExternalCommands());
         ClearOperations();
         OnOperationSummaryChanged();
 
@@ -1281,6 +1321,39 @@ public sealed class MainViewModel : ObservableObject
         return SetStatusAsync($"Included {operation.RelativePath}. Run Compare to refresh the preview.");
     }
 
+    public Task RunExternalCommandAsync(ExternalCommandDefinition command, IReadOnlyList<SyncOperation> operations)
+    {
+        if (string.IsNullOrWhiteSpace(command.CommandLine))
+        {
+            return SetStatusAsync($"External command '{command.Name}' has no command line.");
+        }
+
+        if (operations.Count == 0)
+        {
+            return SetStatusAsync("No comparison item is selected for the external command.");
+        }
+
+        try
+        {
+            var expandedCommand = ExternalCommandMacroExpander.Expand(command.CommandLine, operations, LeftPath, RightPath);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("/D");
+            startInfo.ArgumentList.Add("/C");
+            startInfo.ArgumentList.Add(expandedCommand);
+            Process.Start(startInfo);
+            return SetStatusAsync($"Started external command: {command.Name}.");
+        }
+        catch (Exception exception)
+        {
+            return SetStatusAsync($"External command failed: {exception.Message}");
+        }
+    }
+
     private static string GetFilterPattern(SyncOperation operation)
     {
         return operation.RelativePath.Replace('\\', '/');
@@ -1289,6 +1362,43 @@ public sealed class MainViewModel : ObservableObject
     private static string[] SplitFilterPatterns(string patterns)
     {
         return patterns.Split([';', ',', '|', '\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static ExternalCommandDefinition[] ParseExternalCommands(string text)
+    {
+        return text.Split(['\r', '\n'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(line =>
+            {
+                var separatorIndex = line.IndexOf('=', StringComparison.Ordinal);
+                return separatorIndex < 0
+                    ? null
+                    : new ExternalCommandDefinition(line[..separatorIndex].Trim(), line[(separatorIndex + 1)..].Trim());
+            })
+            .Where(command => command is not null
+                && !string.IsNullOrWhiteSpace(command.Name)
+                && !string.IsNullOrWhiteSpace(command.CommandLine))
+            .Cast<ExternalCommandDefinition>()
+            .ToArray();
+    }
+
+    private static ObservableCollection<ExternalCommandDefinition> CreateDefaultExternalCommands()
+    {
+        return
+        [
+            new ExternalCommandDefinition("Show in Explorer", "explorer.exe /select, %local_path% & exit 0"),
+            new ExternalCommandDefinition("Copy path to clipboard", "echo %item_path%| clip")
+        ];
+    }
+
+    private void ReplaceExternalCommands(IEnumerable<ExternalCommandDefinition> commands)
+    {
+        ExternalCommands.Clear();
+        foreach (var command in commands.Where(command =>
+            !string.IsNullOrWhiteSpace(command.Name)
+            && !string.IsNullOrWhiteSpace(command.CommandLine)))
+        {
+            ExternalCommands.Add(command);
+        }
     }
 
     private Task OpenDocumentationAsync()

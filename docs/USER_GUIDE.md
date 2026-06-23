@@ -156,6 +156,20 @@ Use the checkbox in the action column to include or exclude an individual planne
 
 Double-click a result row to open the existing left-side item, or the right-side item when no left item exists. Right-click a row to open either side, copy the relative path, add that path to the include filter, or add it to the exclude filter.
 
+## External Commands
+
+Use `Tools` -> `External commands` to configure row context-menu commands. Store one command per line in the form `Name=command line`.
+
+External commands support the FreeFileSync item macros `%item_path%`, `%local_path%`, `%item_name%`, and `%parent_path%`. Append `2` to use the opposite side, for example `%local_path2%` or `%local_path 2%`. Append `s` to pass all selected items as a space-separated list, for example `%local_path s%`.
+
+Examples:
+
+```text
+Show in Explorer=explorer.exe /select, %local_path% & exit 0
+Copy path to clipboard=echo %item_path%| clip
+Compare in WinMerge="C:\Program Files\WinMerge\WinMergeU.exe" %local_path% %local_path2%
+```
+
 ## Filters
 
 Filters follow the FreeFileSync wildcard syntax. Separate official FreeFileSync filter items with `|` or new lines. FolderSyncr also accepts semicolons and commas when loading older FolderSyncr configurations. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. Matching is case-insensitive.

@@ -29,14 +29,21 @@ public sealed class FolderSyncrConfigurationStoreTests
                 SymbolicLinkHandling: SymbolicLinkHandling.CopyLinksAsLinks,
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
-                IsDarkMode: true);
+                IsDarkMode: true,
+                ExternalCommands:
+                [
+                    new ExternalCommandDefinition("Compare", "winmerge %local_path% %local_path2%")
+                ]);
 
             var store = new FolderSyncrConfigurationStore();
             store.Save(path, original);
 
             var loaded = store.Load(path);
 
-            Assert.AreEqual(original, loaded);
+            Assert.AreEqual(original with { ExternalCommands = loaded.ExternalCommands }, loaded);
+            CollectionAssert.AreEqual(
+                original.ExternalCommands!.ToArray(),
+                loaded.ExternalCommands!.ToArray());
         }
         finally
         {

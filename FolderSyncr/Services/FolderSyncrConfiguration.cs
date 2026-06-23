@@ -19,4 +19,5 @@ public sealed record FolderSyncrConfiguration(
     SymbolicLinkHandling SymbolicLinkHandling,
     string IncludePatterns,
     string ExcludePatterns,
-    bool IsDarkMode);
+    bool IsDarkMode,
+    IReadOnlyList<ExternalCommandDefinition>? ExternalCommands = null);
