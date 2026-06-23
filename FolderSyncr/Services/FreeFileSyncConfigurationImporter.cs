@@ -130,7 +130,7 @@ public sealed class FreeFileSyncConfigurationImporter
 
         if (Contains(text, "Size"))
         {
-            warnings.Add("FreeFileSync size-only comparison is not supported yet. The current compare method was kept.");
+            return CompareMethod.SizeOnly;
         }
 
         return null;

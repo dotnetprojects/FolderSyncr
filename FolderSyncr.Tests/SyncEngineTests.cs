@@ -66,6 +66,37 @@ public sealed class SyncEngineTests
         AssertOperation(operations, "conflict.txt", OperationKind.Conflict);
     }
 
+    [TestMethod]
+    public async Task SizeOnlyComparisonTreatsSameLengthFilesAsEqual()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("same-size.txt", "left", DateTime.UtcNow);
+        workspace.WriteRight("same-size.txt", "rght", DateTime.UtcNow.AddDays(-2));
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, CompareMethod.SizeOnly);
+        var engine = new SyncEngine();
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "same-size.txt", OperationKind.Equal);
+    }
+
+    [TestMethod]
+    public async Task SizeOnlyComparisonDetectsDifferentFileSizes()
+    {
+        using var workspace = TestWorkspace.Create();
+        var timestamp = DateTime.UtcNow;
+        workspace.WriteLeft("different-size.txt", "left", timestamp);
+        workspace.WriteRight("different-size.txt", "right side", timestamp);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, CompareMethod.SizeOnly);
+        var engine = new SyncEngine();
+
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "different-size.txt", OperationKind.Conflict);
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -99,14 +130,14 @@ public sealed class SyncEngineTests
 
         public string RightPath(string relativePath) => Path.Combine(_right, relativePath);
 
-        public SyncOptions CreateOptions(SyncMode mode)
+        public SyncOptions CreateOptions(SyncMode mode, CompareMethod compareMethod = CompareMethod.TimeAndSize)
         {
             return new SyncOptions
             {
                 LeftPath = _left,
                 RightPath = _right,
                 Mode = mode,
-                CompareMethod = CompareMethod.TimeAndSize,
+                CompareMethod = compareMethod,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false

@@ -52,6 +52,7 @@ Use `File` -> `Save` or `Save as` to store the current folder pair, sync mode, c
 
 - `TimeAndSize`: fast comparison using file length and last-write timestamp.
 - `ContentHash`: slower comparison using SHA-256 hashes.
+- `SizeOnly`: compares only file length, useful when modification times are unreliable.
 
 ## Preview Actions
 

@@ -81,6 +81,28 @@ public sealed class FreeFileSyncConfigurationImporterTests
         Assert.IsTrue(configuration.Warnings.Any(warning => warning.Contains("multiple folder pairs", StringComparison.OrdinalIgnoreCase)));
     }
 
+    [TestMethod]
+    public void ImportMapsFreeFileSyncSizeComparison()
+    {
+        using var file = TempConfig.Create(
+            "size.ffs_gui",
+            """
+            <FreeFileSync XmlType="GUI">
+              <Pair>
+                <Left>C:\Source</Left>
+                <Right>D:\Target</Right>
+              </Pair>
+              <Comparison>
+                <Variant>Size</Variant>
+              </Comparison>
+            </FreeFileSync>
+            """);
+
+        var configuration = new FreeFileSyncConfigurationImporter().Import(file.Path);
+
+        Assert.AreEqual(CompareMethod.SizeOnly, configuration.CompareMethod);
+    }
+
     private sealed class TempConfig : IDisposable
     {
         private TempConfig(string path)

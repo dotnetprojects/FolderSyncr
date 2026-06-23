@@ -22,7 +22,7 @@ public sealed class SyncEngine
         var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
 
         progress?.Report("Building operation preview...");
-        return BuildOperations(leftFiles, rightFiles, options.Mode);
+        return BuildOperations(leftFiles, rightFiles, options.Mode, options.CompareMethod);
     }
 
     public async Task ExecuteAsync(
@@ -115,7 +115,8 @@ public sealed class SyncEngine
     private static IReadOnlyList<SyncOperation> BuildOperations(
         IReadOnlyDictionary<string, FileSnapshot> leftFiles,
         IReadOnlyDictionary<string, FileSnapshot> rightFiles,
-        SyncMode mode)
+        SyncMode mode,
+        CompareMethod compareMethod)
     {
         var allPaths = leftFiles.Keys
             .Union(rightFiles.Keys, StringComparer.OrdinalIgnoreCase)
@@ -132,26 +133,26 @@ public sealed class SyncEngine
                 RelativePath = relativePath,
                 Left = left,
                 Right = right,
-                Kind = DetermineOperation(left, right, mode)
+                Kind = DetermineOperation(left, right, mode, compareMethod)
             });
         }
 
         return operations;
     }
 
-    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode)
+    private static OperationKind DetermineOperation(FileSnapshot? left, FileSnapshot? right, SyncMode mode, CompareMethod compareMethod)
     {
         return mode switch
         {
-            SyncMode.MirrorLeftToRight => DetermineMirrorOperation(left, right, leftIsSource: true),
-            SyncMode.MirrorRightToLeft => DetermineMirrorOperation(left, right, leftIsSource: false),
-            SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true),
-            SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false),
-            _ => DetermineTwoWayOperation(left, right)
+            SyncMode.MirrorLeftToRight => DetermineMirrorOperation(left, right, leftIsSource: true, compareMethod),
+            SyncMode.MirrorRightToLeft => DetermineMirrorOperation(left, right, leftIsSource: false, compareMethod),
+            SyncMode.UpdateLeftToRight => DetermineUpdateOperation(left, right, leftIsSource: true, compareMethod),
+            SyncMode.UpdateRightToLeft => DetermineUpdateOperation(left, right, leftIsSource: false, compareMethod),
+            _ => DetermineTwoWayOperation(left, right, compareMethod)
         };
     }
 
-    private static OperationKind DetermineMirrorOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource)
+    private static OperationKind DetermineMirrorOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod)
     {
         var source = leftIsSource ? left : right;
         var target = leftIsSource ? right : left;
@@ -166,7 +167,7 @@ public sealed class SyncEngine
             return leftIsSource ? OperationKind.DeleteRight : OperationKind.DeleteLeft;
         }
 
-        if (target is null || !AreEquivalent(source, target))
+        if (target is null || !AreEquivalent(source, target, compareMethod))
         {
             return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
         }
@@ -174,7 +175,7 @@ public sealed class SyncEngine
         return OperationKind.Equal;
     }
 
-    private static OperationKind DetermineUpdateOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource)
+    private static OperationKind DetermineUpdateOperation(FileSnapshot? left, FileSnapshot? right, bool leftIsSource, CompareMethod compareMethod)
     {
         var source = leftIsSource ? left : right;
         var target = leftIsSource ? right : left;
@@ -184,7 +185,17 @@ public sealed class SyncEngine
             return OperationKind.Equal;
         }
 
-        if (target is null || IsNewer(source, target))
+        if (target is null)
+        {
+            return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
+        }
+
+        if (AreEquivalent(source, target, compareMethod))
+        {
+            return OperationKind.Equal;
+        }
+
+        if (IsNewer(source, target))
         {
             return leftIsSource ? OperationKind.CopyLeftToRight : OperationKind.CopyRightToLeft;
         }
@@ -192,7 +203,7 @@ public sealed class SyncEngine
         return OperationKind.Equal;
     }
 
-    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right)
+    private static OperationKind DetermineTwoWayOperation(FileSnapshot? left, FileSnapshot? right, CompareMethod compareMethod)
     {
         if (left is null && right is null)
         {
@@ -209,7 +220,7 @@ public sealed class SyncEngine
             return OperationKind.CopyLeftToRight;
         }
 
-        if (AreEquivalent(left, right))
+        if (AreEquivalent(left, right, compareMethod))
         {
             return OperationKind.Equal;
         }
@@ -227,8 +238,13 @@ public sealed class SyncEngine
         return OperationKind.Conflict;
     }
 
-    private static bool AreEquivalent(FileSnapshot left, FileSnapshot right)
+    private static bool AreEquivalent(FileSnapshot left, FileSnapshot right, CompareMethod compareMethod)
     {
+        if (compareMethod == CompareMethod.SizeOnly)
+        {
+            return left.Length == right.Length;
+        }
+
         if (left.Hash is not null || right.Hash is not null)
         {
             return string.Equals(left.Hash, right.Hash, StringComparison.OrdinalIgnoreCase);
