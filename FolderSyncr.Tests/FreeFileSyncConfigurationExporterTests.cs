@@ -60,6 +60,47 @@ public sealed class FreeFileSyncConfigurationExporterTests
         }
     }
 
+    [TestMethod]
+    public void SaveWritesEveryPreservedFolderPair()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "FolderSyncrFfsExport_" + Guid.NewGuid().ToString("N"), "backup.ffs_gui");
+        try
+        {
+            new FreeFileSyncConfigurationExporter().Save(
+                path,
+                CreateConfiguration(
+                    SyncMode.TwoWay,
+                    CompareMethod.TimeAndSize,
+                    includePatterns: "*",
+                    excludePatterns: string.Empty)
+                with
+                {
+                    FolderPairs =
+                    [
+                        new FolderPairConfiguration("C:\\Left1", "D:\\Right1"),
+                        new FolderPairConfiguration("C:\\Left2", "D:\\Right2")
+                    ]
+                });
+
+            var imported = new FreeFileSyncConfigurationImporter().Import(path);
+
+            Assert.HasCount(2, imported.FolderPairs);
+            Assert.AreEqual("C:\\Left1", imported.FolderPairs[0].LeftPath);
+            Assert.AreEqual("D:\\Right1", imported.FolderPairs[0].RightPath);
+            Assert.AreEqual("C:\\Left2", imported.FolderPairs[1].LeftPath);
+            Assert.AreEqual("D:\\Right2", imported.FolderPairs[1].RightPath);
+        }
+        finally
+        {
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+
     private static FolderSyncrConfiguration CreateConfiguration(
         SyncMode syncMode,
         CompareMethod compareMethod,

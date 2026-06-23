@@ -31,22 +31,43 @@ public sealed class FolderSyncrBatchRunnerTests
     }
 
     [TestMethod]
-    public async Task RunAsyncReturnsWarningsForImportedConfigurationWarnings()
+    public async Task RunAsyncSynchronizesEveryNativeFolderPair()
     {
         using var workspace = BatchWorkspace.Create();
-        File.WriteAllText(Path.Combine(workspace.LeftPath, "copy.txt"), "warning copy");
-        var configPath = workspace.SaveFreeFileSyncConfigurationWithTwoPairs();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "copy.txt"), "native copy");
+        File.WriteAllText(Path.Combine(workspace.SecondLeftPath, "second.txt"), "native second");
+        var configPath = workspace.SaveNativeConfiguration("multi.foldersyncr.json", SyncMode.MirrorLeftToRight, includeSecondPair: true);
 
         var report = await workspace.CreateRunner().RunAsync(
-            new BatchRunOptions(configPath, null, null, DryRun: true, JsonOutputPath: null),
+            new BatchRunOptions(configPath, null, null, DryRun: false, JsonOutputPath: null),
             null,
             CancellationToken.None);
 
-        Assert.AreEqual(1, report.ExitCode);
-        Assert.AreEqual("dry-run", report.Result.SyncResult);
-        Assert.AreEqual(1, report.Result.Warnings);
-        Assert.AreEqual(1, report.Result.ProcessedItems);
-        Assert.IsFalse(File.Exists(Path.Combine(workspace.RightPath, "copy.txt")));
+        Assert.AreEqual(0, report.ExitCode);
+        Assert.AreEqual(2, report.Result.ProcessedItems);
+        Assert.AreEqual("native copy", File.ReadAllText(Path.Combine(workspace.RightPath, "copy.txt")));
+        Assert.AreEqual("native second", File.ReadAllText(Path.Combine(workspace.SecondRightPath, "second.txt")));
+    }
+
+    [TestMethod]
+    public async Task RunAsyncSynchronizesEveryImportedFreeFileSyncFolderPair()
+    {
+        using var workspace = BatchWorkspace.Create();
+        File.WriteAllText(Path.Combine(workspace.LeftPath, "copy.txt"), "warning copy");
+        File.WriteAllText(Path.Combine(workspace.SecondLeftPath, "second.txt"), "second copy");
+        var configPath = workspace.SaveFreeFileSyncConfigurationWithTwoPairs();
+
+        var report = await workspace.CreateRunner().RunAsync(
+            new BatchRunOptions(configPath, null, null, DryRun: false, JsonOutputPath: null),
+            null,
+            CancellationToken.None);
+
+        Assert.AreEqual(0, report.ExitCode);
+        Assert.AreEqual("success", report.Result.SyncResult);
+        Assert.AreEqual(0, report.Result.Warnings);
+        Assert.AreEqual(2, report.Result.ProcessedItems);
+        Assert.AreEqual("warning copy", File.ReadAllText(Path.Combine(workspace.RightPath, "copy.txt")));
+        Assert.AreEqual("second copy", File.ReadAllText(Path.Combine(workspace.SecondRightPath, "second.txt")));
     }
 
     [TestMethod]
@@ -101,13 +122,19 @@ public sealed class FolderSyncrBatchRunnerTests
             RootPath = rootPath;
             LeftPath = Path.Combine(rootPath, "left");
             RightPath = Path.Combine(rootPath, "right");
+            SecondLeftPath = Path.Combine(rootPath, "left-2");
+            SecondRightPath = Path.Combine(rootPath, "right-2");
             Directory.CreateDirectory(LeftPath);
             Directory.CreateDirectory(RightPath);
+            Directory.CreateDirectory(SecondLeftPath);
+            Directory.CreateDirectory(SecondRightPath);
         }
 
         public string RootPath { get; }
         public string LeftPath { get; }
         public string RightPath { get; }
+        public string SecondLeftPath { get; }
+        public string SecondRightPath { get; }
 
         public static BatchWorkspace Create()
         {
@@ -119,11 +146,11 @@ public sealed class FolderSyncrBatchRunnerTests
             return new FolderSyncrBatchRunner(runHistoryStore: new SyncRunHistoryStore(Path.Combine(RootPath, "history")));
         }
 
-        public string SaveNativeConfiguration(string fileName, SyncMode mode)
+        public string SaveNativeConfiguration(string fileName, SyncMode mode, bool includeSecondPair = false)
         {
             var path = Path.Combine(RootPath, fileName);
             new FolderSyncrConfigurationStore().Save(path, new FolderSyncrConfiguration(
-                Version: 1,
+                Version: includeSecondPair ? 10 : 1,
                 Name: "Batch test",
                 LeftPath,
                 RightPath,
@@ -139,7 +166,14 @@ public sealed class FolderSyncrBatchRunnerTests
                 SymbolicLinkHandling: SymbolicLinkHandling.Skip,
                 IncludePatterns: "*",
                 ExcludePatterns: string.Empty,
-                IsDarkMode: false));
+                IsDarkMode: false,
+                FolderPairs: includeSecondPair
+                    ?
+                    [
+                        new FolderPairConfiguration(LeftPath, RightPath),
+                        new FolderPairConfiguration(SecondLeftPath, SecondRightPath)
+                    ]
+                    : null));
             return path;
         }
 
@@ -155,8 +189,8 @@ public sealed class FolderSyncrBatchRunnerTests
                         <Right>{{RightPath}}</Right>
                       </Pair>
                       <Pair>
-                        <Left>C:\OtherLeft</Left>
-                        <Right>C:\OtherRight</Right>
+                        <Left>{{SecondLeftPath}}</Left>
+                        <Right>{{SecondRightPath}}</Right>
                       </Pair>
                     </FolderPairs>
                   </FreeFileSync>

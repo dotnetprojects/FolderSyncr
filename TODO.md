@@ -8,7 +8,7 @@ This list tracks the work needed to support the main features documented in the 
 ## 1. Configuration and command-line compatibility
 
 - [x] Import `.ffs_gui` and `.ffs_batch` XML files.
-- [ ] Preserve multiple folder pairs from imported configurations instead of only the first pair.
+- [x] Preserve multiple folder pairs from imported configurations instead of only the first pair.
 - [x] Export FolderSyncr configurations to a native format.
 - [x] Optionally export compatible FreeFileSync configuration files where the format is understood.
 - [x] Support command-line startup with a configuration file.

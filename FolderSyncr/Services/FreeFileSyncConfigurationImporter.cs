@@ -29,11 +29,6 @@ public sealed class FreeFileSyncConfigurationImporter
             warnings.Add("No folder pair was found. FolderSyncr looked for FreeFileSync Left/Right folder pair nodes.");
         }
 
-        if (pairs.Count > 1)
-        {
-            warnings.Add("This configuration contains multiple folder pairs. FolderSyncr imported the first pair into the current UI.");
-        }
-
         var syncMode = DetectSyncMode(document, warnings);
         var compareMethod = DetectCompareMethod(document, warnings);
 

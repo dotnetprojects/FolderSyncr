@@ -24,6 +24,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly SampleDataGenerator _sampleDataGenerator = new();
     private CancellationTokenSource? _cancellation;
     private string? _currentConfigurationPath;
+    private List<FolderPairConfiguration> _folderPairs = [];
     private string _leftPath = string.Empty;
     private string _rightPath = string.Empty;
     private SyncMode _selectedMode = SyncMode.TwoWay;
@@ -724,6 +725,9 @@ public sealed class MainViewModel : ObservableObject
 
         LeftPath = firstPair.LeftPath;
         RightPath = firstPair.RightPath;
+        _folderPairs = configuration.FolderPairs
+            .Select(pair => new FolderPairConfiguration(pair.LeftPath, pair.RightPath))
+            .ToList();
 
         if (configuration.SyncMode is { } syncMode)
         {
@@ -753,6 +757,10 @@ public sealed class MainViewModel : ObservableObject
         }
 
         SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.").GetAwaiter().GetResult();
+        if (_folderPairs.Count > 1)
+        {
+            AddLog($"Imported {_folderPairs.Count} folder pairs. The UI shows the first pair; saved configurations and CLI runs preserve all imported pairs.");
+        }
     }
 
     private Task NewConfigurationAsync()
@@ -772,6 +780,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
+        _folderPairs = [];
         ReplaceExternalCommands(CreateDefaultExternalCommands());
         ClearOperations();
         OnOperationSummaryChanged();
@@ -864,7 +873,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 9,
+            Version: 10,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -881,14 +890,26 @@ public sealed class MainViewModel : ObservableObject
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode,
-            ExternalCommands.ToArray());
+            ExternalCommands.ToArray(),
+            GetSavedFolderPairs());
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
     {
         _currentConfigurationPath = path;
-        LeftPath = configuration.LeftPath;
-        RightPath = configuration.RightPath;
+        _folderPairs = configuration.FolderPairs?.ToList() ?? [];
+        var visiblePair = _folderPairs.FirstOrDefault();
+        if (visiblePair is not null)
+        {
+            LeftPath = visiblePair.LeftPath;
+            RightPath = visiblePair.RightPath;
+        }
+        else
+        {
+            LeftPath = configuration.LeftPath;
+            RightPath = configuration.RightPath;
+        }
+
         SelectedMode = configuration.SyncMode;
         SelectedCompareMethod = configuration.CompareMethod;
         FileTimeToleranceSeconds = configuration.Version < 2 ? 2 : configuration.FileTimeToleranceSeconds;
@@ -918,6 +939,11 @@ public sealed class MainViewModel : ObservableObject
             Name = string.IsNullOrWhiteSpace(configuration.Name) ? Path.GetFileNameWithoutExtension(path) : configuration.Name,
             LastSync = "Opened"
         });
+
+        if (_folderPairs.Count > 1)
+        {
+            AddLog($"Loaded {_folderPairs.Count} preserved folder pairs. The UI shows the first pair; CLI runs use all pairs.");
+        }
     }
 
     private static bool IsNativeConfigurationPath(string path)
@@ -966,6 +992,7 @@ public sealed class MainViewModel : ObservableObject
         _currentConfigurationPath = null;
         LeftPath = sample.LeftPath;
         RightPath = sample.RightPath;
+        _folderPairs = [];
         SelectedMode = SyncMode.TwoWay;
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         IncludePatterns = "*";
@@ -1399,6 +1426,23 @@ public sealed class MainViewModel : ObservableObject
         {
             ExternalCommands.Add(command);
         }
+    }
+
+    private IReadOnlyList<FolderPairConfiguration> GetSavedFolderPairs()
+    {
+        if (_folderPairs.Count > 1
+            && string.Equals(_folderPairs[0].LeftPath, LeftPath, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(_folderPairs[0].RightPath, RightPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return _folderPairs.ToArray();
+        }
+
+        if (!string.IsNullOrWhiteSpace(LeftPath) || !string.IsNullOrWhiteSpace(RightPath))
+        {
+            return [new FolderPairConfiguration(LeftPath, RightPath)];
+        }
+
+        return [];
     }
 
     private Task OpenDocumentationAsync()

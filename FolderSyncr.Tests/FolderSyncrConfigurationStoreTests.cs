@@ -33,6 +33,11 @@ public sealed class FolderSyncrConfigurationStoreTests
                 ExternalCommands:
                 [
                     new ExternalCommandDefinition("Compare", "winmerge %local_path% %local_path2%")
+                ],
+                FolderPairs:
+                [
+                    new FolderPairConfiguration(@"C:\Source", @"D:\Target"),
+                    new FolderPairConfiguration(@"E:\More", @"F:\MoreBackup")
                 ]);
 
             var store = new FolderSyncrConfigurationStore();
@@ -40,10 +45,13 @@ public sealed class FolderSyncrConfigurationStoreTests
 
             var loaded = store.Load(path);
 
-            Assert.AreEqual(original with { ExternalCommands = loaded.ExternalCommands }, loaded);
+            Assert.AreEqual(original with { ExternalCommands = loaded.ExternalCommands, FolderPairs = loaded.FolderPairs }, loaded);
             CollectionAssert.AreEqual(
                 original.ExternalCommands!.ToArray(),
                 loaded.ExternalCommands!.ToArray());
+            CollectionAssert.AreEqual(
+                original.FolderPairs!.ToArray(),
+                loaded.FolderPairs!.ToArray());
         }
         finally
         {

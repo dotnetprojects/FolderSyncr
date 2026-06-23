@@ -31,12 +31,13 @@ public sealed class FreeFileSyncConfigurationExporter
             new XElement("FreeFileSync",
                 new XAttribute("XmlType", "GUI"),
                 new XElement("FolderPairs",
-                    new XElement("Pair",
-                        new XElement("Left", configuration.LeftPath),
-                        new XElement("Right", configuration.RightPath),
-                        new XElement("LocalFilter",
-                            CreateFilter("Include", configuration.IncludePatterns, defaultValue: "*"),
-                            CreateFilter("Exclude", configuration.ExcludePatterns, defaultValue: string.Empty)))),
+                    GetFolderPairs(configuration)
+                        .Select(pair => new XElement("Pair",
+                            new XElement("Left", pair.LeftPath),
+                            new XElement("Right", pair.RightPath),
+                            new XElement("LocalFilter",
+                                CreateFilter("Include", configuration.IncludePatterns, defaultValue: "*"),
+                                CreateFilter("Exclude", configuration.ExcludePatterns, defaultValue: string.Empty))))),
                 new XElement("Comparison",
                     new XElement("Variant", ToCompareVariant(configuration.CompareMethod))),
                 synchronization));
@@ -60,6 +61,13 @@ public sealed class FreeFileSyncConfigurationExporter
         }
 
         return element;
+    }
+
+    private static IReadOnlyList<FolderPairConfiguration> GetFolderPairs(FolderSyncrConfiguration configuration)
+    {
+        return configuration.FolderPairs is { Count: > 0 }
+            ? configuration.FolderPairs
+            : [new FolderPairConfiguration(configuration.LeftPath, configuration.RightPath)];
     }
 
     private static string ToCompareVariant(CompareMethod compareMethod)

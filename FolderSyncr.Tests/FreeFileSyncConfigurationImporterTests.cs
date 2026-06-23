@@ -50,7 +50,7 @@ public sealed class FreeFileSyncConfigurationImporterTests
     }
 
     [TestMethod]
-    public void ImportReadsBatchModeAndWarnsForMultiplePairs()
+    public void ImportReadsBatchModeAndPreservesMultiplePairs()
     {
         using var file = TempConfig.Create(
             "job.ffs_batch",
@@ -78,7 +78,7 @@ public sealed class FreeFileSyncConfigurationImporterTests
         Assert.AreEqual(@"C:\Right1", configuration.FolderPairs[0].RightPath);
         Assert.AreEqual(CompareMethod.TimeAndSize, configuration.CompareMethod);
         Assert.AreEqual(SyncMode.MirrorRightToLeft, configuration.SyncMode);
-        Assert.IsTrue(configuration.Warnings.Any(warning => warning.Contains("multiple folder pairs", StringComparison.OrdinalIgnoreCase)));
+        Assert.IsFalse(configuration.Warnings.Any(warning => warning.Contains("multiple folder pairs", StringComparison.OrdinalIgnoreCase)));
     }
 
     [TestMethod]

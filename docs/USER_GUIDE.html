@@ -152,7 +152,7 @@
 
     <section>
       <h2>FreeFileSync Import</h2>
-      <p>Use <code>File -> Open configuration</code> to import a FreeFileSync <code>.ffs_gui</code>, <code>.ffs_batch</code>, or <code>.ffs_real</code> file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters. For <code>.ffs_real</code> files, FolderSyncr imports the configured folders but does not start a real-time monitor yet.</p>
+      <p>Use <code>File -> Open configuration</code> to import a FreeFileSync <code>.ffs_gui</code>, <code>.ffs_batch</code>, or <code>.ffs_real</code> file. FolderSyncr preserves all imported folder pairs in saved native configurations and compatible FreeFileSync exports. The current WPF UI shows the first pair until full multi-pair editing is implemented. <code>FolderSyncr.Cli.exe</code> runs every preserved pair unless you pass a single <code>-dirpair</code> override. For <code>.ffs_real</code> files, FolderSyncr imports the configured folders but does not start a real-time monitor yet.</p>
       <p>Use <code>Tools -> Open FreeFileSync log</code> to import a FreeFileSync JSON result or log file. JSON results show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.</p>
     </section>
 
@@ -163,8 +163,8 @@
 
     <section>
       <h2>FolderSyncr Configurations</h2>
-      <p>Use <code>File -> Save</code> or <code>Save as</code> to store the current folder pair, sync mode, compare method, filters, and theme as a <code>.foldersyncr.json</code> file.</p>
-      <p>Use <code>File -> Export FreeFileSync configuration</code> to write a compatible <code>.ffs_gui</code> file. The export includes the current folder pair, comparison method, synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as theme, recycle-bin deletion, and versioning options stay in the native <code>.foldersyncr.json</code> format.</p>
+      <p>Use <code>File -> Save</code> or <code>Save as</code> to store the current folder pair, any preserved imported folder pairs, sync mode, compare method, filters, external commands, and theme as a <code>.foldersyncr.json</code> file.</p>
+      <p>Use <code>File -> Export FreeFileSync configuration</code> to write a compatible <code>.ffs_gui</code> file. The export includes the current or preserved folder pairs, comparison method, synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as theme, recycle-bin deletion, and versioning options stay in the native <code>.foldersyncr.json</code> format.</p>
       <p>Use <code>File -> Open configuration</code> to reopen it later, and <code>File -> Reload configuration</code> to discard local changes and load the current file again.</p>
     </section>
 

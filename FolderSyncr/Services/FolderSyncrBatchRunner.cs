@@ -24,13 +24,22 @@ public sealed class FolderSyncrBatchRunner(
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var syncOptions = LoadOptions(options, out warnings);
+            var syncOptionsList = LoadOptions(options, out warnings);
 
-            var operations = await _syncEngine.CompareAsync(syncOptions, progress, cancellationToken);
-            var executable = operations.Where(operation => operation.ShouldExecute).ToList();
-            if (!options.DryRun)
+            var allOperations = new List<SyncOperation>();
+            var executable = new List<SyncOperation>();
+            foreach (var syncOptions in syncOptionsList)
             {
-                await _syncEngine.ExecuteAsync(operations, syncOptions, progress, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report($"Processing {syncOptions.LeftPath} <-> {syncOptions.RightPath}");
+                var operations = await _syncEngine.CompareAsync(syncOptions, progress, cancellationToken);
+                var pairExecutable = operations.Where(operation => operation.ShouldExecute).ToList();
+                allOperations.AddRange(operations);
+                executable.AddRange(pairExecutable);
+                if (!options.DryRun)
+                {
+                    await _syncEngine.ExecuteAsync(operations, syncOptions, progress, cancellationToken);
+                }
             }
 
             var operationErrors = executable.Count(operation => string.Equals(operation.Status, "Error", StringComparison.OrdinalIgnoreCase));
@@ -44,7 +53,7 @@ public sealed class FolderSyncrBatchRunner(
                 stopwatch.Elapsed,
                 errors: operationErrors,
                 warnings,
-                operations,
+                allOperations,
                 processedOperations,
                 message: options.DryRun
                     ? $"Dry run completed. {executable.Count} change(s) would be applied."
@@ -71,49 +80,42 @@ public sealed class FolderSyncrBatchRunner(
         }
     }
 
-    private SyncOptions LoadOptions(BatchRunOptions options, out int warnings)
+    private IReadOnlyList<SyncOptions> LoadOptions(BatchRunOptions options, out int warnings)
     {
         if (string.IsNullOrWhiteSpace(options.ConfigurationPath))
         {
             throw new ArgumentException("Pass a FolderSyncr or FreeFileSync configuration path.", nameof(options));
         }
 
-        SyncOptions syncOptions;
+        IReadOnlyList<SyncOptions> syncOptionsList;
         warnings = 0;
         if (IsNativeConfigurationPath(options.ConfigurationPath))
         {
             var configuration = _configurationStore.Load(options.ConfigurationPath);
-            syncOptions = FromNative(configuration);
+            syncOptionsList = FromNative(configuration);
         }
         else
         {
             var configuration = _freeFileSyncImporter.Import(options.ConfigurationPath);
             warnings = configuration.Warnings.Count;
-            syncOptions = FromFreeFileSync(configuration);
+            syncOptionsList = FromFreeFileSync(configuration);
         }
 
-        return CopyWithOverrides(syncOptions, options);
+        if (!string.IsNullOrWhiteSpace(options.OverrideLeftPath) || !string.IsNullOrWhiteSpace(options.OverrideRightPath))
+        {
+            return [CopyWithOverrides(syncOptionsList[0], options)];
+        }
+
+        return syncOptionsList.Select(syncOptions => CopyWithOverrides(syncOptions, options)).ToArray();
     }
 
-    private static SyncOptions FromNative(FolderSyncrConfiguration configuration)
+    private static IReadOnlyList<SyncOptions> FromNative(FolderSyncrConfiguration configuration)
     {
-        return new SyncOptions
-        {
-            LeftPath = configuration.LeftPath,
-            RightPath = configuration.RightPath,
-            Mode = configuration.SyncMode,
-            CompareMethod = configuration.CompareMethod,
-            FileTimeToleranceSeconds = configuration.FileTimeToleranceSeconds,
-            IgnoreDaylightSavingTimeShift = configuration.IgnoreDaylightSavingTimeShift,
-            VerifyCopiedFiles = configuration.VerifyCopiedFiles,
-            DeletionHandling = configuration.DeletionHandling,
-            VersioningMode = configuration.VersioningMode,
-            VersioningFolderPath = configuration.VersioningFolderPath,
-            ErrorHandling = configuration.ErrorHandling,
-            SymbolicLinkHandling = configuration.SymbolicLinkHandling,
-            IncludePatterns = configuration.IncludePatterns,
-            ExcludePatterns = configuration.ExcludePatterns
-        };
+        var pairs = configuration.FolderPairs is { Count: > 0 }
+            ? configuration.FolderPairs
+            : [new FolderPairConfiguration(configuration.LeftPath, configuration.RightPath)];
+
+        return pairs.Select(pair => CreateSyncOptions(configuration, pair)).ToArray();
     }
 
     private static SyncOptions CopyWithOverrides(SyncOptions syncOptions, BatchRunOptions options)
@@ -138,18 +140,41 @@ public sealed class FolderSyncrBatchRunner(
         };
     }
 
-    private static SyncOptions FromFreeFileSync(FreeFileSyncConfiguration configuration)
+    private static IReadOnlyList<SyncOptions> FromFreeFileSync(FreeFileSyncConfiguration configuration)
     {
-        var pair = configuration.FolderPairs.FirstOrDefault()
-            ?? throw new InvalidDataException("The FreeFileSync configuration does not contain a folder pair.");
+        if (configuration.FolderPairs.Count == 0)
+        {
+            throw new InvalidDataException("The FreeFileSync configuration does not contain a folder pair.");
+        }
 
-        return new SyncOptions
+        return configuration.FolderPairs.Select(pair => new SyncOptions
         {
             LeftPath = pair.LeftPath,
             RightPath = pair.RightPath,
             Mode = configuration.SyncMode ?? SyncMode.TwoWay,
             CompareMethod = configuration.CompareMethod ?? CompareMethod.TimeAndSize,
             FileTimeToleranceSeconds = 2,
+            IncludePatterns = configuration.IncludePatterns,
+            ExcludePatterns = configuration.ExcludePatterns
+        }).ToArray();
+    }
+
+    private static SyncOptions CreateSyncOptions(FolderSyncrConfiguration configuration, FolderPairConfiguration pair)
+    {
+        return new SyncOptions
+        {
+            LeftPath = pair.LeftPath,
+            RightPath = pair.RightPath,
+            Mode = configuration.SyncMode,
+            CompareMethod = configuration.CompareMethod,
+            FileTimeToleranceSeconds = configuration.FileTimeToleranceSeconds,
+            IgnoreDaylightSavingTimeShift = configuration.IgnoreDaylightSavingTimeShift,
+            VerifyCopiedFiles = configuration.VerifyCopiedFiles,
+            DeletionHandling = configuration.DeletionHandling,
+            VersioningMode = configuration.VersioningMode,
+            VersioningFolderPath = configuration.VersioningFolderPath,
+            ErrorHandling = configuration.ErrorHandling,
+            SymbolicLinkHandling = configuration.SymbolicLinkHandling,
             IncludePatterns = configuration.IncludePatterns,
             ExcludePatterns = configuration.ExcludePatterns
         };
