@@ -5,6 +5,9 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Markup;
+using System.Windows.Media;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
 
@@ -373,7 +376,7 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
-    private static bool ShowDialog(string title, UIElement body)
+    private bool ShowDialog(string title, UIElement body)
     {
         var okButton = new Button
         {
@@ -414,6 +417,8 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 360
         };
 
+        ApplyDialogTheme(window);
+
         okButton.Click += (_, _) =>
         {
             window.DialogResult = true;
@@ -421,6 +426,158 @@ public sealed class MainViewModel : ObservableObject
         };
 
         return window.ShowDialog() == true;
+    }
+
+    private void ApplyDialogTheme(Window window)
+    {
+        ThemeManager.ApplyTo(window.Resources, IsDarkMode);
+
+        var panelBrush = GetBrush(window.Resources, "PanelBrush");
+        var inputBrush = GetBrush(window.Resources, "InputBrush");
+        var buttonBrush = GetBrush(window.Resources, "ButtonBrush");
+        var borderBrush = GetBrush(window.Resources, "BorderBrushSoft");
+        var textBrush = GetBrush(window.Resources, "TextBrush");
+
+        window.Background = panelBrush;
+        window.SetValue(TextElement.ForegroundProperty, textBrush);
+
+        window.Resources[typeof(TextBlock)] = CreateStyle<TextBlock>(
+            (TextBlock.ForegroundProperty, textBrush),
+            (TextBlock.FontSizeProperty, 13d));
+
+        window.Resources[typeof(TextBox)] = CreateStyle<TextBox>(
+            (TextBox.ForegroundProperty, textBrush),
+            (TextBox.CaretBrushProperty, textBrush),
+            (TextBox.BackgroundProperty, inputBrush),
+            (TextBox.BorderBrushProperty, borderBrush),
+            (TextBox.BorderThicknessProperty, new Thickness(1)),
+            (TextBox.PaddingProperty, new Thickness(8, 5, 8, 5)));
+
+        window.Resources[typeof(ComboBox)] = CreateDialogComboBoxStyle();
+
+        var comboBoxItemStyle = CreateStyle<ComboBoxItem>(
+            (ComboBoxItem.ForegroundProperty, textBrush),
+            (ComboBoxItem.BackgroundProperty, inputBrush),
+            (ComboBoxItem.PaddingProperty, new Thickness(8, 6, 8, 6)),
+            (ComboBoxItem.VerticalContentAlignmentProperty, VerticalAlignment.Center));
+        comboBoxItemStyle.Triggers.Add(new Trigger
+        {
+            Property = ComboBoxItem.IsHighlightedProperty,
+            Value = true,
+            Setters = { new Setter(Control.BackgroundProperty, GetBrush(window.Resources, "MenuHoverBrush")) }
+        });
+        comboBoxItemStyle.Triggers.Add(new Trigger
+        {
+            Property = ComboBoxItem.IsSelectedProperty,
+            Value = true,
+            Setters =
+            {
+                new Setter(Control.BackgroundProperty, GetBrush(window.Resources, "SelectionBrush")),
+                new Setter(Control.ForegroundProperty, GetBrush(window.Resources, "SelectionTextBrush"))
+            }
+        });
+        window.Resources[typeof(ComboBoxItem)] = comboBoxItemStyle;
+
+        window.Resources[typeof(Button)] = CreateStyle<Button>(
+            (Button.ForegroundProperty, textBrush),
+            (Button.BackgroundProperty, buttonBrush),
+            (Button.BorderBrushProperty, borderBrush),
+            (Button.BorderThicknessProperty, new Thickness(1)),
+            (Button.PaddingProperty, new Thickness(12, 5, 12, 5)),
+            (Button.MinHeightProperty, 32d));
+    }
+
+    private static Style CreateStyle<TControl>(params (DependencyProperty Property, object Value)[] setters)
+        where TControl : FrameworkElement
+    {
+        var style = new Style(typeof(TControl));
+        foreach (var setter in setters)
+        {
+            style.Setters.Add(new Setter(setter.Property, setter.Value));
+        }
+
+        return style;
+    }
+
+    private static Style CreateDialogComboBoxStyle()
+    {
+        const string styleXaml = """
+<Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       TargetType="{x:Type ComboBox}">
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="Background" Value="{DynamicResource InputBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushSoft}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="{x:Type ComboBox}">
+                <Grid>
+                    <ToggleButton x:Name="ToggleButton"
+                                  Focusable="False"
+                                  ClickMode="Press"
+                                  IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                <Border x:Name="Chrome"
+                                        Background="{DynamicResource InputBrush}"
+                                        BorderBrush="{DynamicResource BorderBrushSoft}"
+                                        BorderThickness="1">
+                                    <Grid>
+                                        <ContentPresenter Margin="8,0,30,0"
+                                                          HorizontalAlignment="Stretch"
+                                                          VerticalAlignment="Center"
+                                                          RecognizesAccessKey="True"
+                                                          TextElement.Foreground="{DynamicResource TextBrush}" />
+                                        <Path HorizontalAlignment="Right"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,10,0"
+                                              Fill="{DynamicResource TextBrush}"
+                                              Data="M 0 0 L 4 4 L 8 0 Z" />
+                                    </Grid>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource HeaderBlueBrush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                        <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+                    </ToggleButton>
+                    <Popup x:Name="PART_Popup"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           Placement="Bottom"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Fade">
+                        <Border Background="{DynamicResource InputBrush}"
+                                BorderBrush="{DynamicResource BorderBrushSoft}"
+                                BorderThickness="1"
+                                MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
+                                MaxHeight="260">
+                            <ScrollViewer CanContentScroll="True">
+                                <ItemsPresenter />
+                            </ScrollViewer>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style>
+""";
+
+        return (Style)XamlReader.Parse(styleXaml);
+    }
+
+    private static Brush GetBrush(ResourceDictionary resources, string key)
+    {
+        return (Brush)resources[key];
     }
 
     private Task SetStatusAsync(string message)

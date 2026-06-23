@@ -16,6 +16,10 @@ Menu rendering is checked in the same smoke run.
 
 ![FolderSyncr light menu](screenshots/foldersyncr-light-menu.png)
 
+Dark-mode dialogs are also checked.
+
+![FolderSyncr dark settings dialog](screenshots/foldersyncr-dark-settings.png)
+
 ## Basic Workflow
 
 1. Choose a left folder.

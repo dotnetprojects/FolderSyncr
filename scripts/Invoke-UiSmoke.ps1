@@ -10,6 +10,7 @@ $exe = Join-Path $repoRoot 'FolderSyncr\bin\Debug\net10.0-windows\FolderSyncr.ex
 $lightScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-light.png'
 $lightMenuScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-light-menu.png'
 $darkScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-dark.png'
+$darkSettingsScreenshot = Join-Path $repoRoot 'docs\screenshots\foldersyncr-dark-settings.png'
 
 if (-not $SkipBuild) {
     dotnet build $solution
@@ -170,14 +171,14 @@ function Expand-Menu {
     }
 }
 
-function Capture-Window {
+function Capture-Handle {
     param(
-        [System.Diagnostics.Process]$Process,
+        [IntPtr]$Handle,
         [string]$Path
     )
 
     $rect = New-Object FolderSyncrSmokeNative+RECT
-    [FolderSyncrSmokeNative]::GetWindowRect($Process.MainWindowHandle, [ref]$rect) | Out-Null
+    [FolderSyncrSmokeNative]::GetWindowRect($Handle, [ref]$rect) | Out-Null
 
     $width = $rect.Right - $rect.Left
     $height = $rect.Bottom - $rect.Top
@@ -196,6 +197,60 @@ function Capture-Window {
     if ($file.Length -lt 10000) {
         throw "Screenshot looks too small: $Path"
     }
+}
+
+function Capture-Rectangle {
+    param(
+        [double]$Left,
+        [double]$Top,
+        [double]$Width,
+        [double]$Height,
+        [string]$Path
+    )
+
+    if ($Width -le 0 -or $Height -le 0) {
+        throw 'Invalid screenshot rectangle.'
+    }
+
+    $bitmap = New-Object System.Drawing.Bitmap([int][Math]::Ceiling($Width), [int][Math]::Ceiling($Height))
+    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+    $graphics.CopyFromScreen([int][Math]::Floor($Left), [int][Math]::Floor($Top), 0, 0, $bitmap.Size)
+    $bitmap.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+    $graphics.Dispose()
+    $bitmap.Dispose()
+
+    $file = Get-Item $Path
+    if ($file.Length -lt 10000) {
+        throw "Screenshot looks too small: $Path"
+    }
+}
+
+function Capture-Window {
+    param(
+        [System.Diagnostics.Process]$Process,
+        [string]$Path
+    )
+
+    Capture-Handle ([IntPtr]$Process.MainWindowHandle) $Path
+}
+
+function Capture-AutomationWindow {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$Path
+    )
+
+    Capture-Handle ([IntPtr]$Window.Current.NativeWindowHandle) $Path
+}
+
+function Capture-AutomationWindowWithDropdown {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$Path
+    )
+
+    $bounds = $Window.Current.BoundingRectangle
+    Capture-Rectangle $bounds.Left $bounds.Top $bounds.Width ($bounds.Height + 260) $Path
 }
 
 $process = Start-Process -FilePath $exe -PassThru
@@ -240,10 +295,30 @@ try {
     Start-Sleep -Milliseconds 300
     Capture-Window $process $darkScreenshot
 
+    $fileMenu = Find-ByName ([System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)) 'File' $menuItemType
+    $fileMenu.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Collapse()
+    Start-Sleep -Milliseconds 200
+
+    $root = [System.Windows.Automation.AutomationElement]::FromHandle($process.MainWindowHandle)
+    Invoke-Element (Find-ByHelp $root 'Comparison settings') 'Dark comparison settings button'
+    $settingsWindow = Wait-WindowTitle -ProcessId $process.Id -Title 'Comparison settings'
+    $comboCondition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::ComboBox)
+    $modeCombo = $settingsWindow.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $comboCondition)
+    if ($null -eq $modeCombo) {
+        throw 'Settings mode ComboBox was not found.'
+    }
+    $modeCombo.GetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern).Expand()
+    Start-Sleep -Milliseconds 300
+    Capture-AutomationWindowWithDropdown $settingsWindow $darkSettingsScreenshot
+    Close-Window $settingsWindow
+
     Write-Host 'FolderSyncr UI smoke passed.'
     Write-Host "Light screenshot: $lightScreenshot"
     Write-Host "Light menu screenshot: $lightMenuScreenshot"
     Write-Host "Dark screenshot: $darkScreenshot"
+    Write-Host "Dark settings screenshot: $darkSettingsScreenshot"
 }
 finally {
     if ($process -and -not $process.HasExited) {
