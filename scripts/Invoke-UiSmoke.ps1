@@ -577,7 +577,6 @@ try {
 
     $settingsWindow = Open-DialogByHelp $process 'Synchronization settings' 'Synchronization settings' 'Dark synchronization settings button'
     Start-Sleep -Milliseconds 300
-    Scroll-WindowContentToBottom $settingsWindow
     Capture-AutomationWindow $settingsWindow $darkSettingsScreenshot
     Close-Window $settingsWindow
 

@@ -614,7 +614,11 @@ public sealed class MainViewModel : ObservableObject
         };
         var syncDatabaseBox = new CheckBox
         {
-            Content = "Use synchronization database to detect changes, deletions, moves, and conflicts",
+            Content = new TextBlock
+            {
+                Text = "Use synchronization database to detect changes, deletions, moves, and conflicts",
+                TextWrapping = TextWrapping.Wrap
+            },
             IsChecked = UseSynchronizationDatabase,
             Margin = new Thickness(0, 0, 0, 10)
         };
@@ -692,64 +696,30 @@ public sealed class MainViewModel : ObservableObject
                         new TextBlock { Text = "Use a trailing slash for folder-only filters." },
                         new TextBlock { Text = "Use : for file-only filters." }))));
 
-        var syncPanel = CreateSettingsScrollPanel(
-            CreateSettingsGrid(
-                CreateSettingsChoiceSection(
-                    "Variant",
-                    "Choose the default synchronization strategy.",
-                    CreateChoiceList(
-                        [
-                            (SyncMode.TwoWay, "\uE8AB", "Two way", "Propagate changes on both sides and detect conflicts."),
-                            (SyncMode.MirrorLeftToRight, "\uE72A", "Mirror left to right", "Make the right side match the left side."),
-                            (SyncMode.MirrorRightToLeft, "\uE72B", "Mirror right to left", "Make the left side match the right side."),
-                            (SyncMode.UpdateLeftToRight, "\uE74A", "Update left to right", "Copy new and newer left-side files to the right side."),
-                            (SyncMode.UpdateRightToLeft, "\uE74B", "Update right to left", "Copy new and newer right-side files to the left side."),
-                            (SyncMode.Custom, "\uE713", "Custom", "Use the custom row action rules below.")
-                        ],
-                        () => selectedMode,
-                        value => selectedMode = value)),
-                CreateSettingsSection(
-                    "Synchronization database",
-                    CreateVerticalStack(
-                        syncDatabaseBox,
-                        new TextBlock
-                        {
-                            Text = "When enabled, FolderSyncr writes sync.ffs_db-style metadata for local two-way jobs and uses it to recognize one-sided changes, deletions, moved files, and conflicts.",
-                            TextWrapping = TextWrapping.Wrap
-                        })),
-                CreateSettingsChoiceSection(
-                    "Delete and overwrite",
-                    "Choose where removed or overwritten files go.",
-                    CreateChoiceList(
-                        [
-                            (DeletionHandling.RecycleBin, "\uE74D", "Recycle bin", "Move deleted files to the Windows Recycle Bin."),
-                            (DeletionHandling.Permanent, "\uE74D", "Permanent", "Delete files permanently."),
-                            (DeletionHandling.VersioningFolder, "\uE8A5", "Versioning", "Move deleted or overwritten files to a versioning folder.")
-                        ],
-                        () => selectedDeletionHandling,
-                        value => selectedDeletionHandling = value)),
-                CreateSettingsSection(
-                    "Versioning",
-                    CreateVerticalStack(
-                        CreateLabeledRow("Versioning mode", versioningModeBox),
-                        CreateLabeledRow("Versioning folder", versioningBox))),
-                CreateSettingsSection(
-                    "Errors",
-                    CreateTwoColumnForm(
-                        ("Error handling", errorHandlingBox))),
-                CreateSettingsSection(
-                    "Custom rule matrix",
-                    CreateCustomRuleMatrix(
-                        ("Left only", "Item exists only on the left side.", () => leftOnlyRule, value => leftOnlyRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.DeleteLeft }),
-                        ("Right only", "Item exists only on the right side.", () => rightOnlyRule, value => rightOnlyRule = value, new[] { CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.DeleteRight }),
-                        ("Left newer", "Both sides exist; left side is newer.", () => leftNewerRule, value => leftNewerRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft }),
-                        ("Right newer", "Both sides exist; right side is newer.", () => rightNewerRule, value => rightNewerRule = value, new[] { CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.CopyLeftToRight }),
-                        ("Different", "Both sides changed or contents differ.", () => differentRule, value => differentRule = value, new[] { CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft })))));
+        var syncPanel = CreateSynchronizationSettingsPanel(
+            () => selectedMode,
+            value => selectedMode = value,
+            syncDatabaseBox,
+            () => leftOnlyRule,
+            value => leftOnlyRule = value,
+            () => rightOnlyRule,
+            value => rightOnlyRule = value,
+            () => leftNewerRule,
+            value => leftNewerRule = value,
+            () => rightNewerRule,
+            value => rightNewerRule = value,
+            () => differentRule,
+            value => differentRule = value,
+            () => selectedDeletionHandling,
+            value => selectedDeletionHandling = value,
+            versioningModeBox,
+            versioningBox,
+            errorHandlingBox);
 
         var tabs = new TabControl
         {
-            MinWidth = 920,
-            MinHeight = 560,
+            MinWidth = 790,
+            MinHeight = 460,
             Margin = new Thickness(14)
         };
         tabs.Items.Add(CreateSettingsTab("\uE713", "Compare (F6)", comparePanel));
@@ -762,7 +732,7 @@ public sealed class MainViewModel : ObservableObject
             _ => 0
         };
 
-        if (ShowDialog("Synchronization settings", tabs))
+        if (ShowDialog("Synchronization settings", tabs, resizable: true, width: 1040, height: 640))
         {
             SelectedMode = selectedMode;
             SelectedCompareMethod = selectedCompareMethod;
@@ -903,6 +873,31 @@ public sealed class MainViewModel : ObservableObject
         return border;
     }
 
+    private static Border CreateCompactSettingsSection(string title, UIElement body)
+    {
+        var content = new StackPanel();
+        content.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 14,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+        content.Children.Add(body);
+
+        var border = new Border
+        {
+            Child = content,
+            Margin = new Thickness(0),
+            Padding = new Thickness(10),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4)
+        };
+        border.SetResourceReference(Border.BackgroundProperty, "PanelBrush");
+        border.SetResourceReference(Border.BorderBrushProperty, "BorderBrushSoft");
+        return border;
+    }
+
     private static StackPanel CreateVerticalStack(params UIElement[] children)
     {
         var panel = new StackPanel();
@@ -924,6 +919,323 @@ public sealed class MainViewModel : ObservableObject
             Margin = new Thickness(0, 0, 0, 2)
         });
         panel.Children.Add(control);
+        return panel;
+    }
+
+    private static Grid CreateSynchronizationSettingsPanel(
+        Func<SyncMode> getMode,
+        Action<SyncMode> setMode,
+        CheckBox syncDatabaseBox,
+        Func<CustomSyncAction> getLeftOnly,
+        Action<CustomSyncAction> setLeftOnly,
+        Func<CustomSyncAction> getRightOnly,
+        Action<CustomSyncAction> setRightOnly,
+        Func<CustomSyncAction> getLeftNewer,
+        Action<CustomSyncAction> setLeftNewer,
+        Func<CustomSyncAction> getRightNewer,
+        Action<CustomSyncAction> setRightNewer,
+        Func<CustomSyncAction> getDifferent,
+        Action<CustomSyncAction> setDifferent,
+        Func<DeletionHandling> getDeletionHandling,
+        Action<DeletionHandling> setDeletionHandling,
+        ComboBox versioningModeBox,
+        TextBox versioningBox,
+        ComboBox errorHandlingBox)
+    {
+        var root = new Grid { Margin = new Thickness(8, 10, 8, 0) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(220) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(18) });
+        root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var ruleHost = new ContentControl();
+        var variantChoiceHost = new ContentControl();
+
+        void RefreshRules()
+        {
+            ruleHost.Content = CreateFreeFileSyncRuleMatrix(
+                syncDatabaseBox.IsChecked == true,
+                getLeftOnly,
+                setLeftOnly,
+                getRightOnly,
+                setRightOnly,
+                getLeftNewer,
+                setLeftNewer,
+                getRightNewer,
+                setRightNewer,
+                getDifferent,
+                setDifferent,
+                MarkCustom);
+        }
+
+        void RefreshVariants()
+        {
+            variantChoiceHost.Content = CreateCompactChoiceList(
+                [
+                    (SyncMode.TwoWay, "<=>", "Two way", string.Empty),
+                    (SyncMode.MirrorLeftToRight, "=>", "Mirror left to right", string.Empty),
+                    (SyncMode.MirrorRightToLeft, "<=", "Mirror right to left", string.Empty),
+                    (SyncMode.UpdateLeftToRight, "^>", "Update left to right", string.Empty),
+                    (SyncMode.UpdateRightToLeft, "<v", "Update right to left", string.Empty),
+                    (SyncMode.Custom, "<>", "Custom", string.Empty)
+                ],
+                getMode,
+                ApplyVariant);
+        }
+
+        void ApplyVariant(SyncMode mode)
+        {
+            setMode(mode);
+            ApplySynchronizationPreset(
+                mode,
+                setLeftOnly,
+                setRightOnly,
+                setLeftNewer,
+                setRightNewer,
+                setDifferent);
+            RefreshRules();
+        }
+
+        void MarkCustom()
+        {
+            if (getMode() == SyncMode.Custom)
+            {
+                return;
+            }
+
+            setMode(SyncMode.Custom);
+            RefreshVariants();
+        }
+
+        RefreshVariants();
+
+        var variantPanel = CreateVerticalStack(
+            new TextBlock
+            {
+                Text = "Variant",
+                FontWeight = FontWeights.SemiBold,
+                Margin = new Thickness(0, 0, 0, 6)
+            },
+            variantChoiceHost);
+
+        syncDatabaseBox.Checked += (_, _) => RefreshRules();
+        syncDatabaseBox.Unchecked += (_, _) => RefreshRules();
+        RefreshRules();
+
+        var databasePanel = new StackPanel { Margin = new Thickness(0, 0, 24, 0) };
+        databasePanel.Children.Add(new TextBlock
+        {
+            Text = "\uE1DB",
+            FontFamily = new FontFamily("Segoe MDL2 Assets"),
+            FontSize = 28,
+            Margin = new Thickness(0, 0, 0, 4),
+            HorizontalAlignment = HorizontalAlignment.Left
+        });
+        databasePanel.Children.Add(syncDatabaseBox);
+        databasePanel.Children.Add(new TextBlock
+        {
+            Text = "When enabled, FolderSyncr can detect deletions, moved files, and two-sided conflicts. Without it, synchronization uses the four visible difference actions.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 12)
+        });
+        var moveDetectionPanel = new Border
+        {
+            Child = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = "<>",
+                        FontSize = 18,
+                        FontWeight = FontWeights.Bold,
+                        Width = 44,
+                        VerticalAlignment = VerticalAlignment.Center
+                    },
+                    new TextBlock
+                    {
+                        Text = "Detect moved files",
+                        VerticalAlignment = VerticalAlignment.Center
+                    }
+                }
+            },
+            Padding = new Thickness(10, 8, 10, 8),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4)
+        };
+        moveDetectionPanel.SetResourceReference(Border.BackgroundProperty, "ButtonBrush");
+        moveDetectionPanel.SetResourceReference(Border.BorderBrushProperty, "BorderBrushSoft");
+        databasePanel.Children.Add(moveDetectionPanel);
+
+        var rightTop = new Grid();
+        rightTop.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        rightTop.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        rightTop.Children.Add(databasePanel);
+        Grid.SetColumn(ruleHost, 1);
+        rightTop.Children.Add(ruleHost);
+
+        Grid.SetRow(variantPanel, 0);
+        Grid.SetColumn(variantPanel, 0);
+        root.Children.Add(variantPanel);
+        Grid.SetRow(rightTop, 0);
+        Grid.SetColumn(rightTop, 2);
+        root.Children.Add(rightTop);
+
+        var separator = new Border
+        {
+            Height = 1,
+            Margin = new Thickness(0, 14, 0, 14)
+        };
+        separator.SetResourceReference(Border.BackgroundProperty, "BorderBrushSoft");
+        Grid.SetRow(separator, 1);
+        Grid.SetColumnSpan(separator, 3);
+        root.Children.Add(separator);
+
+        var deletionPanel = CreateCompactSettingsSection(
+            "Delete and overwrite",
+            CreateCompactChoiceList(
+                [
+                    (DeletionHandling.RecycleBin, "\uE74D", "Recycle bin", string.Empty),
+                    (DeletionHandling.Permanent, "\uE74D", "Permanent", string.Empty),
+                    (DeletionHandling.VersioningFolder, "\uE8A5", "Versioning", string.Empty)
+                ],
+                getDeletionHandling,
+                setDeletionHandling));
+        var advancedPanel = CreateCompactSettingsSection(
+            "Advanced",
+            CreateTwoColumnForm(
+                ("Versioning mode", versioningModeBox),
+                ("Versioning folder", versioningBox),
+                ("Error handling", errorHandlingBox)));
+
+        Grid.SetRow(deletionPanel, 2);
+        Grid.SetColumn(deletionPanel, 0);
+        root.Children.Add(deletionPanel);
+        Grid.SetRow(advancedPanel, 2);
+        Grid.SetColumn(advancedPanel, 2);
+        root.Children.Add(advancedPanel);
+
+        return root;
+    }
+
+    private static void ApplySynchronizationPreset(
+        SyncMode mode,
+        Action<CustomSyncAction> setLeftOnly,
+        Action<CustomSyncAction> setRightOnly,
+        Action<CustomSyncAction> setLeftNewer,
+        Action<CustomSyncAction> setRightNewer,
+        Action<CustomSyncAction> setDifferent)
+    {
+        switch (mode)
+        {
+            case SyncMode.TwoWay:
+                setLeftOnly(CustomSyncAction.CopyLeftToRight);
+                setRightOnly(CustomSyncAction.CopyRightToLeft);
+                setLeftNewer(CustomSyncAction.CopyLeftToRight);
+                setRightNewer(CustomSyncAction.CopyRightToLeft);
+                setDifferent(CustomSyncAction.DoNothing);
+                break;
+            case SyncMode.MirrorLeftToRight:
+                setLeftOnly(CustomSyncAction.CopyLeftToRight);
+                setRightOnly(CustomSyncAction.DeleteRight);
+                setLeftNewer(CustomSyncAction.CopyLeftToRight);
+                setRightNewer(CustomSyncAction.CopyLeftToRight);
+                setDifferent(CustomSyncAction.CopyLeftToRight);
+                break;
+            case SyncMode.MirrorRightToLeft:
+                setLeftOnly(CustomSyncAction.DeleteLeft);
+                setRightOnly(CustomSyncAction.CopyRightToLeft);
+                setLeftNewer(CustomSyncAction.CopyRightToLeft);
+                setRightNewer(CustomSyncAction.CopyRightToLeft);
+                setDifferent(CustomSyncAction.CopyRightToLeft);
+                break;
+            case SyncMode.UpdateLeftToRight:
+                setLeftOnly(CustomSyncAction.CopyLeftToRight);
+                setRightOnly(CustomSyncAction.DoNothing);
+                setLeftNewer(CustomSyncAction.CopyLeftToRight);
+                setRightNewer(CustomSyncAction.DoNothing);
+                setDifferent(CustomSyncAction.DoNothing);
+                break;
+            case SyncMode.UpdateRightToLeft:
+                setLeftOnly(CustomSyncAction.DoNothing);
+                setRightOnly(CustomSyncAction.CopyRightToLeft);
+                setLeftNewer(CustomSyncAction.DoNothing);
+                setRightNewer(CustomSyncAction.CopyRightToLeft);
+                setDifferent(CustomSyncAction.DoNothing);
+                break;
+        }
+    }
+
+    private static StackPanel CreateCompactChoiceList<T>(
+        IReadOnlyList<(T Value, string Icon, string Title, string Description)> choices,
+        Func<T> getSelected,
+        Action<T> setSelected)
+        where T : notnull
+    {
+        var panel = new StackPanel();
+        var groupName = $"CompactChoice{Guid.NewGuid():N}";
+        var controls = new List<(RadioButton Button, Border Border, TextBlock Icon, TextBlock Title, TextBlock Description)>();
+        foreach (var choice in choices)
+        {
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(42) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var icon = new TextBlock
+            {
+                Text = choice.Icon,
+                FontSize = 20,
+                FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            var title = new TextBlock
+            {
+                Text = choice.Title,
+                FontWeight = FontWeights.SemiBold
+            };
+            var description = new TextBlock
+            {
+                Text = choice.Description,
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap,
+                Visibility = string.IsNullOrWhiteSpace(choice.Description) ? Visibility.Collapsed : Visibility.Visible
+            };
+            var text = new StackPanel();
+            text.Children.Add(title);
+            text.Children.Add(description);
+            Grid.SetColumn(icon, 0);
+            Grid.SetColumn(text, 1);
+            row.Children.Add(icon);
+            row.Children.Add(text);
+
+            var border = new Border
+            {
+                Child = row,
+                Padding = new Thickness(8, 5, 8, 5),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(4)
+            };
+            var button = new RadioButton
+            {
+                GroupName = groupName,
+                Content = border,
+                Margin = new Thickness(0, 0, 0, 6),
+                IsChecked = EqualityComparer<T>.Default.Equals(choice.Value, getSelected())
+            };
+            controls.Add((button, border, icon, title, description));
+            button.Checked += (_, _) =>
+            {
+                setSelected(choice.Value);
+                UpdateChoiceStyles(controls);
+            };
+            button.Unchecked += (_, _) => UpdateChoiceStyles(controls);
+            panel.Children.Add(button);
+        }
+
+        UpdateChoiceStyles(controls);
         return panel;
     }
 
@@ -996,6 +1308,212 @@ public sealed class MainViewModel : ObservableObject
         return grid;
     }
 
+    private static Grid CreateFreeFileSyncRuleMatrix(
+        bool useDatabase,
+        Func<CustomSyncAction> getLeftOnly,
+        Action<CustomSyncAction> setLeftOnly,
+        Func<CustomSyncAction> getRightOnly,
+        Action<CustomSyncAction> setRightOnly,
+        Func<CustomSyncAction> getLeftNewer,
+        Action<CustomSyncAction> setLeftNewer,
+        Func<CustomSyncAction> getRightNewer,
+        Action<CustomSyncAction> setRightNewer,
+        Func<CustomSyncAction> getDifferent,
+        Action<CustomSyncAction> setDifferent,
+        Action onManualEdit)
+    {
+        return useDatabase
+            ? CreateDatabaseRuleMatrix(getLeftOnly, setLeftOnly, getRightOnly, setRightOnly, getLeftNewer, setLeftNewer, getRightNewer, setRightNewer, onManualEdit)
+            : CreateNoDatabaseRuleMatrix(getLeftOnly, setLeftOnly, getLeftNewer, setLeftNewer, getRightNewer, setRightNewer, getRightOnly, setRightOnly, onManualEdit);
+    }
+
+    private static Grid CreateDatabaseRuleMatrix(
+        Func<CustomSyncAction> getLeftOnly,
+        Action<CustomSyncAction> setLeftOnly,
+        Func<CustomSyncAction> getRightOnly,
+        Action<CustomSyncAction> setRightOnly,
+        Func<CustomSyncAction> getLeftNewer,
+        Action<CustomSyncAction> setLeftNewer,
+        Func<CustomSyncAction> getRightNewer,
+        Action<CustomSyncAction> setRightNewer,
+        Action onManualEdit)
+    {
+        var grid = CreateRuleMatrixShell();
+        AddRuleHeader(grid, 1, "Left");
+        AddRuleHeader(grid, 2, "Right");
+        AddRuleRowLabel(grid, 1, "Create");
+        AddRuleRowLabel(grid, 2, "Update");
+        AddRuleRowLabel(grid, 3, "Delete");
+        AddRuleButtonGroup(grid, [(1, 1, CustomSyncAction.CopyLeftToRight), (3, 1, CustomSyncAction.DeleteLeft)], getLeftOnly, setLeftOnly, onManualEdit);
+        AddRuleButtonGroup(grid, [(1, 2, CustomSyncAction.CopyRightToLeft), (3, 2, CustomSyncAction.DeleteRight)], getRightOnly, setRightOnly, onManualEdit);
+        AddRuleButtonGroup(grid, [(2, 1, CustomSyncAction.CopyLeftToRight)], getLeftNewer, setLeftNewer, onManualEdit);
+        AddRuleButtonGroup(grid, [(2, 2, CustomSyncAction.CopyRightToLeft)], getRightNewer, setRightNewer, onManualEdit);
+        return grid;
+    }
+
+    private static Grid CreateNoDatabaseRuleMatrix(
+        Func<CustomSyncAction> getLeftOnly,
+        Action<CustomSyncAction> setLeftOnly,
+        Func<CustomSyncAction> getLeftNewer,
+        Action<CustomSyncAction> setLeftNewer,
+        Func<CustomSyncAction> getRightNewer,
+        Action<CustomSyncAction> setRightNewer,
+        Func<CustomSyncAction> getRightOnly,
+        Action<CustomSyncAction> setRightOnly,
+        Action onManualEdit)
+    {
+        var grid = CreateRuleMatrixShell();
+        AddRuleHeader(grid, 1, "Left only");
+        AddRuleHeader(grid, 2, "Newer left");
+        AddRuleHeader(grid, 3, "Newer right");
+        AddRuleHeader(grid, 4, "Right only");
+        AddRuleRowLabel(grid, 1, "Action");
+        AddRuleCycleButton(grid, 1, 1, getLeftOnly, setLeftOnly, [CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.DeleteLeft], onManualEdit);
+        AddRuleCycleButton(grid, 1, 2, getLeftNewer, setLeftNewer, [CustomSyncAction.CopyLeftToRight, CustomSyncAction.DoNothing, CustomSyncAction.CopyRightToLeft], onManualEdit);
+        AddRuleCycleButton(grid, 1, 3, getRightNewer, setRightNewer, [CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.CopyLeftToRight], onManualEdit);
+        AddRuleCycleButton(grid, 1, 4, getRightOnly, setRightOnly, [CustomSyncAction.CopyRightToLeft, CustomSyncAction.DoNothing, CustomSyncAction.DeleteRight], onManualEdit);
+        return grid;
+    }
+
+    private static Grid CreateRuleMatrixShell()
+    {
+        var grid = new Grid
+        {
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        for (var column = 0; column < 4; column++)
+        {
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        }
+
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (var row = 0; row < 3; row++)
+        {
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+
+        return grid;
+    }
+
+    private static void AddRuleHeader(Grid grid, int column, string text)
+    {
+        var header = new TextBlock
+        {
+            Text = text,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(6, 0, 6, 5),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        Grid.SetRow(header, 0);
+        Grid.SetColumn(header, column);
+        grid.Children.Add(header);
+    }
+
+    private static void AddRuleRowLabel(Grid grid, int row, string text)
+    {
+        var label = new TextBlock
+        {
+            Text = text,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 10, 8),
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        Grid.SetRow(label, row);
+        Grid.SetColumn(label, 0);
+        grid.Children.Add(label);
+    }
+
+    private static void AddRuleButtonGroup(
+        Grid grid,
+        IReadOnlyList<(int Row, int Column, CustomSyncAction Action)> placements,
+        Func<CustomSyncAction> getSelected,
+        Action<CustomSyncAction> setSelected,
+        Action onManualEdit)
+    {
+        var groupName = $"RuleMatrix{Guid.NewGuid():N}";
+        var controls = new List<(RadioButton Button, Border Border, TextBlock Glyph, TextBlock Label)>();
+        foreach (var placement in placements)
+        {
+            var button = CreateRuleActionButton(placement.Action, getSelected, setSelected, groupName, controls, onManualEdit);
+            button.Margin = new Thickness(0, 0, 5, 7);
+            Grid.SetRow(button, placement.Row);
+            Grid.SetColumn(button, placement.Column);
+            grid.Children.Add(button);
+        }
+
+        UpdateRuleActionStyles(controls);
+    }
+
+    private static void AddRuleCycleButton(
+        Grid grid,
+        int row,
+        int column,
+        Func<CustomSyncAction> getSelected,
+        Action<CustomSyncAction> setSelected,
+        IReadOnlyList<CustomSyncAction> actions,
+        Action onManualEdit)
+    {
+        var glyphText = new TextBlock
+        {
+            FontSize = 20,
+            FontWeight = FontWeights.Bold,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var border = new Border
+        {
+            Child = new Grid { Children = { glyphText } },
+            Width = 58,
+            Height = 50,
+            Padding = new Thickness(6),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4)
+        };
+        var button = new Button
+        {
+            Content = border,
+            Margin = new Thickness(0, 0, 5, 7)
+        };
+
+        void Update()
+        {
+            var selected = getSelected();
+            var (glyph, label, brushKey) = GetCustomRuleActionPresentation(selected);
+            glyphText.Text = glyph;
+            glyphText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+            border.SetResourceReference(Border.BackgroundProperty, "SelectionBrush");
+            border.SetResourceReference(Border.BorderBrushProperty, "SelectionBrush");
+            button.ToolTip = $"{label}. Click to cycle this rule.";
+        }
+
+        button.Click += (_, _) =>
+        {
+            var selected = getSelected();
+            var index = -1;
+            for (var actionIndex = 0; actionIndex < actions.Count; actionIndex++)
+            {
+                if (actions[actionIndex] == selected)
+                {
+                    index = actionIndex;
+                    break;
+                }
+            }
+
+            var next = actions[(index + 1) % actions.Count];
+            setSelected(next);
+            onManualEdit();
+            Update();
+        };
+
+        Update();
+        Grid.SetRow(button, row);
+        Grid.SetColumn(button, column);
+        grid.Children.Add(button);
+    }
+
     private static StackPanel CreateRuleActionButtons(
         IReadOnlyList<CustomSyncAction> actions,
         Func<CustomSyncAction> getSelected,
@@ -1007,57 +1525,72 @@ public sealed class MainViewModel : ObservableObject
 
         foreach (var action in actions)
         {
-            var (glyph, label, brushKey) = GetCustomRuleActionPresentation(action);
-            var glyphText = new TextBlock
-            {
-                Text = glyph,
-                FontSize = 17,
-                FontWeight = FontWeights.Bold,
-                Width = 32,
-                TextAlignment = TextAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            glyphText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
-            var labelText = new TextBlock
-            {
-                Text = label,
-                FontSize = 11,
-                TextAlignment = TextAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
-            };
-
-            var content = new StackPanel();
-            content.Children.Add(glyphText);
-            content.Children.Add(labelText);
-
-            var border = new Border
-            {
-                Child = content,
-                MinWidth = 72,
-                Padding = new Thickness(7, 5, 7, 5),
-                BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(4)
-            };
-
-            var button = new RadioButton
-            {
-                GroupName = groupName,
-                Content = border,
-                Margin = new Thickness(0, 0, 6, 0),
-                IsChecked = getSelected() == action
-            };
-            controls.Add((button, border, glyphText, labelText));
-            button.Checked += (_, _) =>
-            {
-                setSelected(action);
-                UpdateRuleActionStyles(controls);
-            };
-            button.Unchecked += (_, _) => UpdateRuleActionStyles(controls);
+            var button = CreateRuleActionButton(action, getSelected, setSelected, groupName, controls, () => { });
+            button.Margin = new Thickness(0, 0, 6, 0);
             panel.Children.Add(button);
         }
 
         UpdateRuleActionStyles(controls);
         return panel;
+    }
+
+    private static RadioButton CreateRuleActionButton(
+        CustomSyncAction action,
+        Func<CustomSyncAction> getSelected,
+        Action<CustomSyncAction> setSelected,
+        string groupName,
+        List<(RadioButton Button, Border Border, TextBlock Glyph, TextBlock Label)> controls,
+        Action onManualEdit)
+    {
+        var (glyph, label, brushKey) = GetCustomRuleActionPresentation(action);
+        var glyphText = new TextBlock
+        {
+            Text = glyph,
+            FontSize = 20,
+            FontWeight = FontWeights.Bold,
+            TextAlignment = TextAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        glyphText.SetResourceReference(TextBlock.ForegroundProperty, brushKey);
+        var labelText = new TextBlock
+        {
+            Text = label,
+            FontSize = 11,
+            TextAlignment = TextAlignment.Center,
+            TextWrapping = TextWrapping.Wrap,
+            Visibility = Visibility.Collapsed
+        };
+
+        var content = new Grid();
+        content.Children.Add(glyphText);
+
+        var border = new Border
+        {
+            Child = content,
+            Width = 58,
+            Height = 50,
+            Padding = new Thickness(6),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4)
+        };
+
+        var button = new RadioButton
+        {
+            GroupName = groupName,
+            Content = border,
+            ToolTip = label,
+            IsChecked = getSelected() == action
+        };
+        controls.Add((button, border, glyphText, labelText));
+        button.Checked += (_, _) =>
+        {
+            setSelected(action);
+            onManualEdit();
+            UpdateRuleActionStyles(controls);
+        };
+        button.Unchecked += (_, _) => UpdateRuleActionStyles(controls);
+        return button;
     }
 
     private static (string Glyph, string Label, string BrushKey) GetCustomRuleActionPresentation(CustomSyncAction action)
