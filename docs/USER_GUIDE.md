@@ -123,6 +123,8 @@ FolderSyncr creates temporary `.foldersyncr.lock` files in the left and right ro
 - `==`: both sides are equal.
 - `!`: conflict.
 
+Use the checkbox in the action column to include or exclude an individual planned copy/delete operation before clicking `Synchronize`.
+
 ## Filters
 
 Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines. `*` matches zero or more characters, `?` matches one character, and `?*` requires at least one character. A trailing `:` marks a file-only filter, while a trailing slash marks a folder filter whose contents are also matched. Start a path with `\` or `/` to anchor it to the folder-pair root.

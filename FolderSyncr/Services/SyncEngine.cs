@@ -41,7 +41,7 @@ public sealed class SyncEngine
         var locks = AcquireSyncLocks(options);
         try
         {
-            var executable = operations.Where(operation => operation.WillChangeFileSystem).ToList();
+            var executable = operations.Where(operation => operation.ShouldExecute).ToList();
             if (executable.Count == 0)
             {
                 progress?.Report("No file changes required.");

@@ -48,7 +48,7 @@ public sealed class MainViewModel : ObservableObject
         BrowseLeftCommand = new RelayCommand(() => BrowseAsync(isLeft: true), () => !IsBusy);
         BrowseRightCommand = new RelayCommand(() => BrowseAsync(isLeft: false), () => !IsBusy);
         CompareCommand = new RelayCommand(CompareAsync, CanRunFolderAction);
-        SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.WillChangeFileSystem));
+        SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.ShouldExecute));
         CancelCommand = new RelayCommand(CancelAsync, () => IsBusy);
         ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
         OpenSettingsCommand = new RelayCommand(OpenSettingsAsync);
@@ -249,7 +249,7 @@ public sealed class MainViewModel : ObservableObject
 
     public bool IsLeftPaneSplitterVisible => IsConfigurationVisible && IsOverviewVisible;
 
-    public int ChangeCount => Operations.Count(operation => operation.WillChangeFileSystem);
+    public int ChangeCount => Operations.Count(operation => operation.ShouldExecute);
     public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
     public int TotalCount => Operations.Count;
     public int LeftFileCount => Operations.Count(operation => operation.Left is not null);
@@ -279,7 +279,7 @@ public sealed class MainViewModel : ObservableObject
                 RightPath = options.OverrideRightPath;
             }
 
-            Operations.Clear();
+            ClearOperations();
             OnOperationSummaryChanged();
             return SetStatusAsync("Startup folder pair override applied.");
         }
@@ -320,14 +320,11 @@ public sealed class MainViewModel : ObservableObject
     {
         await RunBusyAsync(async token =>
         {
-            Operations.Clear();
+            ClearOperations();
             AddLog("Compare started.");
 
             var operations = await _syncEngine.CompareAsync(CreateOptions(dryRun: true), CreateProgress(), token);
-            foreach (var operation in operations)
-            {
-                Operations.Add(operation);
-            }
+            AddOperations(operations);
 
             OnOperationSummaryChanged();
             Status = $"Compare finished: {ChangeCount} change(s), {ConflictCount} conflict(s), {TotalCount} item(s).";
@@ -341,7 +338,7 @@ public sealed class MainViewModel : ObservableObject
         {
             var startTime = DateTimeOffset.Now;
             var started = Stopwatch.StartNew();
-            var executable = Operations.Where(operation => operation.WillChangeFileSystem).ToList();
+            var executable = Operations.Where(operation => operation.ShouldExecute).ToList();
             var totalBytes = Operations.Sum(GetOperationBytes);
             var plannedBytes = executable.Sum(GetOperationBytes);
             var syncResult = "success";
@@ -389,11 +386,8 @@ public sealed class MainViewModel : ObservableObject
             }
 
             var refreshed = await _syncEngine.CompareAsync(CreateOptions(dryRun: true), CreateProgress(), token);
-            Operations.Clear();
-            foreach (var operation in refreshed)
-            {
-                Operations.Add(operation);
-            }
+            ClearOperations();
+            AddOperations(refreshed);
 
             OnOperationSummaryChanged();
             Status = $"Sync finished: {ChangeCount} change(s) remaining, {ConflictCount} conflict(s).";
@@ -595,7 +589,7 @@ public sealed class MainViewModel : ObservableObject
 
         IncludePatterns = configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
-        Operations.Clear();
+        ClearOperations();
         OnOperationSummaryChanged();
         _currentConfigurationPath = null;
 
@@ -626,7 +620,7 @@ public sealed class MainViewModel : ObservableObject
         VersioningFolderPath = string.Empty;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
-        Operations.Clear();
+        ClearOperations();
         OnOperationSummaryChanged();
         return SetStatusAsync("New configuration created.");
     }
@@ -723,7 +717,7 @@ public sealed class MainViewModel : ObservableObject
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
-        Operations.Clear();
+        ClearOperations();
         OnOperationSummaryChanged();
 
         if (IsDarkMode != configuration.IsDarkMode)
@@ -789,7 +783,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedCompareMethod = CompareMethod.TimeAndSize;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
-        Operations.Clear();
+        ClearOperations();
         OnOperationSummaryChanged();
 
         Configurations.Insert(0, new ConfigurationItem
@@ -1180,6 +1174,33 @@ public sealed class MainViewModel : ObservableObject
         SyncCommand.RaiseCanExecuteChanged();
     }
 
+    private void AddOperations(IEnumerable<SyncOperation> operations)
+    {
+        foreach (var operation in operations)
+        {
+            operation.PropertyChanged += Operation_PropertyChanged;
+            Operations.Add(operation);
+        }
+    }
+
+    private void ClearOperations()
+    {
+        foreach (var operation in Operations)
+        {
+            operation.PropertyChanged -= Operation_PropertyChanged;
+        }
+
+        Operations.Clear();
+    }
+
+    private void Operation_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(SyncOperation.IsSelectedForSync) or nameof(SyncOperation.ShouldExecute))
+        {
+            OnOperationSummaryChanged();
+        }
+    }
+
     private bool FilterOperation(object item)
     {
         if (item is not SyncOperation operation)
@@ -1189,7 +1210,7 @@ public sealed class MainViewModel : ObservableObject
 
         return _operationViewFilter switch
         {
-            OperationViewFilter.Changes => operation.WillChangeFileSystem,
+            OperationViewFilter.Changes => operation.ShouldExecute,
             OperationViewFilter.Conflicts => operation.Kind == OperationKind.Conflict,
             _ => true
         };

@@ -169,7 +169,7 @@ public sealed class SyncEngineTests
         var options = workspace.CreateOptions(SyncMode.TwoWay, verifyCopiedFiles: true);
         var engine = new SyncEngine();
         var messages = new List<string>();
-        var progress = new Progress<string>(messages.Add);
+        var progress = new TestProgress(messages);
 
         var operations = await engine.CompareAsync(options, null, CancellationToken.None);
         await engine.ExecuteAsync(operations, options, progress, CancellationToken.None);
@@ -220,6 +220,26 @@ public sealed class SyncEngineTests
         Assert.IsFalse(File.Exists(workspace.RightPath("locked.txt")));
     }
 
+    [TestMethod]
+    public async Task ExecuteSkipsDeselectedOperations()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("skip.txt", "do not copy", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+        var operation = operations.Single(item => item.RelativePath == "skip.txt");
+
+        Assert.IsTrue(operation.IsSelectedForSync);
+        operation.IsSelectedForSync = false;
+
+        await engine.ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.IsFalse(File.Exists(workspace.RightPath("skip.txt")));
+        Assert.AreEqual("Pending", operation.Status);
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(
@@ -227,6 +247,14 @@ public sealed class SyncEngineTests
                 string.Equals(operation.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase)
                 && operation.Kind == kind),
             $"Expected {relativePath} to have operation {kind}.");
+    }
+
+    private sealed class TestProgress(List<string> messages) : IProgress<string>
+    {
+        public void Report(string value)
+        {
+            messages.Add(value);
+        }
     }
 
     private sealed class TestWorkspace : IDisposable

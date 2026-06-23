@@ -140,7 +140,7 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Add multiple folder pairs in the UI.
 - [ ] Add tree overview navigation.
 - [ ] Add category filter buttons for all FreeFileSync item categories.
-- [ ] Add selectable per-row sync actions.
+- [x] Add selectable per-row sync actions.
 - [x] Add drag-and-drop folder selection.
 - [x] Create HTML user documentation and open it from the `Help` -> `Documentation` menu.
 - [x] Add real save/open/reload configuration commands.

@@ -1,12 +1,43 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace FolderSyncr.Models;
 
-public sealed class SyncOperation
+public sealed class SyncOperation : INotifyPropertyChanged
 {
+    private bool? _isSelectedForSync;
+    private string _status = "Pending";
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
     public required string RelativePath { get; init; }
     public FileSnapshot? Left { get; init; }
     public FileSnapshot? Right { get; init; }
     public OperationKind Kind { get; init; }
-    public string Status { get; set; } = "Pending";
+    public string Status
+    {
+        get => _status;
+        set => SetProperty(ref _status, value);
+    }
+
+    public bool IsSelectedForSync
+    {
+        get => _isSelectedForSync ?? WillChangeFileSystem;
+        set
+        {
+            if (!WillChangeFileSystem)
+            {
+                value = false;
+            }
+
+            if (_isSelectedForSync != value)
+            {
+                _isSelectedForSync = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShouldExecute));
+            }
+        }
+    }
 
     public string Direction => Kind switch
     {
@@ -51,6 +82,26 @@ public sealed class SyncOperation
         OperationKind.CopyRightToLeft or
         OperationKind.DeleteLeft or
         OperationKind.DeleteRight;
+
+    public bool ShouldExecute => WillChangeFileSystem && IsSelectedForSync;
+
+    public bool CanSelectForSync => WillChangeFileSystem;
+
+    private void SetProperty<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value))
+        {
+            return;
+        }
+
+        field = value;
+        OnPropertyChanged(propertyName);
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 
     private static string FormatBytes(long bytes)
     {
