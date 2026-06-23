@@ -531,6 +531,11 @@ public sealed class SyncEngine
                 throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
             }
 
+            if (PathMacroExpander.GetVolumeGuidReference(options.LeftPath) is { } volumeGuid)
+            {
+                throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
+            }
+
             throw new DirectoryNotFoundException("Choose an existing left folder.");
         }
 
@@ -539,6 +544,11 @@ public sealed class SyncEngine
             if (PathMacroExpander.GetVolumeLabelReference(options.RightPath) is { } volumeLabel)
             {
                 throw new DirectoryNotFoundException($"Drive with volume label '{volumeLabel}' is not available.");
+            }
+
+            if (PathMacroExpander.GetVolumeGuidReference(options.RightPath) is { } volumeGuid)
+            {
+                throw new DirectoryNotFoundException($"Volume GUID path '{volumeGuid}' is not available.");
             }
 
             throw new DirectoryNotFoundException("Choose an existing right folder.");

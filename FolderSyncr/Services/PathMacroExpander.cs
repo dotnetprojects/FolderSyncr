@@ -29,6 +29,12 @@ public static partial class PathMacroExpander
         return match.Success ? match.Groups["label"].Value : null;
     }
 
+    public static string? GetVolumeGuidReference(string path)
+    {
+        var match = VolumeGuidRegex().Match(path);
+        return match.Success ? match.Groups["volume"].Value : null;
+    }
+
     private static string ExpandInternalMacros(string path, DateTime now)
     {
         return MacroRegex().Replace(path, match =>
@@ -142,4 +148,7 @@ public static partial class PathMacroExpander
 
     [GeneratedRegex("^\\[(?<label>[^\\]]+)\\](?<rest>[\\\\/].*)?$", RegexOptions.CultureInvariant)]
     private static partial Regex VolumeLabelRegex();
+
+    [GeneratedRegex("""^\\\\\?\\(?<volume>Volume\{[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\})(?:[\\/].*)?$""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex VolumeGuidRegex();
 }

@@ -84,6 +84,8 @@ Windows special-folder macros are supported for common locations, including `%cs
 
 For removable drives, use a volume label path such as `[Backup-Disk]\folder`. FolderSyncr resolves the label to the currently mounted drive and reports a clear error if the drive is not available.
 
+FolderSyncr also accepts Windows volume GUID paths such as `\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder`. Windows resolves the mounted volume, and FolderSyncr reports a volume-specific error if the GUID path is currently unavailable.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.

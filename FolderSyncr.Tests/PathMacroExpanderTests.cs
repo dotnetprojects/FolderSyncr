@@ -104,4 +104,15 @@ public sealed class PathMacroExpanderTests
         Assert.AreEqual(@"[Missing-Disk]\folder", expanded);
         Assert.AreEqual("Missing-Disk", PathMacroExpander.GetVolumeLabelReference(expanded));
     }
+
+    [TestMethod]
+    public void ExpandLeavesVolumeGuidPathsUnchanged()
+    {
+        const string path = @"\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder\file.txt";
+
+        var expanded = PathMacroExpander.Expand(path, DateTime.Now, new Dictionary<string, string>());
+
+        Assert.AreEqual(path, expanded);
+        Assert.AreEqual("Volume{01234567-89ab-cdef-0123-456789abcdef}", PathMacroExpander.GetVolumeGuidReference(expanded));
+    }
 }

@@ -331,6 +331,24 @@ public sealed class SyncEngineTests
         StringAssert.Contains(exception.Message, "Definitely-Missing-FolderSyncr-Test-Disk");
     }
 
+    [TestMethod]
+    public async Task CompareReportsUnavailableVolumeGuid()
+    {
+        using var workspace = TestWorkspace.Create();
+        var options = new SyncOptions
+        {
+            LeftPath = @"\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\left",
+            RightPath = workspace.RightPath(string.Empty),
+            Mode = SyncMode.TwoWay,
+            CompareMethod = CompareMethod.TimeAndSize
+        };
+
+        var exception = await Assert.ThrowsExactlyAsync<DirectoryNotFoundException>(() =>
+            new SyncEngine().CompareAsync(options, null, CancellationToken.None));
+
+        StringAssert.Contains(exception.Message, "Volume{01234567-89ab-cdef-0123-456789abcdef}");
+    }
+
     private static void AssertOperation(IEnumerable<SyncOperation> operations, string relativePath, OperationKind kind)
     {
         Assert.IsTrue(

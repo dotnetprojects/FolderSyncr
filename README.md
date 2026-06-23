@@ -26,7 +26,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - Drag-and-drop folder selection for left and right paths.
 - Per-row checkboxes to include or exclude planned sync actions.
 - Result-grid double-click and context menu actions.
-- Volume-label paths like `[Backup-Disk]\folder` for removable drives.
+- Volume-label paths like `[Backup-Disk]\folder` and volume GUID paths like `\\?\Volume{01234567-89ab-cdef-0123-456789abcdef}\folder` for removable drives.
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
