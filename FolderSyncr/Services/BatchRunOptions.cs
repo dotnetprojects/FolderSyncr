@@ -8,4 +8,5 @@ public sealed record BatchRunOptions(
     string? OverrideRightPath,
     bool DryRun,
     string? JsonOutputPath,
-    SyncErrorHandling? ErrorHandling = null);
+    SyncErrorHandling? ErrorHandling = null,
+    SymbolicLinkHandling? SymbolicLinkHandling = null);

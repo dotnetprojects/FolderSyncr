@@ -35,6 +35,7 @@ public sealed class MainViewModel : ObservableObject
     private VersioningMode _selectedVersioningMode = VersioningMode.TimeStampFolder;
     private string _versioningFolderPath = string.Empty;
     private SyncErrorHandling _selectedErrorHandling = SyncErrorHandling.ShowErrors;
+    private SymbolicLinkHandling _selectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -116,6 +117,7 @@ public sealed class MainViewModel : ObservableObject
     public IReadOnlyList<DeletionHandling> DeletionHandlingModes { get; } = Enum.GetValues<DeletionHandling>();
     public IReadOnlyList<VersioningMode> VersioningModes { get; } = Enum.GetValues<VersioningMode>();
     public IReadOnlyList<SyncErrorHandling> ErrorHandlingModes { get; } = Enum.GetValues<SyncErrorHandling>();
+    public IReadOnlyList<SymbolicLinkHandling> SymbolicLinkHandlingModes { get; } = Enum.GetValues<SymbolicLinkHandling>();
 
     public RelayCommand BrowseLeftCommand { get; }
     public RelayCommand BrowseRightCommand { get; }
@@ -227,6 +229,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _selectedErrorHandling;
         set => SetProperty(ref _selectedErrorHandling, value);
+    }
+
+    public SymbolicLinkHandling SelectedSymbolicLinkHandling
+    {
+        get => _selectedSymbolicLinkHandling;
+        set => SetProperty(ref _selectedSymbolicLinkHandling, value);
     }
 
     public string IncludePatterns
@@ -543,6 +551,14 @@ public sealed class MainViewModel : ObservableObject
             MinWidth = 260
         };
 
+        var symbolicLinkBox = new ComboBox
+        {
+            ItemsSource = SymbolicLinkHandlingModes,
+            SelectedItem = SelectedSymbolicLinkHandling,
+            Margin = new Thickness(0, 4, 0, 12),
+            MinWidth = 260
+        };
+
         var content = new StackPanel { Margin = new Thickness(18) };
         content.Children.Add(new TextBlock { Text = "Synchronization mode", FontWeight = FontWeights.SemiBold });
         content.Children.Add(modeBox);
@@ -560,6 +576,8 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(versioningBox);
         content.Children.Add(new TextBlock { Text = "Error handling", FontWeight = FontWeights.SemiBold });
         content.Children.Add(errorHandlingBox);
+        content.Children.Add(new TextBlock { Text = "Symbolic links", FontWeight = FontWeights.SemiBold });
+        content.Children.Add(symbolicLinkBox);
 
         if (ShowDialog("Comparison settings", content))
         {
@@ -576,6 +594,7 @@ public sealed class MainViewModel : ObservableObject
             SelectedDeletionHandling = (DeletionHandling)deletionBox.SelectedItem;
             SelectedVersioningMode = (VersioningMode)versioningModeBox.SelectedItem;
             SelectedErrorHandling = (SyncErrorHandling)errorHandlingBox.SelectedItem;
+            SelectedSymbolicLinkHandling = (SymbolicLinkHandling)symbolicLinkBox.SelectedItem;
             VersioningFolderPath = versioningBox.Text.Trim();
             SetStatusAsync($"Settings updated: {SelectedMode}, {SelectedCompareMethod}, {SelectedDeletionHandling}, {SelectedErrorHandling}.").GetAwaiter().GetResult();
         }
@@ -715,6 +734,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedVersioningMode = VersioningMode.TimeStampFolder;
         VersioningFolderPath = string.Empty;
         SelectedErrorHandling = SyncErrorHandling.ShowErrors;
+        SelectedSymbolicLinkHandling = SymbolicLinkHandling.Skip;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         ClearOperations();
@@ -808,7 +828,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 7,
+            Version: 8,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -821,6 +841,7 @@ public sealed class MainViewModel : ObservableObject
             SelectedVersioningMode,
             VersioningFolderPath,
             SelectedErrorHandling,
+            SelectedSymbolicLinkHandling,
             IncludePatterns,
             ExcludePatterns,
             IsDarkMode);
@@ -840,6 +861,7 @@ public sealed class MainViewModel : ObservableObject
         SelectedVersioningMode = configuration.Version >= 6 ? configuration.VersioningMode : VersioningMode.TimeStampFolder;
         VersioningFolderPath = configuration.Version >= 4 ? configuration.VersioningFolderPath : string.Empty;
         SelectedErrorHandling = configuration.Version >= 7 ? configuration.ErrorHandling : SyncErrorHandling.ShowErrors;
+        SelectedSymbolicLinkHandling = configuration.Version >= 8 ? configuration.SymbolicLinkHandling : SymbolicLinkHandling.Skip;
         IncludePatterns = string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns;
         ExcludePatterns = configuration.ExcludePatterns;
         ClearOperations();
@@ -1361,6 +1383,7 @@ public sealed class MainViewModel : ObservableObject
             VersioningMode = SelectedVersioningMode,
             VersioningFolderPath = VersioningFolderPath,
             ErrorHandling = SelectedErrorHandling,
+            SymbolicLinkHandling = SelectedSymbolicLinkHandling,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

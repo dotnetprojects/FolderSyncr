@@ -136,6 +136,7 @@ public sealed class FolderSyncrBatchRunnerTests
                 VersioningMode.TimeStampFolder,
                 VersioningFolderPath: string.Empty,
                 ErrorHandling: SyncErrorHandling.ShowErrors,
+                SymbolicLinkHandling: SymbolicLinkHandling.Skip,
                 IncludePatterns: "*",
                 ExcludePatterns: string.Empty,
                 IsDarkMode: false));

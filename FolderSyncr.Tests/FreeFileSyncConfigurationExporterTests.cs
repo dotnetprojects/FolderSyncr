@@ -80,6 +80,7 @@ public sealed class FreeFileSyncConfigurationExporterTests
             VersioningMode.TimeStampFolder,
             VersioningFolderPath: string.Empty,
             ErrorHandling: SyncErrorHandling.ShowErrors,
+            SymbolicLinkHandling: SymbolicLinkHandling.Skip,
             IncludePatterns: includePatterns,
             ExcludePatterns: excludePatterns,
             IsDarkMode: false);

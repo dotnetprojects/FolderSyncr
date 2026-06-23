@@ -6,4 +6,6 @@ public sealed record FileSnapshot(
     string FullPath,
     long Length,
     DateTime LastWriteTimeUtc,
-    string? Hash);
+    string? Hash,
+    bool IsSymbolicLink = false,
+    string? LinkTarget = null);

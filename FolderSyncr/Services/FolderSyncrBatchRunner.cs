@@ -110,6 +110,7 @@ public sealed class FolderSyncrBatchRunner(
             VersioningMode = configuration.VersioningMode,
             VersioningFolderPath = configuration.VersioningFolderPath,
             ErrorHandling = configuration.ErrorHandling,
+            SymbolicLinkHandling = configuration.SymbolicLinkHandling,
             IncludePatterns = configuration.IncludePatterns,
             ExcludePatterns = configuration.ExcludePatterns
         };
@@ -132,7 +133,8 @@ public sealed class FolderSyncrBatchRunner(
             IncludePatterns = syncOptions.IncludePatterns,
             ExcludePatterns = syncOptions.ExcludePatterns,
             DryRun = options.DryRun,
-            ErrorHandling = options.ErrorHandling ?? syncOptions.ErrorHandling
+            ErrorHandling = options.ErrorHandling ?? syncOptions.ErrorHandling,
+            SymbolicLinkHandling = options.SymbolicLinkHandling ?? syncOptions.SymbolicLinkHandling
         };
     }
 

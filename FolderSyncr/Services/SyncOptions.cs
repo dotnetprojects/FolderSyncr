@@ -15,6 +15,7 @@ public sealed class SyncOptions
     public VersioningMode VersioningMode { get; init; } = VersioningMode.TimeStampFolder;
     public string VersioningFolderPath { get; init; } = string.Empty;
     public SyncErrorHandling ErrorHandling { get; init; } = SyncErrorHandling.ShowErrors;
+    public SymbolicLinkHandling SymbolicLinkHandling { get; init; } = SymbolicLinkHandling.Skip;
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

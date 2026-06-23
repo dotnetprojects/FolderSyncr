@@ -333,6 +333,42 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task CompareSkipsSymbolicLinksByDefault()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("target.txt", "target", DateTime.UtcNow);
+        if (!workspace.TryCreateLeftFileSymbolicLink("link.txt", "target.txt"))
+        {
+            Assert.Inconclusive("File symbolic links are not available in this environment.");
+        }
+
+        var operations = await new SyncEngine().CompareAsync(workspace.CreateOptions(SyncMode.TwoWay), null, CancellationToken.None);
+
+        Assert.IsFalse(operations.Any(operation => operation.RelativePath == "link.txt"));
+    }
+
+    [TestMethod]
+    public async Task ExecuteCanCopySymbolicLinksAsLinks()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("target.txt", "target", DateTime.UtcNow);
+        if (!workspace.TryCreateLeftFileSymbolicLink("link.txt", "target.txt"))
+        {
+            Assert.Inconclusive("File symbolic links are not available in this environment.");
+        }
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay, symbolicLinkHandling: SymbolicLinkHandling.CopyLinksAsLinks);
+        var operations = await new SyncEngine().CompareAsync(options, null, CancellationToken.None);
+
+        AssertOperation(operations, "link.txt", OperationKind.CopyLeftToRight);
+
+        await new SyncEngine().ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        var copiedLink = new FileInfo(workspace.RightPath("link.txt"));
+        Assert.AreEqual("target.txt", copiedLink.LinkTarget);
+    }
+
+    [TestMethod]
     public async Task CompareReportsUnavailableVolumeLabel()
     {
         using var workspace = TestWorkspace.Create();
@@ -420,7 +456,8 @@ public sealed class SyncEngineTests
             DeletionHandling deletionHandling = DeletionHandling.Permanent,
             VersioningMode versioningMode = VersioningMode.TimeStampFolder,
             string versioningFolderPath = "",
-            SyncErrorHandling errorHandling = SyncErrorHandling.ShowErrors)
+            SyncErrorHandling errorHandling = SyncErrorHandling.ShowErrors,
+            SymbolicLinkHandling symbolicLinkHandling = SymbolicLinkHandling.Skip)
         {
             return new SyncOptions
             {
@@ -435,6 +472,7 @@ public sealed class SyncEngineTests
                 VersioningMode = versioningMode,
                 VersioningFolderPath = versioningFolderPath,
                 ErrorHandling = errorHandling,
+                SymbolicLinkHandling = symbolicLinkHandling,
                 IncludePatterns = "*",
                 ExcludePatterns = string.Empty,
                 DryRun = false
@@ -449,6 +487,27 @@ public sealed class SyncEngineTests
         public void WriteRight(string relativePath, string content, DateTime lastWriteTimeUtc)
         {
             WriteFile(RightPath(relativePath), content, lastWriteTimeUtc);
+        }
+
+        public bool TryCreateLeftFileSymbolicLink(string relativePath, string targetPath)
+        {
+            try
+            {
+                File.CreateSymbolicLink(LeftPath(relativePath), targetPath);
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
         }
 
         public void Dispose()

@@ -61,13 +61,14 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized
 ```
 
-Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error.
+Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Add `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error. Add `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links.
 
 ```powershell
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
 FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
 FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
+FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy
 ```
 
 ## Windows Task Scheduler
@@ -115,6 +116,8 @@ Network folders can use standard UNC paths such as `\\server\share\folder` or ex
 The settings dialog also includes a file time tolerance in seconds. The default is `2`, which avoids false differences on file systems with coarse timestamp precision.
 
 Use the error handling setting to choose how synchronization reacts to item-level failures: `ShowErrors` reports and stops, `IgnoreErrors` marks failed items and continues with the remaining operations, and `CancelOnFirstError` stops at the first failure.
+
+Use the symbolic-link setting to choose whether links are skipped, followed as their targets, or copied as file links. FolderSyncr skips symbolic links by default.
 
 Enable `Ignore one-hour daylight saving time shifts` when a file system reports otherwise equal files exactly one hour apart.
 

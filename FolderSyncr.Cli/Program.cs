@@ -41,6 +41,7 @@ internal static class BatchCommandLineParser
         string? right = null;
         string? jsonOutputPath = null;
         SyncErrorHandling? errorHandling = null;
+        SymbolicLinkHandling? symbolicLinkHandling = null;
         var dryRun = false;
 
         for (var index = 0; index < args.Count; index++)
@@ -72,6 +73,19 @@ internal static class BatchCommandLineParser
 
                     errorHandling = parsedErrorHandling;
                     break;
+                case "--symbolic-links":
+                    if (index + 1 >= args.Count)
+                    {
+                        return new BatchParseResult(null, "--symbolic-links requires skip, follow, or copy.", ShowHelp: false);
+                    }
+
+                    if (!TryParseSymbolicLinkHandling(args[++index], out var parsedSymbolicLinkHandling))
+                    {
+                        return new BatchParseResult(null, "--symbolic-links requires skip, follow, or copy.", ShowHelp: false);
+                    }
+
+                    symbolicLinkHandling = parsedSymbolicLinkHandling;
+                    break;
                 case "-dirpair":
                     if (index + 2 >= args.Count)
                     {
@@ -99,7 +113,7 @@ internal static class BatchCommandLineParser
 
         return string.IsNullOrWhiteSpace(configurationPath)
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPath, left, right, dryRun, jsonOutputPath, errorHandling), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPath, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling), null, ShowHelp: false);
     }
 
     private static bool TryParseErrorHandling(string value, out SyncErrorHandling errorHandling)
@@ -120,11 +134,27 @@ internal static class BatchCommandLineParser
             || value.Equals("cancelonfirsterror", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool TryParseSymbolicLinkHandling(string value, out SymbolicLinkHandling symbolicLinkHandling)
+    {
+        symbolicLinkHandling = value.ToLowerInvariant() switch
+        {
+            "skip" => SymbolicLinkHandling.Skip,
+            "follow" => SymbolicLinkHandling.Follow,
+            "copy" or "copylinksaslinks" => SymbolicLinkHandling.CopyLinksAsLinks,
+            _ => SymbolicLinkHandling.Skip
+        };
+
+        return value.Equals("skip", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("follow", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("copy", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("copylinksaslinks", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static string GetUsage()
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
 
                Exit codes:
                  0 success

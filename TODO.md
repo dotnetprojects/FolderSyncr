@@ -29,10 +29,10 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Compare by file size only.
 - [x] Make the file time tolerance configurable.
 - [x] Support explicit daylight-saving-time shift ignores.
-- [ ] Add symbolic link handling:
-  - [ ] Skip links
-  - [ ] Follow links
-  - [ ] Copy links as links
+- [x] Add symbolic link handling:
+  - [x] Skip links
+  - [x] Follow links
+  - [x] Copy links as links
 - [ ] Detect moved files using a synchronization database.
 - [ ] Track conflicts based on a sync database, not only timestamps.
 

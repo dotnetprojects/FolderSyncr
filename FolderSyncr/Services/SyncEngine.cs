@@ -91,10 +91,10 @@ public sealed class SyncEngine
         switch (operation.Kind)
         {
             case OperationKind.CopyLeftToRight:
-                await CopyAsync(operation.Left!, options.RightPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                await CopyAsync(operation.Left!, options.RightPath, options, progress, cancellationToken);
                 break;
             case OperationKind.CopyRightToLeft:
-                await CopyAsync(operation.Right!, options.LeftPath, options.VerifyCopiedFiles, progress, cancellationToken);
+                await CopyAsync(operation.Right!, options.LeftPath, options, progress, cancellationToken);
                 break;
             case OperationKind.DeleteLeft:
                 DeleteFile(operation.Left!, options, progress);
@@ -115,7 +115,7 @@ public sealed class SyncEngine
         var filter = new FileFilter(options.IncludePatterns, options.ExcludePatterns);
         var files = new Dictionary<string, FileSnapshot>(StringComparer.OrdinalIgnoreCase);
 
-        foreach (var path in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+        foreach (var path in EnumerateFilePaths(root, options.SymbolicLinkHandling))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -126,8 +126,18 @@ public sealed class SyncEngine
             }
 
             var info = new FileInfo(path);
+            var isSymbolicLink = info.LinkTarget is not null;
+            if (isSymbolicLink && options.SymbolicLinkHandling == SymbolicLinkHandling.Skip)
+            {
+                continue;
+            }
+
             string? hash = null;
-            if (compareMethod == CompareMethod.ContentHash)
+            if (isSymbolicLink && options.SymbolicLinkHandling == SymbolicLinkHandling.CopyLinksAsLinks)
+            {
+                hash = info.LinkTarget;
+            }
+            else if (compareMethod == CompareMethod.ContentHash)
             {
                 hash = await HashFileAsync(path, cancellationToken);
             }
@@ -138,7 +148,9 @@ public sealed class SyncEngine
                 path,
                 info.Length,
                 info.LastWriteTimeUtc,
-                hash);
+                hash,
+                isSymbolicLink && options.SymbolicLinkHandling == SymbolicLinkHandling.CopyLinksAsLinks,
+                isSymbolicLink && options.SymbolicLinkHandling == SymbolicLinkHandling.CopyLinksAsLinks ? info.LinkTarget : null);
 
             if (files.Count % 250 == 0)
             {
@@ -148,6 +160,28 @@ public sealed class SyncEngine
 
         progress?.Report($"Found {files.Count:n0} file(s) in {root}");
         return files;
+    }
+
+    private static IEnumerable<string> EnumerateFilePaths(string root, SymbolicLinkHandling symbolicLinkHandling)
+    {
+        foreach (var file in Directory.EnumerateFiles(root))
+        {
+            yield return file;
+        }
+
+        foreach (var directory in Directory.EnumerateDirectories(root))
+        {
+            var isSymbolicDirectory = File.GetAttributes(directory).HasFlag(FileAttributes.ReparsePoint);
+            if (isSymbolicDirectory && symbolicLinkHandling != SymbolicLinkHandling.Follow)
+            {
+                continue;
+            }
+
+            foreach (var file in EnumerateFilePaths(directory, symbolicLinkHandling))
+            {
+                yield return file;
+            }
+        }
     }
 
     private static IReadOnlyList<SyncOperation> BuildOperations(
@@ -280,6 +314,12 @@ public sealed class SyncEngine
 
     private static bool AreEquivalent(FileSnapshot left, FileSnapshot right, CompareMethod compareMethod, TimeSpan fileTimeTolerance, bool ignoreDaylightSavingTimeShift)
     {
+        if (left.IsSymbolicLink || right.IsSymbolicLink)
+        {
+            return left.IsSymbolicLink == right.IsSymbolicLink
+                && string.Equals(left.LinkTarget, right.LinkTarget, StringComparison.Ordinal);
+        }
+
         if (compareMethod == CompareMethod.SizeOnly)
         {
             return left.Length == right.Length;
@@ -326,6 +366,7 @@ public sealed class SyncEngine
             VersioningMode = options.VersioningMode,
             VersioningFolderPath = PathMacroExpander.Expand(options.VersioningFolderPath),
             ErrorHandling = options.ErrorHandling,
+            SymbolicLinkHandling = options.SymbolicLinkHandling,
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun
@@ -373,7 +414,7 @@ public sealed class SyncEngine
     private static async Task CopyAsync(
         FileSnapshot source,
         string destinationRoot,
-        bool verifyCopiedFiles,
+        SyncOptions options,
         IProgress<string>? progress,
         CancellationToken cancellationToken)
     {
@@ -386,6 +427,17 @@ public sealed class SyncEngine
         }
 
         progress?.Report($"Copy {source.RelativePath}");
+        if (source.IsSymbolicLink && source.LinkTarget is not null && options.SymbolicLinkHandling == SymbolicLinkHandling.CopyLinksAsLinks)
+        {
+            if (File.Exists(destinationPath))
+            {
+                File.Delete(destinationPath);
+            }
+
+            File.CreateSymbolicLink(destinationPath, source.LinkTarget);
+            return;
+        }
+
         await using (var input = File.Open(source.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read))
         await using (var output = File.Open(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
@@ -394,7 +446,7 @@ public sealed class SyncEngine
 
         File.SetLastWriteTimeUtc(destinationPath, source.LastWriteTimeUtc);
 
-        if (verifyCopiedFiles)
+        if (options.VerifyCopiedFiles)
         {
             progress?.Report($"Verify {source.RelativePath}");
             if (!await FilesAreEqualAsync(source.FullPath, destinationPath, cancellationToken))

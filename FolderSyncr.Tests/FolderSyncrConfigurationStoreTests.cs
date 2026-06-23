@@ -26,6 +26,7 @@ public sealed class FolderSyncrConfigurationStoreTests
                 VersioningMode.FileTime,
                 VersioningFolderPath: @"E:\Versions",
                 ErrorHandling: SyncErrorHandling.IgnoreErrors,
+                SymbolicLinkHandling: SymbolicLinkHandling.CopyLinksAsLinks,
                 IncludePatterns: "*.txt|*.md",
                 ExcludePatterns: @"\bin\",
                 IsDarkMode: true);
