@@ -19,6 +19,7 @@ public sealed class SyncOptions
     public SymbolicLinkHandling SymbolicLinkHandling { get; init; } = SymbolicLinkHandling.Skip;
     public int RemoteConnectionCount { get; init; } = 1;
     public bool SftpCompression { get; init; }
+    public bool UseVolumeShadowCopy { get; init; }
     public string IncludePatterns { get; init; } = "*";
     public string ExcludePatterns { get; init; } = string.Empty;
     public bool DryRun { get; init; } = true;

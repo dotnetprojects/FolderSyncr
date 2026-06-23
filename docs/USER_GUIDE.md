@@ -79,6 +79,10 @@ FolderSyncr supports SFTP and FTP scanning, time/size or content-hash comparison
 
 The settings dialog includes a connection/channel count. Values greater than one run file operations in parallel, which is useful for remote transfers. The SFTP compression checkbox makes SSH connections prefer `zlib@openssh.com` while keeping uncompressed transfer as a fallback.
 
+## Locked Local Files
+
+Enable `Use Volume Shadow Copy for locked local files` in the settings dialog when a local source contains files held open by another process. If a normal read fails, FolderSyncr creates a temporary Windows Volume Shadow Copy for that volume, reads the file from the snapshot, and removes the snapshot when the read stream closes. Windows may require elevated permissions and an enabled Volume Shadow Copy Service for this to succeed.
+
 ## Command Line
 
 Pass a `.foldersyncr.json`, `.ffs_gui`, or `.ffs_batch` file as the first argument to `FolderSyncr.exe` to open it in the UI at startup. Add `-dirpair <left> <right>` to override the loaded folder pair.
@@ -88,7 +92,7 @@ FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized
 ```
 
-Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync `GlobalSettings.xml` file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add `--var NAME=VALUE` to define temporary environment variables for this run, `--watch` to monitor configured folders continuously, `--idle <seconds>` to set the realtime idle delay, `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error, `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links, `--connections <count>` to run file operations in parallel, and `--sftp-compression` to prefer SFTP compression.
+Use `FolderSyncr.Cli.exe` for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to `--json <path>`, exits automatically when the run is complete, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync `GlobalSettings.xml` file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add `--var NAME=VALUE` to define temporary environment variables for this run, `--watch` to monitor configured folders continuously, `--idle <seconds>` to set the realtime idle delay, `--error-handling show|ignore|cancel` to show errors, continue past item errors, or cancel on the first item error, `--symbolic-links skip|follow|copy` to skip links, follow links as normal files/folders, or copy file links as links, `--connections <count>` to run file operations in parallel, `--sftp-compression` to prefer SFTP compression, and `--volume-shadow-copy` to read locked local files through VSS.
 
 ```powershell
 FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json

@@ -652,6 +652,7 @@ public sealed class SyncEngine
             SymbolicLinkHandling = options.SymbolicLinkHandling,
             RemoteConnectionCount = Math.Max(1, options.RemoteConnectionCount),
             SftpCompression = options.SftpCompression,
+            UseVolumeShadowCopy = options.UseVolumeShadowCopy,
             IncludePatterns = options.IncludePatterns,
             ExcludePatterns = options.ExcludePatterns,
             DryRun = options.DryRun

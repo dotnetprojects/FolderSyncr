@@ -26,6 +26,7 @@
   <ItemGroup>
     <PackageReference Include="FluentFTP" Version="54.2.0" />
     <PackageReference Include="SSH.NET" Version="2025.1.0" />
+    <PackageReference Include="System.Management" Version="10.0.9" />
   </ItemGroup>
 
 </Project>

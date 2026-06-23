@@ -24,4 +24,5 @@ public sealed record FolderSyncrConfiguration(
     IReadOnlyList<FolderPairConfiguration>? FolderPairs = null,
     CustomSyncRules? CustomRules = null,
     int RemoteConnectionCount = 1,
-    bool SftpCompression = false);
+    bool SftpCompression = false,
+    bool UseVolumeShadowCopy = false);

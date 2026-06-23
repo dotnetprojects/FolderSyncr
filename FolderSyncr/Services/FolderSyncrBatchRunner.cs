@@ -167,7 +167,8 @@ public sealed class FolderSyncrBatchRunner(
             ErrorHandling = syncOptions.ErrorHandling,
             SymbolicLinkHandling = syncOptions.SymbolicLinkHandling,
             RemoteConnectionCount = syncOptions.RemoteConnectionCount,
-            SftpCompression = syncOptions.SftpCompression
+            SftpCompression = syncOptions.SftpCompression,
+            UseVolumeShadowCopy = syncOptions.UseVolumeShadowCopy
         };
     }
 
@@ -201,7 +202,8 @@ public sealed class FolderSyncrBatchRunner(
             ErrorHandling = options.ErrorHandling ?? syncOptions.ErrorHandling,
             SymbolicLinkHandling = options.SymbolicLinkHandling ?? syncOptions.SymbolicLinkHandling,
             RemoteConnectionCount = options.RemoteConnectionCount ?? syncOptions.RemoteConnectionCount,
-            SftpCompression = options.SftpCompression ?? syncOptions.SftpCompression
+            SftpCompression = options.SftpCompression ?? syncOptions.SftpCompression,
+            UseVolumeShadowCopy = options.UseVolumeShadowCopy ?? syncOptions.UseVolumeShadowCopy
         };
     }
 
@@ -222,6 +224,7 @@ public sealed class FolderSyncrBatchRunner(
             FileTimeToleranceSeconds = 2,
             RemoteConnectionCount = 1,
             SftpCompression = false,
+            UseVolumeShadowCopy = false,
             IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
             ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         }).ToArray();
@@ -246,6 +249,7 @@ public sealed class FolderSyncrBatchRunner(
             SymbolicLinkHandling = configuration.SymbolicLinkHandling,
             RemoteConnectionCount = Math.Max(1, configuration.RemoteConnectionCount),
             SftpCompression = configuration.SftpCompression,
+            UseVolumeShadowCopy = configuration.UseVolumeShadowCopy,
             IncludePatterns = string.IsNullOrWhiteSpace(pair.IncludePatterns) ? configuration.IncludePatterns : pair.IncludePatterns,
             ExcludePatterns = string.IsNullOrWhiteSpace(pair.ExcludePatterns) ? configuration.ExcludePatterns : pair.ExcludePatterns
         };

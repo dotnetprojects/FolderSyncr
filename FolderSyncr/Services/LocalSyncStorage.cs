@@ -10,6 +10,7 @@ namespace FolderSyncr.Services;
 internal sealed class LocalSyncStorage(string root) : ISyncStorage
 {
     private const string LockFileName = ".foldersyncr.lock";
+    private readonly VolumeShadowCopyService _volumeShadowCopyService = new();
 
     public string Root { get; } = root;
 
@@ -53,7 +54,7 @@ internal sealed class LocalSyncStorage(string root) : ISyncStorage
             }
             else if (compareMethod == CompareMethod.ContentHash)
             {
-                await using var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                await using var stream = OpenReadFile(path, options);
                 hash = await HashStreamAsync(stream, cancellationToken);
             }
 
@@ -79,7 +80,7 @@ internal sealed class LocalSyncStorage(string root) : ISyncStorage
 
     public Task<Stream> OpenReadAsync(FileSnapshot snapshot, SyncOptions options, CancellationToken cancellationToken)
     {
-        Stream stream = File.Open(snapshot.FullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        Stream stream = OpenReadFile(snapshot.FullPath, options);
         return Task.FromResult(stream);
     }
 
@@ -157,6 +158,22 @@ internal sealed class LocalSyncStorage(string root) : ISyncStorage
             {
                 yield return file;
             }
+        }
+    }
+
+    private Stream OpenReadFile(string path, SyncOptions options)
+    {
+        try
+        {
+            return File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        }
+        catch (IOException) when (options.UseVolumeShadowCopy)
+        {
+            return _volumeShadowCopyService.OpenRead(path);
+        }
+        catch (UnauthorizedAccessException) when (options.UseVolumeShadowCopy)
+        {
+            return _volumeShadowCopyService.OpenRead(path);
         }
     }
 

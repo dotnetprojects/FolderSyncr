@@ -14,7 +14,8 @@ public sealed record BatchRunOptions(
     bool Watch = false,
     TimeSpan? WatchIdleDelay = null,
     int? RemoteConnectionCount = null,
-    bool? SftpCompression = null)
+    bool? SftpCompression = null,
+    bool? UseVolumeShadowCopy = null)
 {
     public BatchRunOptions(
         string ConfigurationPath,
@@ -28,7 +29,8 @@ public sealed record BatchRunOptions(
         bool Watch = false,
         TimeSpan? WatchIdleDelay = null,
         int? RemoteConnectionCount = null,
-        bool? SftpCompression = null)
+        bool? SftpCompression = null,
+        bool? UseVolumeShadowCopy = null)
         : this(
             [ConfigurationPath],
             OverrideLeftPath,
@@ -41,7 +43,8 @@ public sealed record BatchRunOptions(
             Watch,
             WatchIdleDelay,
             RemoteConnectionCount,
-            SftpCompression)
+            SftpCompression,
+            UseVolumeShadowCopy)
     {
     }
 

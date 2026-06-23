@@ -52,6 +52,7 @@ internal static class BatchCommandLineParser
         SymbolicLinkHandling? symbolicLinkHandling = null;
         int? remoteConnectionCount = null;
         bool? sftpCompression = null;
+        bool? useVolumeShadowCopy = null;
         var temporaryVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var dryRun = false;
         var watch = false;
@@ -136,6 +137,12 @@ internal static class BatchCommandLineParser
                 case "--no-sftp-compression":
                     sftpCompression = false;
                     break;
+                case "--volume-shadow-copy":
+                    useVolumeShadowCopy = true;
+                    break;
+                case "--no-volume-shadow-copy":
+                    useVolumeShadowCopy = false;
+                    break;
                 case "--var":
                     if (index + 1 >= args.Count)
                     {
@@ -171,7 +178,7 @@ internal static class BatchCommandLineParser
 
         return configurationPaths.Count == 0
             ? new BatchParseResult(null, "Pass a configuration path.", ShowHelp: false)
-            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables, watch, watchIdleDelay, remoteConnectionCount, sftpCompression), null, ShowHelp: false);
+            : new BatchParseResult(new BatchRunOptions(configurationPaths, left, right, dryRun, jsonOutputPath, errorHandling, symbolicLinkHandling, temporaryVariables, watch, watchIdleDelay, remoteConnectionCount, sftpCompression, useVolumeShadowCopy), null, ShowHelp: false);
     }
 
     private static bool TryParseTemporaryVariable(string argument, out string name, out string value)
@@ -227,7 +234,7 @@ internal static class BatchCommandLineParser
     {
         return """
                Usage:
-                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--watch] [--idle <seconds>] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [--connections <count>] [--sftp-compression|--no-sftp-compression] [-dirpair <left> <right>]
+                 FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--watch] [--idle <seconds>] [--json <path>] [--var NAME=VALUE] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [--connections <count>] [--sftp-compression|--no-sftp-compression] [--volume-shadow-copy|--no-volume-shadow-copy] [-dirpair <left> <right>]
 
                Additional positional paths may be FolderSyncr/FreeFileSync configurations or a FreeFileSync GlobalSettings.xml file.
 

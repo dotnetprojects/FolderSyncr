@@ -33,6 +33,7 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
 - SFTP roots such as `sftp://user:password@example.com/backups` for comparing, copying, and permanently deleting remote files.
 - FTP roots such as `ftp://user:password@example.com/backups`, with anonymous FTP when no credentials are supplied.
 - Configurable remote connection/channel count and optional SFTP compression.
+- Optional Volume Shadow Copy fallback for reading locked local files.
 - Optional one-hour daylight-saving-time shift ignore for time/size comparisons.
 - Include and exclude wildcard filters.
 - Import FreeFileSync `.ffs_gui`, `.ffs_batch`, and `.ffs_real` configurations.
@@ -121,7 +122,7 @@ Run a saved configuration unattended:
 dotnet run --project .\FolderSyncr.Cli\FolderSyncr.Cli.csproj -- .\Backup.foldersyncr.json --json .\result.json
 ```
 
-`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run, and optionally include a FreeFileSync `GlobalSettings.xml` file for supported global options. Add `--dry-run` to compare without applying changes, `--watch --idle <seconds>` for realtime monitoring, `--var NAME=VALUE` for temporary run-scoped variables, `--error-handling show|ignore|cancel` to control per-item sync errors, `--symbolic-links skip|follow|copy` to control symbolic links, `--connections <count>` to run file operations in parallel, and `--sftp-compression` to prefer SFTP compression.
+`FolderSyncr.Cli` writes the run result JSON to stdout, optionally writes the same JSON to `--json <path>`, exits automatically after the unattended run, and returns `0` for success, `1` for warnings, `2` for errors, or `3` for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run, and optionally include a FreeFileSync `GlobalSettings.xml` file for supported global options. Add `--dry-run` to compare without applying changes, `--watch --idle <seconds>` for realtime monitoring, `--var NAME=VALUE` for temporary run-scoped variables, `--error-handling show|ignore|cancel` to control per-item sync errors, `--symbolic-links skip|follow|copy` to control symbolic links, `--connections <count>` to run file operations in parallel, `--sftp-compression` to prefer SFTP compression, and `--volume-shadow-copy` to read locked local files through VSS.
 
 When a native or imported FreeFileSync configuration contains multiple preserved folder pairs, `FolderSyncr.Cli` processes every pair in one run and applies local per-pair filters when present. Passing a single `-dirpair <left> <right>` override runs only that overridden pair.
 

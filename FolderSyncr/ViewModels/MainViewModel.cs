@@ -40,6 +40,7 @@ public sealed class MainViewModel : ObservableObject
     private CustomSyncRules _customRules = CustomSyncRules.Default;
     private int _remoteConnectionCount = 1;
     private bool _sftpCompression;
+    private bool _useVolumeShadowCopy;
     private string _includePatterns = "*";
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
@@ -263,6 +264,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _sftpCompression;
         set => SetProperty(ref _sftpCompression, value);
+    }
+
+    public bool UseVolumeShadowCopy
+    {
+        get => _useVolumeShadowCopy;
+        set => SetProperty(ref _useVolumeShadowCopy, value);
     }
 
     public string IncludePatterns
@@ -601,6 +608,13 @@ public sealed class MainViewModel : ObservableObject
             Margin = new Thickness(0, 0, 0, 12)
         };
 
+        var volumeShadowCopyBox = new CheckBox
+        {
+            Content = "Use Volume Shadow Copy for locked local files",
+            IsChecked = UseVolumeShadowCopy,
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+
         ComboBox CreateCustomRuleBox(CustomSyncAction selectedAction)
         {
             return new ComboBox
@@ -640,6 +654,7 @@ public sealed class MainViewModel : ObservableObject
         content.Children.Add(new TextBlock { Text = "Connection/channel count", FontWeight = FontWeights.SemiBold });
         content.Children.Add(remoteConnectionCountBox);
         content.Children.Add(sftpCompressionBox);
+        content.Children.Add(volumeShadowCopyBox);
         content.Children.Add(new TextBlock { Text = "Left-only action", FontWeight = FontWeights.SemiBold });
         content.Children.Add(leftOnlyRuleBox);
         content.Children.Add(new TextBlock { Text = "Right-only action", FontWeight = FontWeights.SemiBold });
@@ -682,6 +697,7 @@ public sealed class MainViewModel : ObservableObject
 
             RemoteConnectionCount = remoteConnections;
             SftpCompression = sftpCompressionBox.IsChecked == true;
+            UseVolumeShadowCopy = volumeShadowCopyBox.IsChecked == true;
             CustomRules = new CustomSyncRules(
                 (CustomSyncAction)leftOnlyRuleBox.SelectedItem,
                 (CustomSyncAction)rightOnlyRuleBox.SelectedItem,
@@ -961,6 +977,7 @@ public sealed class MainViewModel : ObservableObject
         CustomRules = CustomSyncRules.Default;
         RemoteConnectionCount = 1;
         SftpCompression = false;
+        UseVolumeShadowCopy = false;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         _folderPairs = [];
@@ -1056,7 +1073,7 @@ public sealed class MainViewModel : ObservableObject
     private FolderSyncrConfiguration CreateNativeConfiguration(string path)
     {
         return new FolderSyncrConfiguration(
-            Version: 13,
+            Version: 14,
             Name: Path.GetFileNameWithoutExtension(path),
             LeftPath,
             RightPath,
@@ -1077,7 +1094,8 @@ public sealed class MainViewModel : ObservableObject
             GetSavedFolderPairs(),
             CustomRules,
             RemoteConnectionCount,
-            SftpCompression);
+            SftpCompression,
+            UseVolumeShadowCopy);
     }
 
     private void ApplyNativeConfiguration(string path, FolderSyncrConfiguration configuration)
@@ -1111,6 +1129,7 @@ public sealed class MainViewModel : ObservableObject
             : CustomSyncRules.Default;
         RemoteConnectionCount = configuration.Version >= 13 ? Math.Max(1, configuration.RemoteConnectionCount) : 1;
         SftpCompression = configuration.Version >= 13 && configuration.SftpCompression;
+        UseVolumeShadowCopy = configuration.Version >= 14 && configuration.UseVolumeShadowCopy;
         IncludePatterns = string.IsNullOrWhiteSpace(visiblePair?.IncludePatterns)
             ? string.IsNullOrWhiteSpace(configuration.IncludePatterns) ? "*" : configuration.IncludePatterns
             : visiblePair.IncludePatterns;
@@ -1193,6 +1212,7 @@ public sealed class MainViewModel : ObservableObject
         CustomRules = CustomSyncRules.Default;
         RemoteConnectionCount = 1;
         SftpCompression = false;
+        UseVolumeShadowCopy = false;
         IncludePatterns = "*";
         ExcludePatterns = "**/bin/**;**/obj/**;**/.git/**";
         ClearOperations();
@@ -1745,6 +1765,7 @@ public sealed class MainViewModel : ObservableObject
             CustomRules = CustomRules,
             RemoteConnectionCount = RemoteConnectionCount,
             SftpCompression = SftpCompression,
+            UseVolumeShadowCopy = UseVolumeShadowCopy,
             IncludePatterns = IncludePatterns,
             ExcludePatterns = ExcludePatterns,
             DryRun = dryRun

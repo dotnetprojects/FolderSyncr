@@ -243,12 +243,14 @@ public sealed class FolderSyncrBatchRunnerTests
                 DryRun: true,
                 JsonOutputPath: null,
                 RemoteConnectionCount: 5,
-                SftpCompression: true),
+                SftpCompression: true,
+                UseVolumeShadowCopy: true),
             out _);
 
         Assert.HasCount(1, options);
         Assert.AreEqual(5, options[0].RemoteConnectionCount);
         Assert.IsTrue(options[0].SftpCompression);
+        Assert.IsTrue(options[0].UseVolumeShadowCopy);
     }
 
     private sealed class BatchWorkspace : IDisposable
