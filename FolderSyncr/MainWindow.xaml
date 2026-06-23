@@ -494,6 +494,7 @@
             </MenuItem>
             <MenuItem Header="_Tools">
                 <MenuItem Header="_Reload configuration list" Command="{Binding ReloadConfigurationCommand}" />
+                <MenuItem Header="Open FreeFileSync _log" Command="{Binding OpenFreeFileSyncLogCommand}" />
                 <MenuItem Header="_Toggle light/dark mode" Command="{Binding ToggleThemeCommand}" />
             </MenuItem>
             <MenuItem Header="_Help">

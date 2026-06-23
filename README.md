@@ -18,6 +18,8 @@ See the [tool documentation](docs/USER_GUIDE.md) for screenshots and usage detai
   - `UpdateRightToLeft`
 - Compare by file time/size or SHA-256 content hash.
 - Include and exclude wildcard filters.
+- Import FreeFileSync `.ffs_gui` and `.ffs_batch` configurations.
+- Import FreeFileSync JSON results and log files.
 - Conflict detection when files differ but neither side is clearly newer.
 - Cancellable compare and synchronization operations.
 - FreeFileSync-inspired layout with configuration list, overview pane, split file grids, action column, and statistics bar.
@@ -76,7 +78,7 @@ For the full walkthrough, see [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
 ## Filters
 
-Filters use simple wildcard patterns separated by semicolons, commas, or new lines.
+Filters use simple wildcard patterns separated by semicolons, commas, vertical bars, or new lines.
 
 Examples:
 

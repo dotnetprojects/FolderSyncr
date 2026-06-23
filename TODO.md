@@ -81,9 +81,9 @@ This list tracks the work needed to support the main features documented in the 
 
 ## 6. Logs and scripting
 
-- [ ] Import FreeFileSync JSON stdout results.
-- [ ] Import FreeFileSync log files referenced by JSON results.
-- [ ] Show imported log summaries in the app log/history area.
+- [x] Import FreeFileSync JSON stdout results.
+- [x] Import FreeFileSync log files.
+- [x] Show imported log summaries in the app log/history area.
 - [ ] Store a local FolderSyncr run history.
 - [ ] Export FolderSyncr run results as JSON with FreeFileSync-like fields.
 - [ ] Include total items, total bytes, processed items, processed bytes, warnings, errors, start time, elapsed time, and log path.
@@ -142,6 +142,7 @@ This list tracks the work needed to support the main features documented in the 
 - [ ] Add category filter buttons for all FreeFileSync item categories.
 - [ ] Add selectable per-row sync actions.
 - [ ] Add drag-and-drop folder selection.
+- [ ] Create HTML user documentation and open it from the `Help` -> `Documentation` menu.
 - [ ] Add real save/open/reload configuration commands.
 - [ ] Add a first-run sample configuration and test data generator.
 

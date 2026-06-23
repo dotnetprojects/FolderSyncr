@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject
 {
     private readonly SyncEngine _syncEngine = new();
     private readonly FreeFileSyncConfigurationImporter _configurationImporter = new();
+    private readonly FreeFileSyncLogImporter _logImporter = new();
     private CancellationTokenSource? _cancellation;
     private string _leftPath = string.Empty;
     private string _rightPath = string.Empty;
@@ -51,6 +52,7 @@ public sealed class MainViewModel : ObservableObject
         SaveConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save configuration is not implemented yet."));
         SaveAsConfigurationCommand = new RelayCommand(() => SetStatusAsync("Save as is not implemented yet."));
         ReloadConfigurationCommand = new RelayCommand(() => SetStatusAsync("Configuration list refreshed."));
+        OpenFreeFileSyncLogCommand = new RelayCommand(OpenFreeFileSyncLogAsync);
         OpenDocumentationCommand = new RelayCommand(OpenDocumentationAsync);
         AboutCommand = new RelayCommand(AboutAsync);
         ExitCommand = new RelayCommand(ExitAsync);
@@ -94,6 +96,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand SaveConfigurationCommand { get; }
     public RelayCommand SaveAsConfigurationCommand { get; }
     public RelayCommand ReloadConfigurationCommand { get; }
+    public RelayCommand OpenFreeFileSyncLogCommand { get; }
     public RelayCommand OpenDocumentationCommand { get; }
     public RelayCommand AboutCommand { get; }
     public RelayCommand ExitCommand { get; }
@@ -429,6 +432,40 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return SetStatusAsync($"Imported {Path.GetFileName(configuration.SourcePath)}. Run Compare to preview changes.");
+    }
+
+    private Task OpenFreeFileSyncLogAsync()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Open FreeFileSync log",
+            Filter = "FreeFileSync logs and JSON (*.json;*.html;*.htm;*.log;*.txt)|*.json;*.html;*.htm;*.log;*.txt|All files (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return Task.CompletedTask;
+        }
+
+        var summary = _logImporter.Import(dialog.FileName);
+        AddLog($"Imported FreeFileSync log: {summary.SyncResult}, errors {summary.Errors?.ToString() ?? "?"}, warnings {summary.Warnings?.ToString() ?? "?"}.");
+
+        var summaryText = new TextBox
+        {
+            Text = summary.ToDisplayText(),
+            IsReadOnly = true,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            MinWidth = 520,
+            MinHeight = 260,
+            Margin = new Thickness(18)
+        };
+
+        ShowDialog("FreeFileSync log summary", summaryText);
+        return SetStatusAsync($"Imported FreeFileSync log: {Path.GetFileName(summary.SourcePath)}.");
     }
 
     private bool ShowDialog(string title, UIElement body)

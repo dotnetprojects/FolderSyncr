@@ -30,6 +30,12 @@ Dark-mode dialogs are also checked.
 6. Review the planned actions in the center preview grid.
 7. Click `Synchronize` when the preview looks correct.
 
+## FreeFileSync Import
+
+Use `File` -> `Open configuration` to import a FreeFileSync `.ffs_gui` or `.ffs_batch` file. FolderSyncr reads the first left/right folder pair, supported comparison settings, supported synchronization mode, and include/exclude filters. If the file contains multiple folder pairs or unsupported FreeFileSync options, FolderSyncr writes an import warning to the app log.
+
+Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or log file. JSON results from FreeFileSync batch runs show the synchronization result, start time, duration, errors, warnings, processed item counts, processed byte counts, and referenced log file.
+
 ## Synchronization Modes
 
 - `TwoWay`: copies the newer file to the older or missing side.
@@ -54,7 +60,7 @@ Dark-mode dialogs are also checked.
 
 ## Filters
 
-Filters use wildcard patterns separated by semicolons, commas, or new lines.
+Filters use wildcard patterns separated by semicolons, commas, vertical bars, or new lines.
 
 Include only text and markdown files:
 

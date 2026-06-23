@@ -127,16 +127,27 @@ function Wait-WindowTitle {
 
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     do {
-        $windows = [System.Windows.Automation.AutomationElement]::RootElement.FindAll(
-            [System.Windows.Automation.TreeScope]::Descendants,
-            [System.Windows.Automation.Condition]::TrueCondition)
+        try {
+            $windows = [System.Windows.Automation.AutomationElement]::RootElement.FindAll(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.Condition]::TrueCondition)
+        }
+        catch [System.Windows.Automation.ElementNotAvailableException] {
+            Start-Sleep -Milliseconds 150
+            continue
+        }
 
         for ($i = 0; $i -lt $windows.Count; $i++) {
             $window = $windows.Item($i)
-            if (($window.Current.ProcessId -eq $ProcessId) -and
-                ($window.Current.ControlType -eq [System.Windows.Automation.ControlType]::Window) -and
-                ($window.Current.Name -eq $Title)) {
-                return $window
+            try {
+                if (($window.Current.ProcessId -eq $ProcessId) -and
+                    ($window.Current.ControlType -eq [System.Windows.Automation.ControlType]::Window) -and
+                    ($window.Current.Name -eq $Title)) {
+                    return $window
+                }
+            }
+            catch [System.Windows.Automation.ElementNotAvailableException] {
+                continue
             }
         }
 
