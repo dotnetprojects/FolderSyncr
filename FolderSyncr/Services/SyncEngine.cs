@@ -936,7 +936,8 @@ public sealed class SyncEngine
             return parsedRoot.Protocol switch
             {
                 RemoteSyncProtocol.Sftp => new SftpSyncStorage(parsedRoot),
-                _ => throw new NotSupportedException("FTP support is not implemented yet.")
+                RemoteSyncProtocol.Ftp => new FtpSyncStorage(parsedRoot),
+                _ => throw new NotSupportedException($"Remote protocol {parsedRoot.Protocol} is not supported.")
             };
         }
 

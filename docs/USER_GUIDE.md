@@ -66,14 +66,16 @@ Use `File` -> `Export FreeFileSync configuration` to write a compatible `.ffs_gu
 
 ## Remote Folders
 
-Use an SFTP URI in either folder field to compare and synchronize with an SSH file server:
+Use an SFTP or FTP URI in either folder field to compare and synchronize with a remote file server:
 
 ```text
 sftp://user:password@example.com/backups
 sftp://user:p%40ss@example.com:2222/backups
+ftp://user:password@example.com/backups
+ftp://example.com/public
 ```
 
-FolderSyncr supports SFTP scanning, time/size or content-hash comparison, copying in either direction, and permanent remote delete. Recycle-bin and versioning-folder deletion are local-folder features, so choose permanent delete when a synchronization can delete files on an SFTP side.
+FolderSyncr supports SFTP and FTP scanning, time/size or content-hash comparison, copying in either direction, and permanent remote delete. Recycle-bin and versioning-folder deletion are local-folder features, so choose permanent delete when a synchronization can delete files on a remote side. FTP without credentials uses anonymous login.
 
 ## Command Line
 

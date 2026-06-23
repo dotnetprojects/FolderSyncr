@@ -111,7 +111,7 @@ This list tracks the work needed to support the main features documented in the 
 ## 9. Cloud, network, and device folders
 
 - [x] Add SFTP support.
-- [ ] Add FTP support.
+- [x] Add FTP support.
 - [ ] Add connection count/channel count settings.
 - [ ] Add compression option for SFTP.
 - [x] Investigate MTP support.
