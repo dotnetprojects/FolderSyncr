@@ -8,11 +8,13 @@ public sealed class FolderSyncrBatchRunner(
     SyncEngine? syncEngine = null,
     FolderSyncrConfigurationStore? configurationStore = null,
     FreeFileSyncConfigurationImporter? freeFileSyncImporter = null,
+    FreeFileSyncGlobalSettingsImporter? globalSettingsImporter = null,
     SyncRunHistoryStore? runHistoryStore = null)
 {
     private readonly SyncEngine _syncEngine = syncEngine ?? new SyncEngine();
     private readonly FolderSyncrConfigurationStore _configurationStore = configurationStore ?? new FolderSyncrConfigurationStore();
     private readonly FreeFileSyncConfigurationImporter _freeFileSyncImporter = freeFileSyncImporter ?? new FreeFileSyncConfigurationImporter();
+    private readonly FreeFileSyncGlobalSettingsImporter _globalSettingsImporter = globalSettingsImporter ?? new FreeFileSyncGlobalSettingsImporter();
     private readonly SyncRunHistoryStore _runHistoryStore = runHistoryStore ?? new SyncRunHistoryStore();
 
     public async Task<BatchRunReport> RunAsync(BatchRunOptions options, IProgress<string>? progress, CancellationToken cancellationToken)
@@ -91,9 +93,16 @@ public sealed class FolderSyncrBatchRunner(
         }
 
         var syncOptionsList = new List<SyncOptions>();
+        FreeFileSyncGlobalSettings? globalSettings = null;
         warnings = 0;
         foreach (var configurationPath in configurationPaths)
         {
+            if (_globalSettingsImporter.TryImport(configurationPath, out var importedGlobalSettings))
+            {
+                globalSettings = MergeGlobalSettings(globalSettings, importedGlobalSettings);
+                continue;
+            }
+
             if (IsNativeConfigurationPath(configurationPath))
             {
                 var configuration = _configurationStore.Load(configurationPath);
@@ -107,12 +116,55 @@ public sealed class FolderSyncrBatchRunner(
             }
         }
 
+        if (syncOptionsList.Count == 0)
+        {
+            throw new InvalidDataException("No FolderSyncr or FreeFileSync synchronization configuration was provided.");
+        }
+
+        if (globalSettings is not null)
+        {
+            syncOptionsList = syncOptionsList
+                .Select(syncOptions => ApplyGlobalSettings(syncOptions, globalSettings))
+                .ToList();
+        }
+
         if (!string.IsNullOrWhiteSpace(options.OverrideLeftPath) || !string.IsNullOrWhiteSpace(options.OverrideRightPath))
         {
             return [CopyWithOverrides(syncOptionsList[0], options)];
         }
 
         return syncOptionsList.Select(syncOptions => CopyWithOverrides(syncOptions, options)).ToArray();
+    }
+
+    private static FreeFileSyncGlobalSettings MergeGlobalSettings(
+        FreeFileSyncGlobalSettings? current,
+        FreeFileSyncGlobalSettings next)
+    {
+        return new FreeFileSyncGlobalSettings(
+            next.FileTimeToleranceSeconds ?? current?.FileTimeToleranceSeconds,
+            next.VerifyCopiedFiles ?? current?.VerifyCopiedFiles);
+    }
+
+    private static SyncOptions ApplyGlobalSettings(SyncOptions syncOptions, FreeFileSyncGlobalSettings settings)
+    {
+        return new SyncOptions
+        {
+            LeftPath = syncOptions.LeftPath,
+            RightPath = syncOptions.RightPath,
+            Mode = syncOptions.Mode,
+            CompareMethod = syncOptions.CompareMethod,
+            FileTimeToleranceSeconds = settings.FileTimeToleranceSeconds ?? syncOptions.FileTimeToleranceSeconds,
+            IgnoreDaylightSavingTimeShift = syncOptions.IgnoreDaylightSavingTimeShift,
+            VerifyCopiedFiles = settings.VerifyCopiedFiles ?? syncOptions.VerifyCopiedFiles,
+            DeletionHandling = syncOptions.DeletionHandling,
+            VersioningMode = syncOptions.VersioningMode,
+            VersioningFolderPath = syncOptions.VersioningFolderPath,
+            IncludePatterns = syncOptions.IncludePatterns,
+            ExcludePatterns = syncOptions.ExcludePatterns,
+            DryRun = syncOptions.DryRun,
+            ErrorHandling = syncOptions.ErrorHandling,
+            SymbolicLinkHandling = syncOptions.SymbolicLinkHandling
+        };
     }
 
     private static IReadOnlyList<SyncOptions> FromNative(FolderSyncrConfiguration configuration)

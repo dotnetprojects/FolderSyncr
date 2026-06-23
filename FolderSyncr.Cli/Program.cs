@@ -151,6 +151,8 @@ internal static class BatchCommandLineParser
                Usage:
                  FolderSyncr.Cli <configuration> [configuration ...] [--dry-run] [--json <path>] [--error-handling show|ignore|cancel] [--symbolic-links skip|follow|copy] [-dirpair <left> <right>]
 
+               Additional positional paths may be FolderSyncr/FreeFileSync configurations or a FreeFileSync GlobalSettings.xml file.
+
                Exit codes:
                  0 success
                  1 warnings

@@ -171,13 +171,14 @@
     <section>
       <h2>Command Line</h2>
       <p>Pass a <code>.foldersyncr.json</code>, <code>.ffs_gui</code>, or <code>.ffs_batch</code> file as the first argument to <code>FolderSyncr.exe</code> to open it in the UI at startup. Add <code>-dirpair &lt;left&gt; &lt;right&gt;</code> to override the loaded folder pair, or <code>--minimized</code> to start the WPF app minimized.</p>
-      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. Add <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error. Add <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
+      <p>Use <code>FolderSyncr.Cli.exe</code> for true background unattended batch jobs. It compares and synchronizes the saved configuration, writes a FreeFileSync-like JSON result to stdout, optionally writes the same JSON to <code>--json &lt;path&gt;</code>, exits automatically when the run is complete, and returns <code>0</code> for success, <code>1</code> for warnings, <code>2</code> for errors, or <code>3</code> for cancellation. Pass multiple configuration files to merge their folder pairs into one in-memory batch run. You can also pass a FreeFileSync <code>GlobalSettings.xml</code> file; FolderSyncr applies supported global settings such as file-time tolerance and verify-copied-files. Add <code>--error-handling show|ignore|cancel</code> to show errors, continue past item errors, or cancel on the first item error. Add <code>--symbolic-links skip|follow|copy</code> to skip links, follow links as normal files/folders, or copy file links as links.</p>
       <pre><code>FolderSyncr.exe Backup.foldersyncr.json -dirpair C:\Source D:\Target
 FolderSyncr.exe Backup.foldersyncr.json --minimized</code></pre>
       <pre><code>FolderSyncr.Cli.exe Backup.foldersyncr.json --json Backup-result.json
 FolderSyncr.Cli.exe Backup.foldersyncr.json --dry-run
 FolderSyncr.Cli.exe Backup.ffs_batch -dirpair C:\Source D:\Target
 FolderSyncr.Cli.exe BackupA.foldersyncr.json BackupB.ffs_batch --json Merged-result.json
+FolderSyncr.Cli.exe Backup.ffs_batch "D:\Different GlobalSettings.xml"
 FolderSyncr.Cli.exe Backup.foldersyncr.json --error-handling ignore
 FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
     </section>

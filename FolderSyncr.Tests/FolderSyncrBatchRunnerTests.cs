@@ -74,6 +74,29 @@ public sealed class FolderSyncrBatchRunnerTests
     }
 
     [TestMethod]
+    public async Task RunAsyncAppliesAlternateGlobalSettingsFile()
+    {
+        using var workspace = BatchWorkspace.Create();
+        var leftPath = Path.Combine(workspace.LeftPath, "same-size.txt");
+        var rightPath = Path.Combine(workspace.RightPath, "same-size.txt");
+        File.WriteAllText(leftPath, "same");
+        File.WriteAllText(rightPath, "same");
+        File.SetLastWriteTimeUtc(leftPath, new DateTime(2026, 1, 1, 12, 0, 10, DateTimeKind.Utc));
+        File.SetLastWriteTimeUtc(rightPath, new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
+        var configPath = workspace.SaveNativeConfiguration("tolerance.foldersyncr.json", SyncMode.MirrorLeftToRight);
+        var globalSettingsPath = workspace.SaveGlobalSettings("GlobalSettings.xml", fileTimeToleranceSeconds: 30, verifyCopiedFiles: true);
+
+        var report = await workspace.CreateRunner().RunAsync(
+            new BatchRunOptions([configPath, globalSettingsPath], null, null, DryRun: true, JsonOutputPath: null),
+            null,
+            CancellationToken.None);
+
+        Assert.AreEqual(0, report.ExitCode);
+        Assert.AreEqual("dry-run", report.Result.SyncResult);
+        Assert.AreEqual(0, report.Result.ProcessedItems);
+    }
+
+    [TestMethod]
     public async Task RunAsyncSynchronizesEveryImportedFreeFileSyncFolderPair()
     {
         using var workspace = BatchWorkspace.Create();
@@ -224,6 +247,21 @@ public sealed class FolderSyncrBatchRunnerTests
                         <Right>{{SecondRightPath}}</Right>
                       </Pair>
                     </FolderPairs>
+                  </FreeFileSync>
+                  """);
+            return path;
+        }
+
+        public string SaveGlobalSettings(string fileName, int fileTimeToleranceSeconds, bool verifyCopiedFiles)
+        {
+            var path = Path.Combine(RootPath, fileName);
+            File.WriteAllText(path,
+                $$"""
+                  <FreeFileSync XmlType="GLOBAL">
+                    <Shared>
+                      <FileTimeTolerance Seconds="{{fileTimeToleranceSeconds}}" />
+                      <VerifyCopiedFiles Enabled="{{verifyCopiedFiles.ToString().ToLowerInvariant()}}" />
+                    </Shared>
                   </FreeFileSync>
                   """);
             return path;
