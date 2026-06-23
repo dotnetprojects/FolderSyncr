@@ -27,6 +27,8 @@ public static class ThemeManager
             Set(resources, "MutedTextBrush", "#94A3B8");
             Set(resources, "RowAltBrush", "#162033");
             Set(resources, "RowHoverBrush", "#1E3A5F");
+            Set(resources, "SelectionBrush", "#2563EB");
+            Set(resources, "SelectionTextBrush", "#FFFFFF");
             Set(resources, "ColumnHeaderBrush", "#1F2937");
         }
         else
@@ -44,6 +46,8 @@ public static class ThemeManager
             Set(resources, "MutedTextBrush", "#5B6472");
             Set(resources, "RowAltBrush", "#F7F7F7");
             Set(resources, "RowHoverBrush", "#EAF4FF");
+            Set(resources, "SelectionBrush", "#DBEAFE");
+            Set(resources, "SelectionTextBrush", "#111827");
             Set(resources, "ColumnHeaderBrush", "#ECEFF3");
         }
     }
