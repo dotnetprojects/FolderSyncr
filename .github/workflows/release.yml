@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-zip:
+    name: Build Windows ZIP
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Derive version from release tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          $version = $tag.TrimStart("v")
+          $assemblyVersion = ($version -split "-")[0]
+
+          "RELEASE_TAG=$tag" >> $env:GITHUB_ENV
+          "PACKAGE_VERSION=$version" >> $env:GITHUB_ENV
+          "ASSEMBLY_VERSION=$assemblyVersion" >> $env:GITHUB_ENV
+          "ZIP_NAME=FolderSyncr-$tag-win-x64.zip" >> $env:GITHUB_ENV
+
+      - name: Restore
+        run: dotnet restore .\FolderSyncr.slnx
+
+      - name: Publish
+        run: >
+          dotnet publish .\FolderSyncr\FolderSyncr.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --output .\artifacts\publish\FolderSyncr
+          /p:Version=${{ env.PACKAGE_VERSION }}
+          /p:AssemblyVersion=${{ env.ASSEMBLY_VERSION }}
+          /p:FileVersion=${{ env.ASSEMBLY_VERSION }}
+          /p:InformationalVersion=${{ env.PACKAGE_VERSION }}+${{ github.sha }}
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Create ZIP
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path .\artifacts\release | Out-Null
+          Compress-Archive -Path .\artifacts\publish\FolderSyncr\* -DestinationPath ".\artifacts\release\$env:ZIP_NAME" -Force
+
+      - name: Attach ZIP to GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$env:RELEASE_TAG" ".\artifacts\release\$env:ZIP_NAME" --clobber

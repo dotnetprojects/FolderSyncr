@@ -4,8 +4,6 @@ FolderSyncr is a .NET 10 WPF folder comparison and synchronization tool for Wind
 
 FolderSyncr is an independent project and is not affiliated with FreeFileSync.
 
-![FolderSyncr main window](docs/screenshots/foldersyncr-main.svg)
-
 ## Features
 
 - Compare two folders before changing anything.
@@ -21,16 +19,7 @@ FolderSyncr is an independent project and is not affiliated with FreeFileSync.
 - Conflict detection when files differ but neither side is clearly newer.
 - Cancellable compare and synchronization operations.
 - FreeFileSync-inspired layout with configuration list, overview pane, split file grids, action column, and statistics bar.
-
-## Screenshots
-
-### Main Window
-
-![FolderSyncr main window](docs/screenshots/foldersyncr-main.svg)
-
-### Compare Preview
-
-![FolderSyncr compare preview](docs/screenshots/foldersyncr-preview.svg)
+- Light and dark mode toggle.
 
 ## Requirements
 
@@ -47,6 +36,22 @@ dotnet --list-sdks
 
 ```powershell
 dotnet build .\FolderSyncr.slnx
+```
+
+## Release Builds
+
+When a GitHub release is published, the release workflow builds `FolderSyncr` for `win-x64`, applies the release tag as the application version, creates a ZIP, and uploads it to the release assets.
+
+Recommended release tag format:
+
+```text
+v1.2.3
+```
+
+The uploaded asset is named like:
+
+```text
+FolderSyncr-v1.2.3-win-x64.zip
 ```
 
 ## Run
@@ -101,8 +106,6 @@ FolderSyncr/
   Services/     Filtering, comparison, and synchronization engine
   ViewModels/   WPF view models and commands
   MainWindow.*  Main WPF interface
-docs/
-  screenshots/  README screenshots
 ```
 
 ## Safety Notes

@@ -18,6 +18,7 @@ public sealed class MainViewModel : ObservableObject
     private string _excludePatterns = "**/bin/**;**/obj/**;**/.git/**";
     private string _status = "Choose two folders, compare, then sync.";
     private bool _isBusy;
+    private bool _isDarkMode;
 
     public MainViewModel()
     {
@@ -26,6 +27,7 @@ public sealed class MainViewModel : ObservableObject
         CompareCommand = new RelayCommand(CompareAsync, CanRunFolderAction);
         SyncCommand = new RelayCommand(SyncAsync, () => CanRunFolderAction() && Operations.Any(operation => operation.WillChangeFileSystem));
         CancelCommand = new RelayCommand(CancelAsync, () => IsBusy);
+        ToggleThemeCommand = new RelayCommand(ToggleThemeAsync);
     }
 
     public ObservableCollection<SyncOperation> Operations { get; } = [];
@@ -48,6 +50,7 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand CompareCommand { get; }
     public RelayCommand SyncCommand { get; }
     public RelayCommand CancelCommand { get; }
+    public RelayCommand ToggleThemeCommand { get; }
 
     public string LeftPath
     {
@@ -114,6 +117,20 @@ public sealed class MainViewModel : ObservableObject
             }
         }
     }
+
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        private set
+        {
+            if (SetProperty(ref _isDarkMode, value))
+            {
+                OnPropertyChanged(nameof(ThemeButtonText));
+            }
+        }
+    }
+
+    public string ThemeButtonText => IsDarkMode ? "Light mode" : "Dark mode";
 
     public int ChangeCount => Operations.Count(operation => operation.WillChangeFileSystem);
     public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
@@ -189,6 +206,13 @@ public sealed class MainViewModel : ObservableObject
         _cancellation?.Cancel();
         Status = "Cancelling...";
         AddLog("Cancellation requested.");
+        return Task.CompletedTask;
+    }
+
+    private Task ToggleThemeAsync()
+    {
+        IsDarkMode = !IsDarkMode;
+        ThemeManager.Apply(IsDarkMode);
         return Task.CompletedTask;
     }
 

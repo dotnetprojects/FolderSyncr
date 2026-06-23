@@ -9,16 +9,24 @@
         Width="1240"
         MinHeight="700"
         MinWidth="1100"
-        Background="#E9ECEF"
+        Background="{DynamicResource WindowBrush}"
         FontFamily="Segoe UI"
-        TextElement.Foreground="#111827">
+        TextElement.Foreground="{DynamicResource TextBrush}">
     <Window.Resources>
+        <SolidColorBrush x:Key="WindowBrush" Color="#E9ECEF" />
         <SolidColorBrush x:Key="ChromeBrush" Color="#F3F4F6" />
         <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="InputBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="ButtonBrush" Color="#E5E7EB" />
+        <SolidColorBrush x:Key="ButtonHoverBrush" Color="#F9FAFB" />
         <SolidColorBrush x:Key="BorderBrushSoft" Color="#BFC7D1" />
         <SolidColorBrush x:Key="GridLineBrush" Color="#D8DEE6" />
         <SolidColorBrush x:Key="HeaderBlueBrush" Color="#0875C9" />
+        <SolidColorBrush x:Key="TextBrush" Color="#111827" />
         <SolidColorBrush x:Key="MutedTextBrush" Color="#5B6472" />
+        <SolidColorBrush x:Key="RowAltBrush" Color="#F7F7F7" />
+        <SolidColorBrush x:Key="RowHoverBrush" Color="#EAF4FF" />
+        <SolidColorBrush x:Key="ColumnHeaderBrush" Color="#ECEFF3" />
         <SolidColorBrush x:Key="GreenBrush" Color="#16A34A" />
         <SolidColorBrush x:Key="DarkGreenBrush" Color="#15803D" />
         <SolidColorBrush x:Key="ActionGreenBrush" Color="#A7F3B6" />
@@ -43,12 +51,13 @@
         </Style>
 
         <Style x:Key="ToolbarButton" TargetType="Button">
-            <Setter Property="MinHeight" Value="42" />
+            <Setter Property="MinHeight" Value="40" />
             <Setter Property="MinWidth" Value="54" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="Margin" Value="3,0" />
-            <Setter Property="Background" Value="#E5E7EB" />
-            <Setter Property="BorderBrush" Value="#AEB7C2" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Background" Value="{StaticResource ButtonBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -57,14 +66,14 @@
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="2">
+                                CornerRadius="6">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F9FAFB" />
+                                <Setter Property="Background" Value="{StaticResource ButtonHoverBrush}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="#D1D5DB" />
@@ -91,28 +100,33 @@
         </Style>
 
         <Style x:Key="InputBox" TargetType="TextBox">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="Padding" Value="6,3" />
-            <Setter Property="BorderBrush" Value="#9CA3AF" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource InputBrush}" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
 
         <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="MinHeight" Value="26" />
-            <Setter Property="MinWidth" Value="68" />
-            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="MinWidth" Value="76" />
+            <Setter Property="Padding" Value="10,4" />
         </Style>
 
         <Style TargetType="ComboBox">
-            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="5,2" />
-            <Setter Property="BorderBrush" Value="#9CA3AF" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="Background" Value="{StaticResource InputBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
         </Style>
 
         <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="GridLinesVisibility" Value="All" />
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource GridLineBrush}" />
@@ -123,12 +137,13 @@
             <Setter Property="CanUserDeleteRows" Value="False" />
             <Setter Property="IsReadOnly" Value="True" />
             <Setter Property="AutoGenerateColumns" Value="False" />
-            <Setter Property="AlternatingRowBackground" Value="#F7F7F7" />
+            <Setter Property="AlternatingRowBackground" Value="{StaticResource RowAltBrush}" />
         </Style>
 
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#ECEFF3" />
-            <Setter Property="BorderBrush" Value="#C5CCD5" />
+            <Setter Property="Background" Value="{StaticResource ColumnHeaderBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}" />
             <Setter Property="BorderThickness" Value="0,0,1,1" />
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="FontSize" Value="12" />
@@ -157,7 +172,7 @@
             <Setter Property="MinHeight" Value="23" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#EAF4FF" />
+                    <Setter Property="Background" Value="{StaticResource RowHoverBrush}" />
                 </Trigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Conflict">
                     <Setter Property="Background" Value="#FFF7D6" />
@@ -198,7 +213,7 @@
     </Window.Resources>
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="#FFFFFF" BorderBrush="#D1D5DB" BorderThickness="0,0,0,1">
+        <Menu DockPanel.Dock="Top" Background="{StaticResource PanelBrush}" Foreground="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrushSoft}" BorderThickness="0,0,0,1">
             <MenuItem Header="_File" />
             <MenuItem Header="_Actions" />
             <MenuItem Header="_Tools" />
@@ -207,8 +222,8 @@
 
         <StatusBar DockPanel.Dock="Bottom"
                    Height="26"
-                   Background="#F8FAFC"
-                   BorderBrush="#BFC7D1"
+                   Background="{StaticResource PanelBrush}"
+                   BorderBrush="{StaticResource BorderBrushSoft}"
                    BorderThickness="0,1,0,0">
             <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedTextBrush}" />
         </StatusBar>
@@ -220,7 +235,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0" Background="#EEF1F5">
+            <Grid Grid.Column="0" Background="{StaticResource ChromeBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="5" />
@@ -356,8 +371,8 @@
 
             <Grid Grid.Column="2">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="72" />
-                    <RowDefinition Height="64" />
+                    <RowDefinition Height="86" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="48" />
                 </Grid.RowDefinitions>
@@ -371,6 +386,7 @@
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
@@ -389,11 +405,18 @@
                             </StackPanel>
                         </Button>
 
-                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" Margin="4,7" ToolTip="Filter files">
+                        <Button Grid.Column="2" Style="{StaticResource SmallButton}" HorizontalAlignment="Right" Margin="4,0,12,0" Command="{Binding ToggleThemeCommand}" ToolTip="Switch between light and dark mode">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE708;" FontFamily="Segoe MDL2 Assets" FontSize="14" Margin="0,0,7,0" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding ThemeButtonText}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <Button Grid.Column="3" Style="{StaticResource ToolbarButton}" Margin="4,12" ToolTip="Filter files">
                             <TextBlock Text="&#xE71C;" FontFamily="Segoe MDL2 Assets" FontSize="28" Foreground="#B91C1C" />
                         </Button>
 
-                        <Button Grid.Column="4" Style="{StaticResource MainCommandButton}" Command="{Binding SyncCommand}" Margin="4,6,8,6" ToolTip="Start synchronization">
+                        <Button Grid.Column="4" Style="{StaticResource MainCommandButton}" Command="{Binding SyncCommand}" Margin="4,10,8,10" ToolTip="Start synchronization">
                             <StackPanel Style="{StaticResource IconButtonContent}">
                                 <TextBlock Text="&#xE895;" FontFamily="Segoe MDL2 Assets" FontSize="30" Foreground="{StaticResource GreenBrush}" Margin="0,0,12,0" />
                                 <StackPanel>
@@ -406,40 +429,40 @@
                 </Border>
 
                 <Border Grid.Row="1"
-                        Background="#F6F7F9"
-                        BorderBrush="#BFC7D1"
+                        Background="{StaticResource ChromeBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
                         BorderThickness="0,0,0,1"
-                        Padding="8,5">
+                        Padding="10,8">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="20" />
-                            <RowDefinition Height="30" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="26" />
+                            <ColumnDefinition Width="36" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="80" />
-                            <ColumnDefinition Width="42" />
-                            <ColumnDefinition Width="42" />
+                            <ColumnDefinition Width="88" />
+                            <ColumnDefinition Width="44" />
+                            <ColumnDefinition Width="56" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="80" />
-                            <ColumnDefinition Width="42" />
+                            <ColumnDefinition Width="88" />
+                            <ColumnDefinition Width="44" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" />
-                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource SmallButton}" MinWidth="24" Padding="0" ToolTip="Add folder pair">
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding LeftPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" />
+                        <TextBlock Grid.Row="0" Grid.Column="5" Text="{Binding RightPath}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{StaticResource MutedTextBrush}" />
+                        <Button Grid.Row="1" Grid.Column="0" Style="{StaticResource SmallButton}" MinWidth="34" Padding="0" ToolTip="Add folder pair">
                             <TextBlock Text="+" FontSize="20" Foreground="{StaticResource GreenBrush}" HorizontalAlignment="Center" />
                         </Button>
-                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding LeftPath, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource SmallButton}" Command="{Binding BrowseLeftCommand}" Content="Browse" />
                         <Button Grid.Row="1" Grid.Column="3" Style="{StaticResource SmallButton}" MinWidth="34" Padding="0" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />
                         </Button>
-                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Style="{StaticResource ToolbarButton}" MinWidth="38" MinHeight="44" Margin="6,0" ToolTip="Swap sides">
+                        <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Style="{StaticResource ToolbarButton}" MinWidth="44" MinHeight="54" Margin="8,0" ToolTip="Swap sides">
                             <TextBlock Text="&#xE8AB;" FontFamily="Segoe MDL2 Assets" FontSize="24" Foreground="#374151" />
                         </Button>
-                        <TextBox Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox Grid.Row="1" Grid.Column="5" Style="{StaticResource InputBox}" Margin="6,0" Text="{Binding RightPath, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Grid.Row="1" Grid.Column="6" Style="{StaticResource SmallButton}" Command="{Binding BrowseRightCommand}" Content="Browse" />
                         <Button Grid.Row="1" Grid.Column="7" Style="{StaticResource SmallButton}" MinWidth="34" Padding="0" ToolTip="Cloud path">
                             <TextBlock Text="&#xE753;" FontFamily="Segoe MDL2 Assets" Foreground="#9CA3AF" HorizontalAlignment="Center" />
@@ -501,8 +524,8 @@
                 </Grid>
 
                 <Border Grid.Row="3"
-                        Background="#F6F7F9"
-                        BorderBrush="#BFC7D1"
+                        Background="{StaticResource ChromeBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
                         BorderThickness="0,1,0,0">
                     <Grid>
                         <Grid.ColumnDefinitions>
