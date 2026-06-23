@@ -50,6 +50,10 @@ Use `Tools` -> `Open FreeFileSync log` to import a FreeFileSync JSON result or l
 
 Each synchronization writes a JSON run result to `%LOCALAPPDATA%\FolderSyncr\History`. The JSON uses FreeFileSync-like fields: `syncResult`, `startTime`, `totalTimeSec`, `errors`, `warnings`, `totalItems`, `totalBytes`, `processedItems`, `processedBytes`, and `logFile`.
 
+## Sync Database
+
+After a successful two-way synchronization, FolderSyncr writes a hidden `sync.ffs_db`-style JSON inventory to both synchronized roots. The database records the last known left and right fingerprints for each synchronized relative path. FolderSyncr ignores this metadata file during compare and sync previews.
+
 ## FolderSyncr Configurations
 
 Use `File` -> `Save` or `Save as` to store the current folder pair, any preserved imported folder pairs, sync mode, custom rules, compare method, filters, external commands, and theme as a `.foldersyncr.json` file. Use `File` -> `Open configuration` to reopen it later, and `File` -> `Reload configuration` to discard local changes and load the current file again.

@@ -10,6 +10,12 @@ namespace FolderSyncr.Services;
 public sealed class SyncEngine
 {
     private const string LockFileName = ".foldersyncr.lock";
+    private readonly SyncDatabaseStore _syncDatabaseStore;
+
+    public SyncEngine(SyncDatabaseStore? syncDatabaseStore = null)
+    {
+        _syncDatabaseStore = syncDatabaseStore ?? new SyncDatabaseStore();
+    }
 
     public async Task<IReadOnlyList<SyncOperation>> CompareAsync(
         SyncOptions options,
@@ -51,6 +57,7 @@ public sealed class SyncEngine
             var executable = operations.Where(operation => operation.ShouldExecute).ToList();
             if (executable.Count == 0)
             {
+                await SaveSyncDatabaseAsync(options, progress, cancellationToken);
                 progress?.Report("No file changes required.");
                 return;
             }
@@ -76,6 +83,11 @@ public sealed class SyncEngine
                     progress?.Report($"Error for {operation.RelativePath}: {exception.Message}");
                     throw;
                 }
+            }
+
+            if (executable.All(operation => string.Equals(operation.Status, "Done", StringComparison.OrdinalIgnoreCase)))
+            {
+                await SaveSyncDatabaseAsync(options, progress, cancellationToken);
             }
 
             progress?.Report($"Sync completed. {executable.Count} change(s) applied.");
@@ -125,6 +137,11 @@ public sealed class SyncEngine
         foreach (var path in EnumerateFilePaths(root, options.SymbolicLinkHandling))
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (IsInternalMetadataFile(path))
+            {
+                continue;
+            }
 
             var relativePath = Path.GetRelativePath(root, path);
             if (!filter.IsMatch(relativePath))
@@ -611,6 +628,29 @@ public sealed class SyncEngine
             Directory.Delete(directory);
             directory = Path.GetDirectoryName(directory);
         }
+    }
+
+    private async Task SaveSyncDatabaseAsync(
+        SyncOptions options,
+        IProgress<string>? progress,
+        CancellationToken cancellationToken)
+    {
+        if (options.DryRun || options.Mode != SyncMode.TwoWay)
+        {
+            return;
+        }
+
+        progress?.Report("Updating sync database...");
+        var leftFiles = await ScanAsync(options.LeftPath, options.CompareMethod, options, progress, cancellationToken);
+        var rightFiles = await ScanAsync(options.RightPath, options.CompareMethod, options, progress, cancellationToken);
+        _syncDatabaseStore.SavePair(options.LeftPath, options.RightPath, leftFiles, rightFiles);
+    }
+
+    private static bool IsInternalMetadataFile(string path)
+    {
+        var fileName = Path.GetFileName(path);
+        return string.Equals(fileName, LockFileName, StringComparison.OrdinalIgnoreCase)
+            || SyncDatabaseStore.IsDatabaseFile(path);
     }
 
     private static async Task<string> HashFileAsync(string path, CancellationToken cancellationToken)

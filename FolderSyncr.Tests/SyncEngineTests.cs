@@ -51,6 +51,52 @@ public sealed class SyncEngineTests
     }
 
     [TestMethod]
+    public async Task TwoWaySyncWritesAndSkipsSyncDatabase()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("new.txt", "new file", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.TwoWay);
+        var engine = new SyncEngine();
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        await engine.ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        var leftDatabasePath = workspace.LeftPath(SyncDatabaseStore.FileName);
+        var rightDatabasePath = workspace.RightPath(SyncDatabaseStore.FileName);
+        Assert.IsTrue(File.Exists(leftDatabasePath));
+        Assert.IsTrue(File.Exists(rightDatabasePath));
+
+        var database = new SyncDatabaseStore().Load(workspace.LeftRoot);
+        Assert.IsNotNull(database);
+        Assert.HasCount(1, database.Entries);
+        Assert.AreEqual("new.txt", database.Entries[0].RelativePath);
+        Assert.IsNotNull(database.Entries[0].Left);
+        Assert.IsNotNull(database.Entries[0].Right);
+
+        var refreshed = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        Assert.IsFalse(refreshed.Any(operation => string.Equals(operation.RelativePath, SyncDatabaseStore.FileName, StringComparison.OrdinalIgnoreCase)));
+        AssertOperation(refreshed, "new.txt", OperationKind.Equal);
+    }
+
+    [TestMethod]
+    public async Task MirrorSyncDoesNotWriteSyncDatabase()
+    {
+        using var workspace = TestWorkspace.Create();
+        workspace.WriteLeft("new.txt", "new file", DateTime.UtcNow);
+
+        var options = workspace.CreateOptions(SyncMode.MirrorLeftToRight);
+        var engine = new SyncEngine();
+        var operations = await engine.CompareAsync(options, null, CancellationToken.None);
+
+        await engine.ExecuteAsync(operations, options, null, CancellationToken.None);
+
+        Assert.IsFalse(File.Exists(workspace.LeftPath(SyncDatabaseStore.FileName)));
+        Assert.IsFalse(File.Exists(workspace.RightPath(SyncDatabaseStore.FileName)));
+    }
+
+    [TestMethod]
     public async Task TwoWayMarksChangedFilesAsConflictWhenTimestampDoesNotPickWinner()
     {
         using var workspace = TestWorkspace.Create();
@@ -496,6 +542,10 @@ public sealed class SyncEngineTests
         public string LeftPath(string relativePath) => Path.Combine(_left, relativePath);
 
         public string RightPath(string relativePath) => Path.Combine(_right, relativePath);
+
+        public string LeftRoot => _left;
+
+        public string RightRoot => _right;
 
         public string RootPath => _root;
 

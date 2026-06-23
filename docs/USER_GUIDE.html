@@ -167,6 +167,11 @@
     </section>
 
     <section>
+      <h2>Sync Database</h2>
+      <p>After a successful two-way synchronization, FolderSyncr writes a hidden <code>sync.ffs_db</code>-style JSON inventory to both synchronized roots. The database records the last known left and right fingerprints for each synchronized relative path. FolderSyncr ignores this metadata file during compare and sync previews.</p>
+    </section>
+
+    <section>
       <h2>FolderSyncr Configurations</h2>
       <p>Use <code>File -> Save</code> or <code>Save as</code> to store the current folder pair, any preserved imported folder pairs, sync mode, custom rules, compare method, filters, external commands, and theme as a <code>.foldersyncr.json</code> file.</p>
       <p>Use <code>File -> Export FreeFileSync configuration</code> to write a compatible <code>.ffs_gui</code> file. The export includes the current or preserved folder pairs, comparison method, standard synchronization mode/direction, and include/exclude filters. FolderSyncr-only settings such as custom rules, theme, recycle-bin deletion, and versioning options stay in the native <code>.foldersyncr.json</code> format.</p>
