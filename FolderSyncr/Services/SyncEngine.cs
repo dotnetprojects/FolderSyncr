@@ -1,8 +1,8 @@
 using System.IO;
 using System.Security.Cryptography;
-using FileSyncr.Models;
+using FolderSyncr.Models;
 
-namespace FileSyncr.Services;
+namespace FolderSyncr.Services;
 
 public sealed class SyncEngine
 {

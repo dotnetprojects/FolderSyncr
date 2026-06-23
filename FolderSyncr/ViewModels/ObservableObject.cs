@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace FileSyncr.ViewModels;
+namespace FolderSyncr.ViewModels;
 
 public abstract class ObservableObject : INotifyPropertyChanged
 {

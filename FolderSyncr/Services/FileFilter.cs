@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace FileSyncr.Services;
+namespace FolderSyncr.Services;
 
 public sealed class FileFilter
 {

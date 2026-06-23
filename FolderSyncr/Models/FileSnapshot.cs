@@ -1,4 +1,4 @@
-namespace FileSyncr.Models;
+namespace FolderSyncr.Models;
 
 public sealed record FileSnapshot(
     string Root,

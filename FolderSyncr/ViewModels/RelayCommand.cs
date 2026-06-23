@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace FileSyncr.ViewModels;
+namespace FolderSyncr.ViewModels;
 
 public sealed class RelayCommand : ICommand
 {

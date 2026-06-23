@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Forms;
-using FileSyncr.Models;
-using FileSyncr.Services;
+using FolderSyncr.Models;
+using FolderSyncr.Services;
 
-namespace FileSyncr.ViewModels;
+namespace FolderSyncr.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
@@ -30,6 +30,15 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<SyncOperation> Operations { get; } = [];
     public ObservableCollection<string> LogEntries { get; } = [];
+    public ObservableCollection<ConfigurationItem> Configurations { get; } =
+    [
+        new() { Name = "[Last session]", LastSync = "Today" },
+        new() { Name = "Backup Projects", LastSync = "Today" },
+        new() { Name = "Backup Documents", LastSync = "Yesterday" },
+        new() { Name = "Mirror Archive", LastSync = "Never", IsHealthy = false },
+    ];
+
+    public ObservableCollection<OverviewItem> OverviewRows { get; } = [];
 
     public IReadOnlyList<SyncMode> SyncModes { get; } = Enum.GetValues<SyncMode>();
     public IReadOnlyList<CompareMethod> CompareMethods { get; } = Enum.GetValues<CompareMethod>();
@@ -109,6 +118,8 @@ public sealed class MainViewModel : ObservableObject
     public int ChangeCount => Operations.Count(operation => operation.WillChangeFileSystem);
     public int ConflictCount => Operations.Count(operation => operation.Kind == OperationKind.Conflict);
     public int TotalCount => Operations.Count;
+    public int LeftFileCount => Operations.Count(operation => operation.Left is not null);
+    public int RightFileCount => Operations.Count(operation => operation.Right is not null);
 
     private async Task BrowseAsync(bool isLeft)
     {
@@ -262,7 +273,55 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ChangeCount));
         OnPropertyChanged(nameof(ConflictCount));
         OnPropertyChanged(nameof(TotalCount));
+        OnPropertyChanged(nameof(LeftFileCount));
+        OnPropertyChanged(nameof(RightFileCount));
+        RefreshOverview();
         SyncCommand.RaiseCanExecuteChanged();
+    }
+
+    private void RefreshOverview()
+    {
+        OverviewRows.Clear();
+        var totalItems = Math.Max(Operations.Count, 1);
+        var groups = Operations
+            .GroupBy(operation => GetTopFolder(operation.RelativePath), StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(group => group.Count())
+            .ThenBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .Take(8);
+
+        foreach (var group in groups)
+        {
+            var size = group.Sum(operation => operation.Left?.Length ?? operation.Right?.Length ?? 0);
+            OverviewRows.Add(new OverviewItem
+            {
+                Folder = group.Key,
+                Items = group.Count(),
+                Size = FormatBytes(size),
+                Percentage = group.Count() * 100d / totalItems
+            });
+        }
+    }
+
+    private static string GetTopFolder(string relativePath)
+    {
+        var normalized = relativePath.Replace('\\', '/');
+        var slash = normalized.IndexOf('/');
+        return slash > 0 ? normalized[..slash] : "Files";
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        double value = bytes;
+        var unit = 0;
+
+        while (value >= 1024 && unit < units.Length - 1)
+        {
+            value /= 1024;
+            unit++;
+        }
+
+        return $"{value:0.##} {units[unit]}";
     }
 
     private void RaiseCommandStates()

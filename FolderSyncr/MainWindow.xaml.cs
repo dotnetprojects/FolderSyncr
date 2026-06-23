@@ -1,7 +1,7 @@
 using System.Windows;
-using FileSyncr.ViewModels;
+using FolderSyncr.ViewModels;
 
-namespace FileSyncr;
+namespace FolderSyncr;
 
 public partial class MainWindow : Window
 {

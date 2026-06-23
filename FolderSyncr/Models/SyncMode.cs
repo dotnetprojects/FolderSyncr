@@ -1,4 +1,4 @@
-namespace FileSyncr.Models;
+namespace FolderSyncr.Models;
 
 public enum SyncMode
 {

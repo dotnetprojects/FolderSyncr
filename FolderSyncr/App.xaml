@@ -1,7 +1,7 @@
-﻿<Application x:Class="FileSyncr.App"
+<Application x:Class="FolderSyncr.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:FileSyncr"
+             xmlns:local="clr-namespace:FolderSyncr"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

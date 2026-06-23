@@ -1,4 +1,4 @@
-namespace FileSyncr.Models;
+namespace FolderSyncr.Models;
 
 public sealed class SyncOperation
 {
@@ -11,13 +11,32 @@ public sealed class SyncOperation
     public string Direction => Kind switch
     {
         OperationKind.Equal => "=",
-        OperationKind.CopyLeftToRight => "Left -> Right",
-        OperationKind.CopyRightToLeft => "Right -> Left",
+        OperationKind.CopyLeftToRight => "Left to Right",
+        OperationKind.CopyRightToLeft => "Right to Left",
         OperationKind.DeleteLeft => "Delete Left",
         OperationKind.DeleteRight => "Delete Right",
         OperationKind.Conflict => "Conflict",
         _ => string.Empty
     };
+
+    public string ActionGlyph => Kind switch
+    {
+        OperationKind.Equal => "==",
+        OperationKind.CopyLeftToRight => "=>",
+        OperationKind.CopyRightToLeft => "<=",
+        OperationKind.DeleteLeft => "X<",
+        OperationKind.DeleteRight => ">X",
+        OperationKind.Conflict => "!",
+        _ => string.Empty
+    };
+
+    public string LeftName => Left?.RelativePath ?? string.Empty;
+
+    public string RightName => Right?.RelativePath ?? string.Empty;
+
+    public string LeftSize => Left is null ? string.Empty : FormatBytes(Left.Length);
+
+    public string RightSize => Right is null ? string.Empty : FormatBytes(Right.Length);
 
     public string LeftInfo => Left is null
         ? "-"
