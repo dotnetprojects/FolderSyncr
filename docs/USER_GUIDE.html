@@ -275,7 +275,7 @@ FolderSyncr.Cli.exe Backup.foldersyncr.json --symbolic-links copy</code></pre>
 
     <section>
       <h2>External Commands</h2>
-      <p>Use <code>Tools -&gt; External commands</code> to configure row context-menu commands. Store one command per line in the form <code>Name=command line</code>.</p>
+      <p>Use <code>Tools -&gt; External commands</code> to configure row context-menu commands. Store one command per line in the form <code>Name=command line</code>. Press <code>0</code> through <code>9</code> to run the matching command for the selected comparison rows.</p>
       <p>External commands support the FreeFileSync item macros <code>%item_path%</code>, <code>%local_path%</code>, <code>%item_name%</code>, and <code>%parent_path%</code>. Append <code>2</code> to use the opposite side, for example <code>%local_path2%</code> or <code>%local_path 2%</code>. Append <code>s</code> to pass all selected items as a space-separated list, for example <code>%local_path s%</code>.</p>
       <pre><code>Show in Explorer=explorer.exe /select, %local_path% &amp; exit 0
 Copy path to clipboard=echo %item_path%| clip

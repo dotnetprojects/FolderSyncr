@@ -787,7 +787,8 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <DataGrid Grid.Column="0"
+                    <DataGrid x:Name="LeftOperationsGrid"
+                              Grid.Column="0"
                               ItemsSource="{Binding OperationsView}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="#" Binding="{Binding RelativePath}" Width="36" />
@@ -796,7 +797,8 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <DataGrid Grid.Column="1"
+                    <DataGrid x:Name="ActionOperationsGrid"
+                              Grid.Column="1"
                               ItemsSource="{Binding OperationsView}"
                               BorderBrush="#9CA3AF"
                               BorderThickness="1,0">
@@ -826,7 +828,8 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <DataGrid Grid.Column="2"
+                    <DataGrid x:Name="RightOperationsGrid"
+                              Grid.Column="2"
                               ItemsSource="{Binding OperationsView}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="Relative path" Binding="{Binding RightName}" Width="*" />

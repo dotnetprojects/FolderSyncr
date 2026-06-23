@@ -106,7 +106,7 @@ This list tracks the work needed to support the main features documented in the 
 - [x] Add configurable external commands.
 - [x] Add row double-click behavior.
 - [x] Add grid context menu actions.
-- [ ] Add keyboard shortcuts for configured external commands.
+- [x] Add keyboard shortcuts for configured external commands.
 
 ## 9. Cloud, network, and device folders
 

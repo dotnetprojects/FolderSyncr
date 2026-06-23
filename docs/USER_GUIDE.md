@@ -158,7 +158,7 @@ Double-click a result row to open the existing left-side item, or the right-side
 
 ## External Commands
 
-Use `Tools` -> `External commands` to configure row context-menu commands. Store one command per line in the form `Name=command line`.
+Use `Tools` -> `External commands` to configure row context-menu commands. Store one command per line in the form `Name=command line`. Press `0` through `9` to run the matching command for the selected comparison rows.
 
 External commands support the FreeFileSync item macros `%item_path%`, `%local_path%`, `%item_name%`, and `%parent_path%`. Append `2` to use the opposite side, for example `%local_path2%` or `%local_path 2%`. Append `s` to pass all selected items as a space-separated list, for example `%local_path s%`.
 

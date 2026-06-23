@@ -1,6 +1,8 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using FolderSyncr.Models;
 using FolderSyncr.Services;
@@ -25,6 +27,8 @@ public partial class MainWindow : Window
 
             Loaded += async (_, _) => await viewModel.ApplyStartupOptionsAsync(startupOptions);
         }
+
+        PreviewKeyDown += MainWindow_PreviewKeyDown;
     }
 
     private void PathBox_PreviewDragOver(object sender, DragEventArgs e)
@@ -136,6 +140,31 @@ public partial class MainWindow : Window
 
     private MainViewModel GetViewModel() => (MainViewModel)DataContext;
 
+    private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (IsTextInputFocused(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        var commandIndex = GetNumericCommandIndex(e.Key);
+        if (commandIndex < 0)
+        {
+            return;
+        }
+
+        var viewModel = GetViewModel();
+        if (commandIndex >= viewModel.ExternalCommands.Count)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await viewModel.RunExternalCommandAsync(
+            viewModel.ExternalCommands[commandIndex],
+            GetSelectedOperationsFromGrids());
+    }
+
     private static IReadOnlyList<SyncOperation> GetSelectedOperations(DataGridRow row, SyncOperation clickedOperation)
     {
         var selectedOperations = FindParent<DataGrid>(row)?.SelectedItems
@@ -148,6 +177,52 @@ public partial class MainWindow : Window
         }
 
         return selectedOperations;
+    }
+
+    private IReadOnlyList<SyncOperation> GetSelectedOperationsFromGrids()
+    {
+        var selectedOperations = new[]
+            {
+                LeftOperationsGrid,
+                ActionOperationsGrid,
+                RightOperationsGrid
+            }
+            .SelectMany(grid => grid.SelectedItems.OfType<SyncOperation>())
+            .Distinct()
+            .ToList();
+
+        if (selectedOperations.Count == 0 && ActionOperationsGrid.CurrentItem is SyncOperation currentOperation)
+        {
+            selectedOperations.Add(currentOperation);
+        }
+
+        return selectedOperations;
+    }
+
+    private static int GetNumericCommandIndex(Key key)
+    {
+        if (key is >= Key.D0 and <= Key.D9)
+        {
+            return key - Key.D0;
+        }
+
+        return key is >= Key.NumPad0 and <= Key.NumPad9 ? key - Key.NumPad0 : -1;
+    }
+
+    private static bool IsTextInputFocused(DependencyObject? source)
+    {
+        var current = source;
+        while (current is not null)
+        {
+            if (current is TextBoxBase or PasswordBox or ComboBox)
+            {
+                return true;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return false;
     }
 
     private static T? FindParent<T>(DependencyObject child)
